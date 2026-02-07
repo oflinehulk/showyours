@@ -5,13 +5,10 @@ import { SquadCard } from '@/components/SquadCard';
 import { Button } from '@/components/ui/button';
 import { mockPlayers, mockSquads, mockStats } from '@/lib/mockData';
 import { Users, Shield, Zap, UserPlus, ChevronRight, Trophy, TrendingUp, Target } from 'lucide-react';
-
 export default function HomePage() {
   const featuredPlayers = mockPlayers.filter(p => p.lookingForSquad).slice(0, 3);
   const featuredSquads = mockSquads.slice(0, 2);
-
-  return (
-    <Layout>
+  return <Layout>
       {/* Hero Section */}
       <section className="relative overflow-hidden section-glow">
         <div className="container mx-auto px-4 py-20 md:py-32">
@@ -19,7 +16,7 @@ export default function HomePage() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-6 animate-fade-in">
               <Zap className="w-4 h-4" />
-              <span>The #1 MLBB Recruitment Platform</span>
+              <span>Mobile Legends Bang Bang Recruitment Platform</span>
             </div>
 
             {/* Headline */}
@@ -29,13 +26,14 @@ export default function HomePage() {
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              Showcase your skills, connect with players, and join squads that match your playstyle. 
-              Built by MLBB players, for MLBB players.
-            </p>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{
+            animationDelay: '0.1s'
+          }}>Showcase your skills, connect with players, and join squads that match your playstyle. Built by a MLBB player, for MLBB players.</p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{
+            animationDelay: '0.2s'
+          }}>
               <Button size="lg" className="btn-gaming text-lg px-8" asChild>
                 <Link to="/create-profile">
                   <UserPlus className="w-5 h-5 mr-2" />
@@ -113,9 +111,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredPlayers.map((player) => (
-              <PlayerCard key={player.id} player={player} />
-            ))}
+            {featuredPlayers.map(player => <PlayerCard key={player.id} player={player} />)}
           </div>
 
           <div className="mt-6 text-center sm:hidden">
@@ -191,9 +187,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {featuredSquads.map((squad) => (
-              <SquadCard key={squad.id} squad={squad} />
-            ))}
+            {featuredSquads.map(squad => <SquadCard key={squad.id} squad={squad} />)}
           </div>
 
           <div className="mt-6 text-center sm:hidden">
@@ -224,6 +218,5 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </Layout>
-  );
+    </Layout>;
 }

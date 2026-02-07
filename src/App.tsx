@@ -12,6 +12,7 @@ import SquadDetailPage from "./pages/SquadDetailPage";
 import CreateProfilePage from "./pages/CreateProfilePage";
 import CreateSquadPage from "./pages/CreateSquadPage";
 import AuthPage from "./pages/AuthPage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/squad/:id" element={<SquadDetailPage />} />
             <Route path="/create-profile" element={<CreateProfilePage />} />
             <Route path="/create-squad" element={<CreateSquadPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

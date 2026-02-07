@@ -5,7 +5,8 @@ import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
-import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useAdmin';
+import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -19,6 +20,7 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   const { data: myProfile } = useMyProfile();
   const { data: mySquads } = useMySquads();
+  const { data: isAdmin } = useIsAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasProfile = !!myProfile;
@@ -61,6 +63,14 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
+                {isAdmin && (
+                  <Button variant="outline" size="sm" className="btn-interactive border-secondary text-secondary hover:bg-secondary/10" asChild>
+                    <Link to="/admin">
+                      <ShieldCheck className="w-4 h-4 mr-2" />
+                      Admin
+                    </Link>
+                  </Button>
+                )}
                 {hasProfile ? (
                   <Button variant="outline" size="sm" className="btn-interactive" asChild>
                     <Link to={`/player/${myProfile.id}`}>
@@ -134,6 +144,14 @@ export function Navbar() {
               <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border/50">
                 {user ? (
                   <>
+                    {isAdmin && (
+                      <Button variant="outline" size="sm" className="btn-interactive border-secondary text-secondary hover:bg-secondary/10" asChild>
+                        <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                          <ShieldCheck className="w-4 h-4 mr-2" />
+                          Admin Panel
+                        </Link>
+                      </Button>
+                    )}
                     {hasProfile ? (
                       <Button variant="outline" size="sm" className="btn-interactive" asChild>
                         <Link to={`/player/${myProfile.id}`} onClick={() => setMobileMenuOpen(false)}>

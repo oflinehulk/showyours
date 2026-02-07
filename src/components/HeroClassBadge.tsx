@@ -1,15 +1,15 @@
 import { cn } from '@/lib/utils';
 import { HERO_CLASSES, type HeroClassId } from '@/lib/constants';
-import { Shield, Swords, Skull, Sparkles, Target, Heart } from 'lucide-react';
+import { Shield, Swords, Skull, Sparkles, Target, Heart, HelpCircle } from 'lucide-react';
 
 interface HeroClassBadgeProps {
-  heroClass: HeroClassId;
+  heroClass: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
   className?: string;
 }
 
-const classIcons: Record<HeroClassId, React.ReactNode> = {
+const classIcons: Record<string, React.ReactNode> = {
   tank: <Shield className="w-full h-full" />,
   fighter: <Swords className="w-full h-full" />,
   assassin: <Skull className="w-full h-full" />,
@@ -18,7 +18,7 @@ const classIcons: Record<HeroClassId, React.ReactNode> = {
   support: <Heart className="w-full h-full" />,
 };
 
-const classColors: Record<HeroClassId, string> = {
+const classColors: Record<string, string> = {
   tank: 'text-blue-400 bg-blue-400/10',
   fighter: 'text-orange-400 bg-orange-400/10',
   assassin: 'text-red-400 bg-red-400/10',
@@ -46,13 +46,13 @@ export function HeroClassBadge({ heroClass, size = 'md', showName = true, classN
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-md font-medium border border-current/20',
-        classColors[heroClass],
+        classColors[heroClass] || 'text-muted-foreground bg-muted',
         sizeClasses[size],
         className
       )}
     >
-      <span className={iconSizes[size]}>{classIcons[heroClass]}</span>
-      {showName && <span>{classData?.name}</span>}
+      <span className={iconSizes[size]}>{classIcons[heroClass] || <HelpCircle className="w-full h-full" />}</span>
+      {showName && <span>{classData?.name || heroClass}</span>}
     </span>
   );
 }

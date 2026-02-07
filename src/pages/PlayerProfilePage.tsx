@@ -190,7 +190,13 @@ export default function PlayerProfilePage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    <RoleIcon role={player.main_role} size="md" />
+                    {/* Show multiple roles if available */}
+                    {((player as any).main_roles?.length > 0 
+                      ? (player as any).main_roles 
+                      : [player.main_role]
+                    ).map((role: string) => (
+                      <RoleIcon key={role} role={role} size="md" />
+                    ))}
                     <HeroClassBadge heroClass={player.hero_class} size="md" />
                   </div>
                 </div>

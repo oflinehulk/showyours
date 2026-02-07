@@ -1,15 +1,15 @@
 import { cn } from '@/lib/utils';
 import { ROLES, type RoleId } from '@/lib/constants';
-import { Target, Swords, Crosshair, Shield, Trees } from 'lucide-react';
+import { Target, Swords, Crosshair, Shield, Trees, HelpCircle } from 'lucide-react';
 
 interface RoleIconProps {
-  role: RoleId;
+  role: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
   className?: string;
 }
 
-const roleIcons: Record<RoleId, React.ReactNode> = {
+const roleIcons: Record<string, React.ReactNode> = {
   gold: <Target className="w-full h-full" />,
   exp: <Swords className="w-full h-full" />,
   mid: <Crosshair className="w-full h-full" />,
@@ -17,7 +17,7 @@ const roleIcons: Record<RoleId, React.ReactNode> = {
   jungle: <Trees className="w-full h-full" />,
 };
 
-const roleColors: Record<RoleId, string> = {
+const roleColors: Record<string, string> = {
   gold: 'text-yellow-400',
   exp: 'text-orange-400',
   mid: 'text-purple-400',
@@ -36,11 +36,11 @@ export function RoleIcon({ role, size = 'md', showName = true, className }: Role
 
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
-      <span className={cn(sizeClasses[size], roleColors[role])}>
-        {roleIcons[role]}
+      <span className={cn(sizeClasses[size], roleColors[role] || 'text-muted-foreground')}>
+        {roleIcons[role] || <HelpCircle className="w-full h-full" />}
       </span>
       {showName && (
-        <span className="text-muted-foreground">{roleData?.name}</span>
+        <span className="text-muted-foreground">{roleData?.name || role}</span>
       )}
     </span>
   );

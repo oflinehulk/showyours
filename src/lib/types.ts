@@ -1,20 +1,27 @@
 import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from './constants';
+import type { Json } from '@/integrations/supabase/types';
+
+export interface Contact {
+  type: ContactTypeId;
+  value: string;
+}
 
 export interface Profile {
   id: string;
   user_id: string;
   ign: string;
   avatar_url: string | null;
-  rank: RankId;
+  rank: string;
   win_rate: number | null;
-  main_role: RoleId;
-  hero_class: HeroClassId;
+  main_role: string;
+  main_roles?: string[];
+  hero_class: string;
   favorite_heroes: string[];
-  server: ServerId;
-  state: StateId;
+  server: string;
+  state: string | null;
   bio: string | null;
   looking_for_squad: boolean;
-  contacts: { type: ContactTypeId; value: string }[];
+  contacts: Json;
   screenshots: string[];
   created_at: string;
   updated_at: string;
@@ -26,12 +33,12 @@ export interface Squad {
   name: string;
   logo_url: string | null;
   description: string | null;
-  min_rank: RankId;
-  needed_roles: RoleId[];
-  server: ServerId;
+  min_rank: string;
+  needed_roles: string[];
+  server: string;
   member_count: number;
-  max_members: number;
-  contacts: { type: ContactTypeId; value: string }[];
+  max_members: number | null;
+  contacts: Json;
   is_recruiting: boolean;
   created_at: string;
   updated_at: string;

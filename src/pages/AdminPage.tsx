@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Users, Shield, BarChart3, Eye } from 'lucide-react';
+import { Trash2, Users, Shield, Eye, Swords } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { HeroManagement } from '@/components/admin/HeroManagement';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -164,14 +165,18 @@ const AdminPage = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="players" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="players" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Manage Players ({profiles?.length || 0})
+              Players ({profiles?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="squads" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Manage Squads ({squads?.length || 0})
+              Squads ({squads?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="heroes" className="flex items-center gap-2">
+              <Swords className="h-4 w-4" />
+              Heroes
             </TabsTrigger>
           </TabsList>
 
@@ -337,6 +342,10 @@ const AdminPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="heroes">
+            <HeroManagement />
           </TabsContent>
         </Tabs>
       </div>

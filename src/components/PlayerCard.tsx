@@ -49,8 +49,14 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
             <RankBadge rank={player.rank} size="sm" />
           </div>
 
-          <div className="flex items-center gap-3 mt-2 text-sm">
-            <RoleIcon role={player.main_role} size="sm" />
+          <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
+            {/* Show multiple roles if available */}
+            {((player as any).main_roles?.length > 0 
+              ? (player as any).main_roles.slice(0, 2) 
+              : [player.main_role]
+            ).map((role: string, idx: number) => (
+              <RoleIcon key={role} role={role} size="sm" showName={idx === 0} />
+            ))}
             <span className="text-muted-foreground">•</span>
             <HeroClassBadge heroClass={player.hero_class} size="sm" showName={false} />
           </div>

@@ -5,7 +5,7 @@ import { RoleIcon } from './RoleIcon';
 import { HeroClassBadge } from './HeroClassBadge';
 import type { Profile } from '@/lib/types';
 import { TrendingUp, MapPin } from 'lucide-react';
-import { SERVERS } from '@/lib/constants';
+import { INDIAN_STATES } from '@/lib/constants';
 
 interface PlayerCardProps {
   player: Profile;
@@ -13,7 +13,7 @@ interface PlayerCardProps {
 }
 
 export function PlayerCard({ player, className }: PlayerCardProps) {
-  const server = SERVERS.find(s => s.id === player.server);
+  const state = INDIAN_STATES.find(s => s.id === player.state);
   const contacts = typeof player.contacts === 'string' 
     ? JSON.parse(player.contacts) 
     : player.contacts || [];
@@ -67,13 +67,13 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
 
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="w-3 h-3" />
-          <span>{server?.name}</span>
+          <span>{state?.name || 'India'}</span>
         </div>
       </div>
 
       {/* Favorite heroes preview */}
       {player.favorite_heroes && player.favorite_heroes.length > 0 && (
-        <div className="flex gap-1 mt-3">
+        <div className="flex gap-1 mt-3 flex-wrap">
           {player.favorite_heroes.slice(0, 3).map((hero) => (
             <span
               key={hero}

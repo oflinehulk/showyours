@@ -42,7 +42,7 @@ export default function HomePage() {
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              Showcase your skills, connect with players, and join squads that match your playstyle. Built by a MLBB player, for MLBB players.
+              India's premier MLBB recruitment platform. Showcase your skills, connect with players from your state, and join squads that match your playstyle.
             </p>
 
             {/* CTA Buttons */}

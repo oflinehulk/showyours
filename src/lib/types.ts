@@ -1,4 +1,4 @@
-import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId } from './constants';
+import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from './constants';
 
 export interface Profile {
   id: string;
@@ -11,9 +11,11 @@ export interface Profile {
   hero_class: HeroClassId;
   favorite_heroes: string[];
   server: ServerId;
+  state: StateId;
   bio: string | null;
   looking_for_squad: boolean;
   contacts: { type: ContactTypeId; value: string }[];
+  screenshots: string[];
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,7 @@ export interface Squad {
   needed_roles: RoleId[];
   server: ServerId;
   member_count: number;
+  max_members: number;
   contacts: { type: ContactTypeId; value: string }[];
   is_recruiting: boolean;
   created_at: string;

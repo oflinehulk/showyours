@@ -12,28 +12,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreateSquad } from '@/hooks/useSquads';
-import { RANKS, ROLES, SERVERS, CONTACT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Plus, X, Check, Shield, Loader2 } from 'lucide-react';
+import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
+import { RANKS, ROLES, CONTACT_TYPES } from '@/lib/constants';
+import { ArrowLeft, Plus, X, Check, Shield, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function CreateSquadPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: existingSquads } = useMySquads();
   const createSquad = useCreateSquad();
   
   // Form state
   const [name, setName] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [minRank, setMinRank] = useState('');
-  const [server, setServer] = useState('');
   const [neededRoles, setNeededRoles] = useState<string[]>([]);
   const [memberCount, setMemberCount] = useState('1');
-  const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
-  const [newContactType, setNewContactType] = useState('discord');
-  const [newContactValue, setNewContactValue] = useState('');
+  const [maxMembers, setMaxMembers] = useState('5');
+  
+  // Contact state
+  const [whatsapp, setWhatsapp] = useState('');
+  const [discord, setDiscord] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -41,6 +45,13 @@ export default function CreateSquadPage() {
       navigate('/auth');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (existingSquads && existingSquads.length > 0) {
+      toast.info('You already have a squad. You can only create one squad.');
+      navigate(`/squad/${existingSquads[0].id}`);
+    }
+  }, [existingSquads, navigate]);
 
   const toggleRole = (roleId: string) => {
     if (neededRoles.includes(roleId)) {
@@ -50,15 +61,11 @@ export default function CreateSquadPage() {
     }
   };
 
-  const addContact = () => {
-    if (newContactValue.trim()) {
-      setContacts([...contacts, { type: newContactType, value: newContactValue.trim() }]);
-      setNewContactValue('');
-    }
-  };
-
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
+  const buildContacts = () => {
+    const contacts: { type: string; value: string }[] = [];
+    if (whatsapp.trim()) contacts.push({ type: 'whatsapp', value: whatsapp.trim() });
+    if (discord.trim()) contacts.push({ type: 'discord', value: discord.trim() });
+    return contacts;
   };
 
   const canSubmit = () => {
@@ -66,9 +73,8 @@ export default function CreateSquadPage() {
       name.trim() &&
       description.trim() &&
       minRank &&
-      server &&
       neededRoles.length > 0 &&
-      contacts.length > 0
+      whatsapp.trim() // WhatsApp is required
     );
   };
 
@@ -78,12 +84,13 @@ export default function CreateSquadPage() {
     try {
       await createSquad.mutateAsync({
         name: name.trim(),
+        logo_url: logoUrl,
         description: description.trim(),
         min_rank: minRank as any,
-        server: server as any,
         needed_roles: neededRoles as any,
         member_count: parseInt(memberCount) || 1,
-        contacts: contacts as any,
+        max_members: parseInt(maxMembers) || 5,
+        contacts: buildContacts() as any,
         is_recruiting: true,
       });
       
@@ -122,8 +129,34 @@ export default function CreateSquadPage() {
           </div>
         </div>
 
+        {/* Notice */}
+        <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/20 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-secondary mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-secondary">One squad per player</p>
+              <p className="text-muted-foreground mt-1">
+                You can only create one squad listing. Once created, you can manage and update it anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6">
+          {/* Squad Logo */}
+          <div className="flex flex-col items-center gap-4">
+            <Label>Squad Logo (Optional)</Label>
+            <ImageUpload
+              bucket="squad-logos"
+              currentUrl={logoUrl}
+              onUpload={setLogoUrl}
+              onRemove={() => setLogoUrl(null)}
+              shape="square"
+              size="lg"
+            />
+          </div>
+
           {/* Basic Info */}
           <div>
             <Label htmlFor="name">Squad Name *</Label>
@@ -149,15 +182,15 @@ export default function CreateSquadPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="server">Server *</Label>
-              <Select value={server} onValueChange={setServer}>
+              <Label htmlFor="memberCount">Current Members</Label>
+              <Select value={memberCount} onValueChange={setMemberCount}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Select server" />
+                  <SelectValue placeholder="How many?" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SERVERS.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <SelectItem key={n} value={n.toString()}>
+                      {n} member{n > 1 ? 's' : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -165,13 +198,13 @@ export default function CreateSquadPage() {
             </div>
 
             <div>
-              <Label htmlFor="memberCount">Current Members</Label>
-              <Select value={memberCount} onValueChange={setMemberCount}>
+              <Label htmlFor="maxMembers">Maximum Members</Label>
+              <Select value={maxMembers} onValueChange={setMaxMembers}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="How many?" />
+                  <SelectValue placeholder="Max size?" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4].map((n) => (
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                     <SelectItem key={n} value={n.toString()}>
                       {n} member{n > 1 ? 's' : ''}
                     </SelectItem>
@@ -222,69 +255,37 @@ export default function CreateSquadPage() {
           </div>
 
           {/* Contact Info */}
-          <div>
+          <div className="space-y-4">
             <Label className="mb-3 block">Contact Info *</Label>
-            <p className="text-sm text-muted-foreground mb-3">
-              Add at least one way for players to reach your squad
+            <p className="text-sm text-muted-foreground">
+              WhatsApp is required so players can reach you.
             </p>
 
-            <div className="flex gap-2">
-              <Select value={newContactType} onValueChange={setNewContactType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTACT_TYPES.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div>
+              <Label htmlFor="whatsapp">
+                WhatsApp Number * <span className="text-xs text-muted-foreground">(Required)</span>
+              </Label>
               <Input
-                value={newContactValue}
-                onChange={(e) => setNewContactValue(e.target.value)}
-                placeholder="Enter link or username"
-                className="flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addContact();
-                  }
-                }}
+                id="whatsapp"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="e.g., +91 98765 43210"
+                className="mt-1.5"
               />
-              <Button type="button" onClick={addContact} size="icon" className="btn-interactive">
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
 
-            {contacts.length > 0 && (
-              <div className="space-y-2 mt-4">
-                {contacts.map((contact, index) => {
-                  const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                    >
-                      <div>
-                        <p className="text-xs text-muted-foreground">{contactType?.name}</p>
-                        <p className="text-foreground font-medium">{contact.value}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        type="button"
-                        onClick={() => removeContact(index)}
-                        className="btn-interactive"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <div>
+              <Label htmlFor="discord">
+                Discord Server <span className="text-xs text-muted-foreground">(Optional)</span>
+              </Label>
+              <Input
+                id="discord"
+                value={discord}
+                onChange={(e) => setDiscord(e.target.value)}
+                placeholder="e.g., discord.gg/invite"
+                className="mt-1.5"
+              />
+            </div>
           </div>
 
           {/* Submit */}

@@ -27,7 +27,9 @@ export type Database = {
           looking_for_squad: boolean
           main_role: string
           rank: string
+          screenshots: string[] | null
           server: string
+          state: string | null
           updated_at: string
           user_id: string
           win_rate: number | null
@@ -44,7 +46,9 @@ export type Database = {
           looking_for_squad?: boolean
           main_role?: string
           rank?: string
+          screenshots?: string[] | null
           server?: string
+          state?: string | null
           updated_at?: string
           user_id: string
           win_rate?: number | null
@@ -61,7 +65,9 @@ export type Database = {
           looking_for_squad?: boolean
           main_role?: string
           rank?: string
+          screenshots?: string[] | null
           server?: string
+          state?: string | null
           updated_at?: string
           user_id?: string
           win_rate?: number | null
@@ -76,6 +82,7 @@ export type Database = {
           id: string
           is_recruiting: boolean
           logo_url: string | null
+          max_members: number | null
           member_count: number
           min_rank: string
           name: string
@@ -91,6 +98,7 @@ export type Database = {
           id?: string
           is_recruiting?: boolean
           logo_url?: string | null
+          max_members?: number | null
           member_count?: number
           min_rank?: string
           name: string
@@ -106,6 +114,7 @@ export type Database = {
           id?: string
           is_recruiting?: boolean
           logo_url?: string | null
+          max_members?: number | null
           member_count?: number
           min_rank?: string
           name?: string

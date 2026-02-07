@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Gamepad2, Github, Twitter } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { Gamepad2, Github, Twitter, Heart } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -8,14 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-lg font-bold text-primary-foreground">M</span>
-              </div>
-              <span className="font-bold text-lg">
-                MLBB<span className="text-primary">Recruit</span>
-              </span>
-            </Link>
+            <Logo className="mb-4" />
             <p className="text-sm text-muted-foreground max-w-md">
               The ultimate platform for Mobile Legends: Bang Bang players to find their perfect squad 
               and showcase their skills to the community.
@@ -55,19 +49,19 @@ export function Footer() {
             <div className="flex gap-3">
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 <Gamepad2 className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 <Twitter className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
+                className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/80 transition-all duration-200 hover:scale-105 active:scale-95"
               >
                 <Github className="w-5 h-5" />
               </a>
@@ -75,8 +69,11 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border/50 text-center text-sm text-muted-foreground">
+        <div className="mt-8 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} MLBBRecruit. Not affiliated with Moonton.</p>
+          <p className="flex items-center gap-1">
+            Built with <Heart className="w-4 h-4 text-destructive fill-destructive" /> by Ram
+          </p>
         </div>
       </div>
     </footer>

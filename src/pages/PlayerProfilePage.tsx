@@ -4,7 +4,8 @@ import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { HeroClassBadge } from '@/components/HeroClassBadge';
 import { Button } from '@/components/ui/button';
-import { mockPlayers } from '@/lib/mockData';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useProfile } from '@/hooks/useProfiles';
 import { SERVERS, CONTACT_TYPES } from '@/lib/constants';
 import { 
   ArrowLeft, 
@@ -13,22 +14,33 @@ import {
   MessageCircle,
   Copy,
   Check,
-  ExternalLink
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const { data: player, isLoading } = useProfile(id || '');
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
-  
-  const player = mockPlayers.find((p) => p.id === id);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-64 w-full rounded-lg mb-6" />
+          <Skeleton className="h-32 w-full rounded-lg mb-6" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!player) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Player not found</h1>
-          <Button asChild>
+          <Button asChild className="btn-interactive">
             <Link to="/players">Back to Players</Link>
           </Button>
         </div>
@@ -37,10 +49,14 @@ export default function PlayerProfilePage() {
   }
 
   const server = SERVERS.find((s) => s.id === player.server);
+  const contacts = typeof player.contacts === 'string' 
+    ? JSON.parse(player.contacts) 
+    : player.contacts || [];
 
   const copyToClipboard = (text: string, contactId: string) => {
     navigator.clipboard.writeText(text);
     setCopiedContact(contactId);
+    toast.success('Copied to clipboard!');
     setTimeout(() => setCopiedContact(null), 2000);
   };
 
@@ -72,7 +88,7 @@ export default function PlayerProfilePage() {
       <div className="container mx-auto px-4">
         {/* Back button */}
         <div className="mb-4 -mt-8 relative z-10">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="btn-interactive">
             <Link to="/players">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Players
@@ -89,12 +105,12 @@ export default function PlayerProfilePage() {
                 {/* Avatar */}
                 <div className="relative">
                   <img
-                    src={player.avatar}
+                    src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                     alt={player.ign}
                     className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover glow-primary"
                   />
-                  {player.lookingForSquad && (
-                    <span className="absolute -bottom-2 -right-2 px-3 py-1 text-xs font-semibold bg-green-500 text-white rounded-full">
+                  {player.looking_for_squad && (
+                    <span className="absolute -bottom-2 -right-2 px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
                       LFG
                     </span>
                   )}
@@ -116,16 +132,16 @@ export default function PlayerProfilePage() {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    <RoleIcon role={player.mainRole} size="md" />
-                    <HeroClassBadge heroClass={player.heroClass} size="md" />
+                    <RoleIcon role={player.main_role} size="md" />
+                    <HeroClassBadge heroClass={player.hero_class} size="md" />
                   </div>
                 </div>
 
                 {/* Win Rate */}
                 <div className="text-center sm:text-right">
                   <div className="flex items-center gap-2 justify-center sm:justify-end mb-1">
-                    <TrendingUp className="w-5 h-5 text-green-400" />
-                    <span className="text-3xl font-bold text-green-400">{player.winRate}%</span>
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <span className="text-3xl font-bold text-primary">{player.win_rate || '—'}%</span>
                   </div>
                   <p className="text-sm text-muted-foreground">Win Rate</p>
                 </div>
@@ -133,25 +149,29 @@ export default function PlayerProfilePage() {
             </div>
 
             {/* Bio */}
-            <div className="glass-card p-6 mb-6">
-              <h2 className="text-lg font-semibold text-foreground mb-3">About</h2>
-              <p className="text-muted-foreground leading-relaxed">{player.bio}</p>
-            </div>
+            {player.bio && (
+              <div className="glass-card p-6 mb-6">
+                <h2 className="text-lg font-semibold text-foreground mb-3">About</h2>
+                <p className="text-muted-foreground leading-relaxed">{player.bio}</p>
+              </div>
+            )}
 
             {/* Favorite Heroes */}
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Favorite Heroes</h2>
-              <div className="flex flex-wrap gap-3">
-                {player.favoriteHeroes.map((hero) => (
-                  <div
-                    key={hero}
-                    className="px-4 py-2 bg-muted rounded-lg text-foreground font-medium hover:bg-muted/80 transition-colors"
-                  >
-                    {hero}
-                  </div>
-                ))}
+            {player.favorite_heroes && player.favorite_heroes.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Favorite Heroes</h2>
+                <div className="flex flex-wrap gap-3">
+                  {player.favorite_heroes.map((hero) => (
+                    <div
+                      key={hero}
+                      className="px-4 py-2 bg-muted rounded-lg text-foreground font-medium hover:bg-muted/80 transition-colors"
+                    >
+                      {hero}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Sidebar - Contact Info */}
@@ -162,9 +182,9 @@ export default function PlayerProfilePage() {
                 Contact Info
               </h2>
 
-              {player.contacts.length > 0 ? (
+              {contacts.length > 0 ? (
                 <div className="space-y-3">
-                  {player.contacts.map((contact, index) => {
+                  {contacts.map((contact: { type: string; value: string }, index: number) => {
                     const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
                     const contactKey = `${contact.type}-${index}`;
                     
@@ -183,11 +203,11 @@ export default function PlayerProfilePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                           onClick={() => copyToClipboard(contact.value, contactKey)}
                         >
                           {copiedContact === contactKey ? (
-                            <Check className="w-4 h-4 text-green-400" />
+                            <Check className="w-4 h-4 text-primary" />
                           ) : (
                             <Copy className="w-4 h-4" />
                           )}
@@ -204,9 +224,9 @@ export default function PlayerProfilePage() {
               <div className="mt-6 pt-6 border-t border-border">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  {player.lookingForSquad ? (
-                    <span className="inline-flex items-center gap-2 text-sm font-medium text-green-400">
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  {player.looking_for_squad ? (
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                       Looking for Squad
                     </span>
                   ) : (

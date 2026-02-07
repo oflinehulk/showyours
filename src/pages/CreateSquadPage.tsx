@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -13,14 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCreateSquad } from '@/hooks/useSquads';
 import { RANKS, ROLES, SERVERS, CONTACT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Plus, X, Check, Shield } from 'lucide-react';
+import { ArrowLeft, Plus, X, Check, Shield, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 
 export default function CreateSquadPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createSquad = useCreateSquad();
   
   // Form state
   const [name, setName] = useState('');
@@ -28,10 +30,17 @@ export default function CreateSquadPage() {
   const [minRank, setMinRank] = useState('');
   const [server, setServer] = useState('');
   const [neededRoles, setNeededRoles] = useState<string[]>([]);
-  const [memberCount, setMemberCount] = useState('');
+  const [memberCount, setMemberCount] = useState('1');
   const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
   const [newContactType, setNewContactType] = useState('discord');
   const [newContactValue, setNewContactValue] = useState('');
+
+  useEffect(() => {
+    if (!user) {
+      toast.error('Please sign in to create a squad');
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   const toggleRole = (roleId: string) => {
     if (neededRoles.includes(roleId)) {
@@ -63,21 +72,37 @@ export default function CreateSquadPage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, this would save to a database
-    toast.success('Squad listing created!', {
-      description: 'Players can now find your squad.',
-    });
-    navigate('/squads');
+    try {
+      await createSquad.mutateAsync({
+        name: name.trim(),
+        description: description.trim(),
+        min_rank: minRank as any,
+        server: server as any,
+        needed_roles: neededRoles as any,
+        member_count: parseInt(memberCount) || 1,
+        contacts: contacts as any,
+        is_recruiting: true,
+      });
+      
+      toast.success('Squad listing created!', {
+        description: 'Players can now find your squad.',
+      });
+      navigate('/squads');
+    } catch (error: any) {
+      toast.error('Failed to create squad', {
+        description: error.message,
+      });
+    }
   };
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
-        <Button variant="ghost" size="sm" asChild className="mb-6">
+        <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
           <Link to="/squads">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Squads
@@ -182,7 +207,7 @@ export default function CreateSquadPage() {
                   type="button"
                   onClick={() => toggleRole(role.id)}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors',
+                    'flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 active:scale-95',
                     neededRoles.includes(role.id)
                       ? 'bg-primary/10 border-primary text-primary'
                       : 'bg-muted border-transparent text-muted-foreground hover:text-foreground'
@@ -228,7 +253,7 @@ export default function CreateSquadPage() {
                   }
                 }}
               />
-              <Button type="button" onClick={addContact} size="icon">
+              <Button type="button" onClick={addContact} size="icon" className="btn-interactive">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -251,6 +276,7 @@ export default function CreateSquadPage() {
                         size="icon"
                         type="button"
                         onClick={() => removeContact(index)}
+                        className="btn-interactive"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -266,10 +292,16 @@ export default function CreateSquadPage() {
             <Button
               type="submit"
               className="w-full btn-gaming"
-              disabled={!canSubmit()}
+              disabled={!canSubmit() || createSquad.isPending}
             >
-              <Shield className="w-4 h-4 mr-2" />
-              Post Squad Listing
+              {createSquad.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Post Squad Listing
+                </>
+              )}
             </Button>
           </div>
         </form>

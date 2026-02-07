@@ -3,17 +3,20 @@ import { cn } from '@/lib/utils';
 import { RankBadge } from './RankBadge';
 import { RoleIcon } from './RoleIcon';
 import { HeroClassBadge } from './HeroClassBadge';
-import type { Player } from '@/lib/mockData';
+import type { Profile } from '@/lib/types';
 import { TrendingUp, MapPin } from 'lucide-react';
 import { SERVERS } from '@/lib/constants';
 
 interface PlayerCardProps {
-  player: Player;
+  player: Profile;
   className?: string;
 }
 
 export function PlayerCard({ player, className }: PlayerCardProps) {
   const server = SERVERS.find(s => s.id === player.server);
+  const contacts = typeof player.contacts === 'string' 
+    ? JSON.parse(player.contacts) 
+    : player.contacts || [];
 
   return (
     <Link
@@ -27,11 +30,11 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
         {/* Avatar */}
         <div className="relative">
           <img
-            src={player.avatar}
+            src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
             alt={player.ign}
             className="w-16 h-16 rounded-lg bg-muted object-cover"
           />
-          {player.lookingForSquad && (
+          {player.looking_for_squad && (
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-card animate-pulse" />
           )}
         </div>
@@ -47,9 +50,9 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
           </div>
 
           <div className="flex items-center gap-3 mt-2 text-sm">
-            <RoleIcon role={player.mainRole} size="sm" />
+            <RoleIcon role={player.main_role} size="sm" />
             <span className="text-muted-foreground">•</span>
-            <HeroClassBadge heroClass={player.heroClass} size="sm" showName={false} />
+            <HeroClassBadge heroClass={player.hero_class} size="sm" showName={false} />
           </div>
         </div>
       </div>
@@ -58,7 +61,7 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/50">
         <div className="flex items-center gap-1 text-sm">
           <TrendingUp className="w-4 h-4 text-green-400" />
-          <span className="text-foreground font-medium">{player.winRate}%</span>
+          <span className="text-foreground font-medium">{player.win_rate || '—'}%</span>
           <span className="text-muted-foreground">WR</span>
         </div>
 
@@ -69,16 +72,18 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
       </div>
 
       {/* Favorite heroes preview */}
-      <div className="flex gap-1 mt-3">
-        {player.favoriteHeroes.slice(0, 3).map((hero) => (
-          <span
-            key={hero}
-            className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground"
-          >
-            {hero}
-          </span>
-        ))}
-      </div>
+      {player.favorite_heroes && player.favorite_heroes.length > 0 && (
+        <div className="flex gap-1 mt-3">
+          {player.favorite_heroes.slice(0, 3).map((hero) => (
+            <span
+              key={hero}
+              className="text-xs px-2 py-0.5 bg-muted rounded text-muted-foreground"
+            >
+              {hero}
+            </span>
+          ))}
+        </div>
+      )}
     </Link>
   );
 }

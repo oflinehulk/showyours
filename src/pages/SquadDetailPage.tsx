@@ -3,7 +3,8 @@ import { Layout } from '@/components/Layout';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { Button } from '@/components/ui/button';
-import { mockSquads } from '@/lib/mockData';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSquad } from '@/hooks/useSquads';
 import { SERVERS, CONTACT_TYPES } from '@/lib/constants';
 import { 
   ArrowLeft, 
@@ -14,19 +15,31 @@ import {
   Check,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function SquadDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { data: squad, isLoading } = useSquad(id || '');
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
-  
-  const squad = mockSquads.find((s) => s.id === id);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-64 w-full rounded-lg mb-6" />
+          <Skeleton className="h-32 w-full rounded-lg mb-6" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!squad) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Squad not found</h1>
-          <Button asChild>
+          <Button asChild className="btn-interactive">
             <Link to="/squads">Back to Squads</Link>
           </Button>
         </div>
@@ -35,10 +48,15 @@ export default function SquadDetailPage() {
   }
 
   const server = SERVERS.find((s) => s.id === squad.server);
+  const contacts = typeof squad.contacts === 'string' 
+    ? JSON.parse(squad.contacts) 
+    : squad.contacts || [];
+  const neededRoles = squad.needed_roles || [];
 
   const copyToClipboard = (text: string, contactId: string) => {
     navigator.clipboard.writeText(text);
     setCopiedContact(contactId);
+    toast.success('Copied to clipboard!');
     setTimeout(() => setCopiedContact(null), 2000);
   };
 
@@ -70,7 +88,7 @@ export default function SquadDetailPage() {
       <div className="container mx-auto px-4">
         {/* Back button */}
         <div className="mb-4 -mt-8 relative z-10">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="btn-interactive">
             <Link to="/squads">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Squads
@@ -86,7 +104,7 @@ export default function SquadDetailPage() {
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 {/* Logo */}
                 <img
-                  src={squad.logo}
+                  src={squad.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${squad.name}`}
                   alt={squad.name}
                   className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover glow-secondary"
                 />
@@ -100,7 +118,7 @@ export default function SquadDetailPage() {
                   <div className="flex flex-wrap items-center gap-3 mb-4">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Users className="w-4 h-4" />
-                      <span>{squad.memberCount}/5 members</span>
+                      <span>{squad.member_count}/5 members</span>
                     </div>
                     <span className="text-muted-foreground">•</span>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -111,38 +129,42 @@ export default function SquadDetailPage() {
 
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Min Rank:</span>
-                    <RankBadge rank={squad.minRank} size="sm" />
+                    <RankBadge rank={squad.min_rank} size="sm" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            <div className="glass-card p-6 mb-6">
-              <h2 className="text-lg font-semibold text-foreground mb-3">About Us</h2>
-              <p className="text-muted-foreground leading-relaxed">{squad.description}</p>
-            </div>
+            {squad.description && (
+              <div className="glass-card p-6 mb-6">
+                <h2 className="text-lg font-semibold text-foreground mb-3">About Us</h2>
+                <p className="text-muted-foreground leading-relaxed">{squad.description}</p>
+              </div>
+            )}
 
             {/* Needed Roles */}
-            <div className="glass-card p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">Open Positions</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {squad.neededRoles.map((role) => (
-                  <div
-                    key={role}
-                    className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <RoleIcon role={role} size="md" showName={false} />
+            {neededRoles.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Open Positions</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {neededRoles.map((role) => (
+                    <div
+                      key={role}
+                      className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <RoleIcon role={role} size="md" showName={false} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground capitalize">{role}</p>
+                        <p className="text-xs text-muted-foreground">Position Available</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground capitalize">{role}</p>
-                      <p className="text-xs text-muted-foreground">Position Available</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Sidebar - Contact Info */}
@@ -153,9 +175,9 @@ export default function SquadDetailPage() {
                 Contact Squad
               </h2>
 
-              {squad.contacts.length > 0 ? (
+              {contacts.length > 0 ? (
                 <div className="space-y-3">
-                  {squad.contacts.map((contact, index) => {
+                  {contacts.map((contact: { type: string; value: string }, index: number) => {
                     const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
                     const contactKey = `${contact.type}-${index}`;
                     
@@ -174,11 +196,11 @@ export default function SquadDetailPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                           onClick={() => copyToClipboard(contact.value, contactKey)}
                         >
                           {copiedContact === contactKey ? (
-                            <Check className="w-4 h-4 text-green-400" />
+                            <Check className="w-4 h-4 text-primary" />
                           ) : (
                             <Copy className="w-4 h-4" />
                           )}
@@ -195,11 +217,11 @@ export default function SquadDetailPage() {
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Members</span>
-                  <span className="text-foreground font-medium">{squad.memberCount}/5</span>
+                  <span className="text-foreground font-medium">{squad.member_count}/5</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Open Spots</span>
-                  <span className="text-primary font-medium">{squad.neededRoles.length}</span>
+                  <span className="text-primary font-medium">{neededRoles.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Server</span>

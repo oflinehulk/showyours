@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCreateProfile, useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, SERVERS, CONTACT_TYPES, POPULAR_HEROES } from '@/lib/constants';
-import { ArrowLeft, ArrowRight, Check, Plus, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -22,6 +24,9 @@ type Step = 1 | 2 | 3 | 4;
 
 export default function CreateProfilePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: existingProfile } = useMyProfile();
+  const createProfile = useCreateProfile();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   
   // Form state
@@ -39,6 +44,20 @@ export default function CreateProfilePage() {
   const [newContactType, setNewContactType] = useState('discord');
   const [newContactValue, setNewContactValue] = useState('');
 
+  useEffect(() => {
+    if (!user) {
+      toast.error('Please sign in to create a profile');
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (existingProfile) {
+      toast.info('You already have a profile');
+      navigate(`/player/${existingProfile.id}`);
+    }
+  }, [existingProfile, navigate]);
+
   const steps = [
     { number: 1, title: 'Basic Info' },
     { number: 2, title: 'Stats' },
@@ -53,7 +72,7 @@ export default function CreateProfilePage() {
       case 2:
         return rank && mainRole && heroClass;
       case 3:
-        return true; // Heroes are optional
+        return true;
       case 4:
         return contacts.length > 0;
       default:
@@ -83,12 +102,30 @@ export default function CreateProfilePage() {
     setContacts(contacts.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    // In a real app, this would save to a database
-    toast.success('Profile created successfully!', {
-      description: 'Your profile is now visible to squads.',
-    });
-    navigate('/players');
+  const handleSubmit = async () => {
+    try {
+      await createProfile.mutateAsync({
+        ign: ign.trim(),
+        rank: rank as any,
+        server: server as any,
+        win_rate: winRate ? parseFloat(winRate) : null,
+        main_role: mainRole as any,
+        hero_class: heroClass as any,
+        favorite_heroes: favoriteHeroes,
+        bio: bio.trim() || null,
+        looking_for_squad: lookingForSquad,
+        contacts: contacts as any,
+      });
+      
+      toast.success('Profile created successfully!', {
+        description: 'Your profile is now visible to squads.',
+      });
+      navigate('/players');
+    } catch (error: any) {
+      toast.error('Failed to create profile', {
+        description: error.message,
+      });
+    }
   };
 
   const suggestedHeroes = POPULAR_HEROES.filter(
@@ -114,7 +151,7 @@ export default function CreateProfilePage() {
             <div key={step.number} className="flex items-center">
               <div
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors',
+                  'w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-200',
                   currentStep >= step.number
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
@@ -137,7 +174,7 @@ export default function CreateProfilePage() {
               {index < steps.length - 1 && (
                 <div
                   className={cn(
-                    'w-8 sm:w-16 h-0.5 mx-2 sm:mx-4',
+                    'w-8 sm:w-16 h-0.5 mx-2 sm:mx-4 transition-colors',
                     currentStep > step.number ? 'bg-primary' : 'bg-muted'
                   )}
                 />
@@ -358,7 +395,7 @@ export default function CreateProfilePage() {
                     }
                   }}
                 />
-                <Button type="button" onClick={addContact} size="icon">
+                <Button type="button" onClick={addContact} size="icon" className="btn-interactive">
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
@@ -380,6 +417,7 @@ export default function CreateProfilePage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => removeContact(index)}
+                          className="btn-interactive"
                         >
                           <X className="w-4 h-4" />
                         </Button>
@@ -397,6 +435,7 @@ export default function CreateProfilePage() {
               variant="outline"
               onClick={() => setCurrentStep((currentStep - 1) as Step)}
               disabled={currentStep === 1}
+              className="btn-interactive"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -406,6 +445,7 @@ export default function CreateProfilePage() {
               <Button
                 onClick={() => setCurrentStep((currentStep + 1) as Step)}
                 disabled={!canProceed()}
+                className="btn-interactive"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -414,10 +454,16 @@ export default function CreateProfilePage() {
               <Button
                 className="btn-gaming"
                 onClick={handleSubmit}
-                disabled={!canProceed()}
+                disabled={!canProceed() || createProfile.isPending}
               >
-                Create Profile
-                <Check className="w-4 h-4 ml-2" />
+                {createProfile.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Create Profile
+                    <Check className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             )}
           </div>

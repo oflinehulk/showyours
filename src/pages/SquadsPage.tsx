@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { SquadCard } from '@/components/SquadCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -10,13 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockSquads } from '@/lib/mockData';
+import { useSquads } from '@/hooks/useSquads';
 import { RANKS, ROLES, SERVERS } from '@/lib/constants';
 import { Search, Filter, Shield, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 
 export default function SquadsPage() {
+  const { data: squads, isLoading } = useSquads();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -24,42 +26,42 @@ export default function SquadsPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredSquads = useMemo(() => {
-    let squads = [...mockSquads];
+    let squadList = [...(squads || [])];
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      squads = squads.filter(
+      squadList = squadList.filter(
         (s) =>
           s.name.toLowerCase().includes(query) ||
-          s.description.toLowerCase().includes(query)
+          (s.description || '').toLowerCase().includes(query)
       );
     }
 
     // Rank filter (shows squads with minRank at or below selected)
     if (rankFilter !== 'all') {
       const selectedRankTier = RANKS.find((r) => r.id === rankFilter)?.tier || 0;
-      squads = squads.filter((s) => {
-        const squadMinTier = RANKS.find((r) => r.id === s.minRank)?.tier || 0;
+      squadList = squadList.filter((s) => {
+        const squadMinTier = RANKS.find((r) => r.id === s.min_rank)?.tier || 0;
         return squadMinTier <= selectedRankTier;
       });
     }
 
     // Role filter (shows squads needing that role)
     if (roleFilter !== 'all') {
-      squads = squads.filter((s) => s.neededRoles.includes(roleFilter as any));
+      squadList = squadList.filter((s) => (s.needed_roles || []).includes(roleFilter as any));
     }
 
     // Server filter
     if (serverFilter !== 'all') {
-      squads = squads.filter((s) => s.server === serverFilter);
+      squadList = squadList.filter((s) => s.server === serverFilter);
     }
 
     // Sort by most recent
-    squads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    squadList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    return squads;
-  }, [searchQuery, rankFilter, roleFilter, serverFilter]);
+    return squadList;
+  }, [squads, searchQuery, rankFilter, roleFilter, serverFilter]);
 
   const hasActiveFilters =
     rankFilter !== 'all' || roleFilter !== 'all' || serverFilter !== 'all';
@@ -105,7 +107,7 @@ export default function SquadsPage() {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className={cn(hasActiveFilters && 'border-primary text-primary')}
+            className={cn('btn-interactive', hasActiveFilters && 'border-primary text-primary')}
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
@@ -123,7 +125,7 @@ export default function SquadsPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">Filters</h3>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="btn-interactive">
                   <X className="w-4 h-4 mr-1" />
                   Clear All
                 </Button>
@@ -180,22 +182,35 @@ export default function SquadsPage() {
           Showing {filteredSquads.length} squad{filteredSquads.length !== 1 ? 's' : ''}
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-48 rounded-lg" />
+            ))}
+          </div>
+        )}
+
         {/* Squad Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredSquads.map((squad) => (
-            <SquadCard key={squad.id} squad={squad} />
-          ))}
-        </div>
+        {!isLoading && filteredSquads.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredSquads.map((squad) => (
+              <SquadCard key={squad.id} squad={squad} />
+            ))}
+          </div>
+        )}
 
         {/* Empty state */}
-        {filteredSquads.length === 0 && (
+        {!isLoading && filteredSquads.length === 0 && (
           <div className="text-center py-16">
             <Shield className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No squads found</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or search query
+              {squads?.length === 0 
+                ? "Be the first to create a squad!" 
+                : "Try adjusting your filters or search query"}
             </p>
-            <Button variant="outline" onClick={clearFilters}>
+            <Button variant="outline" onClick={clearFilters} className="btn-interactive">
               Clear Filters
             </Button>
           </div>

@@ -4,6 +4,7 @@ import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -11,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockPlayers } from '@/lib/mockData';
+import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, SERVERS } from '@/lib/constants';
 import { Search, Filter, Trophy, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ type ViewMode = 'grid' | 'rankings';
 type SortOption = 'recent' | 'winrate' | 'rank';
 
 export default function PlayersPage() {
+  const { data: profiles, isLoading } = useProfiles();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -30,7 +32,7 @@ export default function PlayersPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredPlayers = useMemo(() => {
-    let players = [...mockPlayers];
+    let players = [...(profiles || [])];
 
     // Search filter
     if (searchQuery) {
@@ -38,7 +40,7 @@ export default function PlayersPage() {
       players = players.filter(
         (p) =>
           p.ign.toLowerCase().includes(query) ||
-          p.favoriteHeroes.some((h) => h.toLowerCase().includes(query))
+          (p.favorite_heroes || []).some((h) => h.toLowerCase().includes(query))
       );
     }
 
@@ -49,12 +51,12 @@ export default function PlayersPage() {
 
     // Role filter
     if (roleFilter !== 'all') {
-      players = players.filter((p) => p.mainRole === roleFilter);
+      players = players.filter((p) => p.main_role === roleFilter);
     }
 
     // Class filter
     if (classFilter !== 'all') {
-      players = players.filter((p) => p.heroClass === classFilter);
+      players = players.filter((p) => p.hero_class === classFilter);
     }
 
     // Server filter
@@ -65,7 +67,7 @@ export default function PlayersPage() {
     // Sort
     switch (sortBy) {
       case 'winrate':
-        players.sort((a, b) => b.winRate - a.winRate);
+        players.sort((a, b) => (b.win_rate || 0) - (a.win_rate || 0));
         break;
       case 'rank':
         players.sort((a, b) => {
@@ -76,11 +78,11 @@ export default function PlayersPage() {
         break;
       case 'recent':
       default:
-        players.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        players.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     return players;
-  }, [searchQuery, rankFilter, roleFilter, classFilter, serverFilter, sortBy]);
+  }, [profiles, searchQuery, rankFilter, roleFilter, classFilter, serverFilter, sortBy]);
 
   const hasActiveFilters =
     rankFilter !== 'all' || roleFilter !== 'all' || classFilter !== 'all' || serverFilter !== 'all';
@@ -122,7 +124,7 @@ export default function PlayersPage() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'px-4 py-2 flex items-center gap-2 text-sm transition-colors',
+                  'px-4 py-2 flex items-center gap-2 text-sm transition-all duration-200 active:scale-95',
                   viewMode === 'grid'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-background text-muted-foreground hover:text-foreground'
@@ -134,7 +136,7 @@ export default function PlayersPage() {
               <button
                 onClick={() => setViewMode('rankings')}
                 className={cn(
-                  'px-4 py-2 flex items-center gap-2 text-sm transition-colors',
+                  'px-4 py-2 flex items-center gap-2 text-sm transition-all duration-200 active:scale-95',
                   viewMode === 'rankings'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-background text-muted-foreground hover:text-foreground'
@@ -148,7 +150,7 @@ export default function PlayersPage() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className={cn(hasActiveFilters && 'border-primary text-primary')}
+              className={cn('btn-interactive', hasActiveFilters && 'border-primary text-primary')}
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
@@ -167,7 +169,7 @@ export default function PlayersPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">Filters</h3>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="btn-interactive">
                   <X className="w-4 h-4 mr-1" />
                   Clear All
                 </Button>
@@ -249,8 +251,17 @@ export default function PlayersPage() {
           Showing {filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''}
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-64 rounded-lg" />
+            ))}
+          </div>
+        )}
+
         {/* Grid View */}
-        {viewMode === 'grid' && (
+        {!isLoading && viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPlayers.map((player) => (
               <PlayerCard key={player.id} player={player} />
@@ -259,7 +270,7 @@ export default function PlayersPage() {
         )}
 
         {/* Rankings View */}
-        {viewMode === 'rankings' && (
+        {!isLoading && viewMode === 'rankings' && filteredPlayers.length > 0 && (
           <div className="glass-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -275,7 +286,7 @@ export default function PlayersPage() {
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, index) => {
-                    const role = ROLES.find((r) => r.id === player.mainRole);
+                    const role = ROLES.find((r) => r.id === player.main_role);
                     return (
                       <tr
                         key={player.id}
@@ -285,7 +296,7 @@ export default function PlayersPage() {
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <img
-                              src={player.avatar}
+                              src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                               alt={player.ign}
                               className="w-10 h-10 rounded-lg bg-muted"
                             />
@@ -296,13 +307,13 @@ export default function PlayersPage() {
                           <RankBadge rank={player.rank} size="sm" />
                         </td>
                         <td className="p-4">
-                          <span className="text-green-400 font-semibold">{player.winRate}%</span>
+                          <span className="text-green-400 font-semibold">{player.win_rate || '—'}%</span>
                         </td>
                         <td className="p-4 text-muted-foreground">
                           {role?.icon} {role?.name}
                         </td>
                         <td className="p-4">
-                          {player.lookingForSquad ? (
+                          {player.looking_for_squad ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">
                               <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                               Looking
@@ -321,14 +332,16 @@ export default function PlayersPage() {
         )}
 
         {/* Empty state */}
-        {filteredPlayers.length === 0 && (
+        {!isLoading && filteredPlayers.length === 0 && (
           <div className="text-center py-16">
             <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No players found</h3>
             <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or search query
+              {profiles?.length === 0 
+                ? "Be the first to create a profile!" 
+                : "Try adjusting your filters or search query"}
             </p>
-            <Button variant="outline" onClick={clearFilters}>
+            <Button variant="outline" onClick={clearFilters} className="btn-interactive">
               Clear Filters
             </Button>
           </div>

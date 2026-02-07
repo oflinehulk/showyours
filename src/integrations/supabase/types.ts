@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          contacts: Json | null
+          created_at: string
+          favorite_heroes: string[] | null
+          hero_class: string
+          id: string
+          ign: string
+          looking_for_squad: boolean
+          main_role: string
+          rank: string
+          server: string
+          updated_at: string
+          user_id: string
+          win_rate: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          contacts?: Json | null
+          created_at?: string
+          favorite_heroes?: string[] | null
+          hero_class?: string
+          id?: string
+          ign: string
+          looking_for_squad?: boolean
+          main_role?: string
+          rank?: string
+          server?: string
+          updated_at?: string
+          user_id: string
+          win_rate?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          contacts?: Json | null
+          created_at?: string
+          favorite_heroes?: string[] | null
+          hero_class?: string
+          id?: string
+          ign?: string
+          looking_for_squad?: boolean
+          main_role?: string
+          rank?: string
+          server?: string
+          updated_at?: string
+          user_id?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
+      squads: {
+        Row: {
+          contacts: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_recruiting: boolean
+          logo_url: string | null
+          member_count: number
+          min_rank: string
+          name: string
+          needed_roles: string[] | null
+          owner_id: string
+          server: string
+          updated_at: string
+        }
+        Insert: {
+          contacts?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recruiting?: boolean
+          logo_url?: string | null
+          member_count?: number
+          min_rank?: string
+          name: string
+          needed_roles?: string[] | null
+          owner_id: string
+          server?: string
+          updated_at?: string
+        }
+        Update: {
+          contacts?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_recruiting?: boolean
+          logo_url?: string | null
+          member_count?: number
+          min_rank?: string
+          name?: string
+          needed_roles?: string[] | null
+          owner_id?: string
+          server?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

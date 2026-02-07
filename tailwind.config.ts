@@ -57,7 +57,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // MLBB Rank colors
+        // MLBB Rank colors - no purple
         rank: {
           warrior: "hsl(var(--rank-warrior))",
           elite: "hsl(var(--rank-elite))",

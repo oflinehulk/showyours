@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './RankBadge';
 import { RoleIcon } from './RoleIcon';
-import type { Squad } from '@/lib/mockData';
+import type { Squad } from '@/lib/types';
 import { Users, MapPin } from 'lucide-react';
 import { SERVERS } from '@/lib/constants';
 
@@ -13,6 +13,7 @@ interface SquadCardProps {
 
 export function SquadCard({ squad, className }: SquadCardProps) {
   const server = SERVERS.find(s => s.id === squad.server);
+  const neededRoles = squad.needed_roles || [];
 
   return (
     <Link
@@ -25,7 +26,7 @@ export function SquadCard({ squad, className }: SquadCardProps) {
       <div className="flex items-start gap-4">
         {/* Logo */}
         <img
-          src={squad.logo}
+          src={squad.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${squad.name}`}
           alt={squad.name}
           className="w-16 h-16 rounded-lg bg-muted object-cover"
         />
@@ -38,35 +39,39 @@ export function SquadCard({ squad, className }: SquadCardProps) {
           
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{squad.memberCount}/5 members</span>
+            <span>{squad.member_count}/5 members</span>
           </div>
 
           <div className="mt-2">
-            <RankBadge rank={squad.minRank} size="sm" />
+            <RankBadge rank={squad.min_rank} size="sm" />
           </div>
         </div>
       </div>
 
       {/* Description */}
-      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-        {squad.description}
-      </p>
+      {squad.description && (
+        <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+          {squad.description}
+        </p>
+      )}
 
       {/* Needed roles */}
-      <div className="mt-4 pt-3 border-t border-border/50">
-        <p className="text-xs text-muted-foreground mb-2">Looking for:</p>
-        <div className="flex flex-wrap gap-2">
-          {squad.neededRoles.map((role) => (
-            <span
-              key={role}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-primary/10 text-primary rounded-md"
-            >
-              <RoleIcon role={role} size="sm" showName={false} />
-              <span className="capitalize">{role}</span>
-            </span>
-          ))}
+      {neededRoles.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-border/50">
+          <p className="text-xs text-muted-foreground mb-2">Looking for:</p>
+          <div className="flex flex-wrap gap-2">
+            {neededRoles.map((role) => (
+              <span
+                key={role}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-primary/10 text-primary rounded-md"
+              >
+                <RoleIcon role={role} size="sm" showName={false} />
+                <span className="capitalize">{role}</span>
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Server */}
       <div className="flex items-center gap-1 mt-3 text-sm text-muted-foreground">

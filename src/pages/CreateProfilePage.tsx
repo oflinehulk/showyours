@@ -13,14 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateProfile, useMyProfile } from '@/hooks/useProfiles';
-import { RANKS, ROLES, HERO_CLASSES, SERVERS, CONTACT_TYPES, POPULAR_HEROES } from '@/lib/constants';
-import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2 } from 'lucide-react';
+import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES, CONTACT_TYPES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
+import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function CreateProfilePage() {
   const navigate = useNavigate();
@@ -31,8 +32,9 @@ export default function CreateProfilePage() {
   
   // Form state
   const [ign, setIgn] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [state, setState] = useState('');
   const [rank, setRank] = useState('');
-  const [server, setServer] = useState('');
   const [winRate, setWinRate] = useState('');
   const [mainRole, setMainRole] = useState('');
   const [heroClass, setHeroClass] = useState('');
@@ -40,9 +42,13 @@ export default function CreateProfilePage() {
   const [heroInput, setHeroInput] = useState('');
   const [bio, setBio] = useState('');
   const [lookingForSquad, setLookingForSquad] = useState(true);
-  const [contacts, setContacts] = useState<{ type: string; value: string }[]>([]);
-  const [newContactType, setNewContactType] = useState('discord');
-  const [newContactValue, setNewContactValue] = useState('');
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+  
+  // Contact state
+  const [gameId, setGameId] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [discord, setDiscord] = useState('');
+  const [instagram, setInstagram] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -63,18 +69,21 @@ export default function CreateProfilePage() {
     { number: 2, title: 'Stats' },
     { number: 3, title: 'Heroes' },
     { number: 4, title: 'Contact' },
+    { number: 5, title: 'Media' },
   ];
 
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return ign.trim() && server;
+        return ign.trim() && state;
       case 2:
         return rank && mainRole && heroClass;
       case 3:
         return true;
       case 4:
-        return contacts.length > 0;
+        return gameId.trim() && whatsapp.trim();
+      case 5:
+        return true;
       default:
         return false;
     }
@@ -91,30 +100,43 @@ export default function CreateProfilePage() {
     setFavoriteHeroes(favoriteHeroes.filter((h) => h !== hero));
   };
 
-  const addContact = () => {
-    if (newContactValue.trim()) {
-      setContacts([...contacts, { type: newContactType, value: newContactValue.trim() }]);
-      setNewContactValue('');
-    }
+  // Get heroes filtered by selected hero class
+  const getHeroesForClass = () => {
+    if (!heroClass) return ALL_HEROES;
+    const classHeroes = MLBB_HEROES[heroClass as keyof typeof MLBB_HEROES] || [];
+    return classHeroes as string[];
   };
 
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
+  const suggestedHeroes = getHeroesForClass().filter(
+    (h) => 
+      h.toLowerCase().includes(heroInput.toLowerCase()) && 
+      !favoriteHeroes.includes(h)
+  ).slice(0, 8);
+
+  const buildContacts = () => {
+    const contacts: { type: string; value: string }[] = [];
+    if (gameId.trim()) contacts.push({ type: 'game-id', value: gameId.trim() });
+    if (whatsapp.trim()) contacts.push({ type: 'whatsapp', value: whatsapp.trim() });
+    if (discord.trim()) contacts.push({ type: 'discord', value: discord.trim() });
+    if (instagram.trim()) contacts.push({ type: 'instagram', value: instagram.trim() });
+    return contacts;
   };
 
   const handleSubmit = async () => {
     try {
       await createProfile.mutateAsync({
         ign: ign.trim(),
+        avatar_url: avatarUrl,
         rank: rank as any,
-        server: server as any,
+        state: state as any,
         win_rate: winRate ? parseFloat(winRate) : null,
         main_role: mainRole as any,
         hero_class: heroClass as any,
         favorite_heroes: favoriteHeroes,
         bio: bio.trim() || null,
         looking_for_squad: lookingForSquad,
-        contacts: contacts as any,
+        contacts: buildContacts() as any,
+        screenshots,
       });
       
       toast.success('Profile created successfully!', {
@@ -128,12 +150,6 @@ export default function CreateProfilePage() {
     }
   };
 
-  const suggestedHeroes = POPULAR_HEROES.filter(
-    (h) => 
-      h.toLowerCase().includes(heroInput.toLowerCase()) && 
-      !favoriteHeroes.includes(h)
-  ).slice(0, 5);
-
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -146,12 +162,12 @@ export default function CreateProfilePage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 overflow-x-auto">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center">
               <div
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-200',
+                  'w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-200 flex-shrink-0',
                   currentStep >= step.number
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
@@ -165,7 +181,7 @@ export default function CreateProfilePage() {
               </div>
               <span
                 className={cn(
-                  'ml-2 text-sm hidden sm:block',
+                  'ml-2 text-sm hidden sm:block whitespace-nowrap',
                   currentStep >= step.number ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -174,7 +190,7 @@ export default function CreateProfilePage() {
               {index < steps.length - 1 && (
                 <div
                   className={cn(
-                    'w-8 sm:w-16 h-0.5 mx-2 sm:mx-4 transition-colors',
+                    'w-6 sm:w-12 h-0.5 mx-2 transition-colors flex-shrink-0',
                     currentStep > step.number ? 'bg-primary' : 'bg-muted'
                   )}
                 />
@@ -188,6 +204,17 @@ export default function CreateProfilePage() {
           {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in">
+              <div className="flex flex-col items-center gap-4">
+                <Label>Profile Photo</Label>
+                <ImageUpload
+                  bucket="avatars"
+                  currentUrl={avatarUrl}
+                  onUpload={setAvatarUrl}
+                  onRemove={() => setAvatarUrl(null)}
+                  size="lg"
+                />
+              </div>
+
               <div>
                 <Label htmlFor="ign">In-Game Name (IGN) *</Label>
                 <Input
@@ -200,13 +227,13 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="server">Server *</Label>
-                <Select value={server} onValueChange={setServer}>
+                <Label htmlFor="state">Your State *</Label>
+                <Select value={state} onValueChange={setState}>
                   <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Select your server" />
+                    <SelectValue placeholder="Select your state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SERVERS.map((s) => (
+                    {INDIAN_STATES.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name}
                       </SelectItem>
@@ -300,6 +327,9 @@ export default function CreateProfilePage() {
             <div className="space-y-6 animate-fade-in">
               <div>
                 <Label htmlFor="heroes">Favorite Heroes (up to 5)</Label>
+                <p className="text-sm text-muted-foreground mt-1 mb-2">
+                  {heroClass ? `Showing ${HERO_CLASSES.find(c => c.id === heroClass)?.name} heroes` : 'Select a hero class first to filter heroes'}
+                </p>
                 <div className="relative mt-1.5">
                   <Input
                     id="heroes"
@@ -314,7 +344,7 @@ export default function CreateProfilePage() {
                     }}
                   />
                   {heroInput && suggestedHeroes.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 overflow-hidden max-h-48 overflow-y-auto">
                       {suggestedHeroes.map((hero) => (
                         <button
                           key={hero}
@@ -360,6 +390,18 @@ export default function CreateProfilePage() {
                   I'm actively looking for a squad
                 </Label>
               </div>
+
+              <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-secondary mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-secondary">Note about recruitment visibility</p>
+                    <p className="text-muted-foreground mt-1">
+                      When you get recruited to a squad, you can uncheck "looking for squad" to hide your profile from the recruitment listings.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -367,65 +409,80 @@ export default function CreateProfilePage() {
           {currentStep === 4 && (
             <div className="space-y-6 animate-fade-in">
               <p className="text-sm text-muted-foreground">
-                Add at least one way for squads to contact you
+                In-Game ID and WhatsApp are required. Others are optional.
               </p>
 
-              <div className="flex gap-2">
-                <Select value={newContactType} onValueChange={setNewContactType}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONTACT_TYPES.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label htmlFor="gameId">
+                  In-Game ID * <span className="text-xs text-muted-foreground">(Required)</span>
+                </Label>
                 <Input
-                  value={newContactValue}
-                  onChange={(e) => setNewContactValue(e.target.value)}
-                  placeholder="Enter your ID or username"
-                  className="flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addContact();
-                    }
-                  }}
+                  id="gameId"
+                  value={gameId}
+                  onChange={(e) => setGameId(e.target.value)}
+                  placeholder="e.g., 123456789 (1234)"
+                  className="mt-1.5"
                 />
-                <Button type="button" onClick={addContact} size="icon" className="btn-interactive">
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <p className="text-xs text-muted-foreground mt-1">Your MLBB Game ID with server number</p>
               </div>
 
-              {contacts.length > 0 && (
-                <div className="space-y-2">
-                  {contacts.map((contact, index) => {
-                    const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
-                    return (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                      >
-                        <div>
-                          <p className="text-xs text-muted-foreground">{contactType?.name}</p>
-                          <p className="text-foreground font-medium">{contact.value}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeContact(index)}
-                          className="btn-interactive"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <div>
+                <Label htmlFor="whatsapp">
+                  WhatsApp Number * <span className="text-xs text-muted-foreground">(Required)</span>
+                </Label>
+                <Input
+                  id="whatsapp"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="e.g., +91 98765 43210"
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="discord">
+                  Discord <span className="text-xs text-muted-foreground">(Optional)</span>
+                </Label>
+                <Input
+                  id="discord"
+                  value={discord}
+                  onChange={(e) => setDiscord(e.target.value)}
+                  placeholder="e.g., username#1234"
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="instagram">
+                  Instagram <span className="text-xs text-muted-foreground">(Optional)</span>
+                </Label>
+                <Input
+                  id="instagram"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="e.g., @username"
+                  className="mt-1.5"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Media */}
+          {currentStep === 5 && (
+            <div className="space-y-6 animate-fade-in">
+              <div>
+                <Label className="mb-3 block">In-Game Screenshots (Optional)</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add screenshots of your stats, rank, or gameplay to showcase your skills
+                </p>
+                <MultiImageUpload
+                  bucket="screenshots"
+                  images={screenshots}
+                  maxImages={5}
+                  onUpload={(url) => setScreenshots([...screenshots, url])}
+                  onRemove={(url) => setScreenshots(screenshots.filter(s => s !== url))}
+                />
+              </div>
             </div>
           )}
 
@@ -441,7 +498,7 @@ export default function CreateProfilePage() {
               Back
             </Button>
 
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button
                 onClick={() => setCurrentStep((currentStep + 1) as Step)}
                 disabled={!canProceed()}

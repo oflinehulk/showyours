@@ -1,11 +1,14 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSquad } from '@/hooks/useSquads';
-import { SERVERS, CONTACT_TYPES } from '@/lib/constants';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useSquad, useMySquads, useUpdateSquad } from '@/hooks/useSquads';
+import { useAuth } from '@/contexts/AuthContext';
+import { CONTACT_TYPES } from '@/lib/constants';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -13,14 +16,39 @@ import {
   MessageCircle,
   Copy,
   Check,
+  Edit,
+  Phone,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function SquadDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: squad, isLoading } = useSquad(id || '');
+  const { data: mySquads } = useMySquads();
+  const updateSquad = useUpdateSquad();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
+
+  const isOwner = user && mySquads && mySquads.some(s => s.id === id);
+
+  const handleToggleRecruiting = async () => {
+    if (!squad || !isOwner) return;
+    
+    try {
+      await updateSquad.mutateAsync({
+        id: squad.id,
+        is_recruiting: !squad.is_recruiting,
+      });
+      toast.success(squad.is_recruiting 
+        ? 'Squad is now hidden from listings' 
+        : 'Squad is now visible in listings!'
+      );
+    } catch (error: any) {
+      toast.error('Failed to update status', { description: error.message });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -47,11 +75,11 @@ export default function SquadDetailPage() {
     );
   }
 
-  const server = SERVERS.find((s) => s.id === squad.server);
   const contacts = typeof squad.contacts === 'string' 
     ? JSON.parse(squad.contacts) 
     : squad.contacts || [];
   const neededRoles = squad.needed_roles || [];
+  const maxMembers = squad.max_members || 5;
 
   const copyToClipboard = (text: string, contactId: string) => {
     navigator.clipboard.writeText(text);
@@ -72,6 +100,8 @@ export default function SquadDetailPage() {
         return '📷';
       case 'twitter':
         return '🐦';
+      case 'whatsapp':
+        return '📱';
       default:
         return '📱';
     }
@@ -118,12 +148,12 @@ export default function SquadDetailPage() {
                   <div className="flex flex-wrap items-center gap-3 mb-4">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Users className="w-4 h-4" />
-                      <span>{squad.member_count}/5 members</span>
+                      <span>{squad.member_count}/{maxMembers} members</span>
                     </div>
                     <span className="text-muted-foreground">•</span>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4" />
-                      {server?.name}
+                      Asia Server • India
                     </div>
                   </div>
 
@@ -133,6 +163,36 @@ export default function SquadDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Owner Controls */}
+              {isOwner && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="isRecruiting"
+                        checked={squad.is_recruiting}
+                        onCheckedChange={handleToggleRecruiting}
+                        disabled={updateSquad.isPending}
+                      />
+                      <Label htmlFor="isRecruiting" className="cursor-pointer">
+                        <span className="font-medium">Actively Recruiting</span>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {squad.is_recruiting 
+                            ? 'Your squad is visible in listings' 
+                            : 'Your squad is hidden from listings'}
+                        </p>
+                      </Label>
+                    </div>
+                    <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                      <Link to="/create-squad">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Squad
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -180,6 +240,7 @@ export default function SquadDetailPage() {
                   {contacts.map((contact: { type: string; value: string }, index: number) => {
                     const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
                     const contactKey = `${contact.type}-${index}`;
+                    const isWhatsApp = contact.type === 'whatsapp';
                     
                     return (
                       <div
@@ -193,18 +254,36 @@ export default function SquadDetailPage() {
                             <p className="text-foreground font-medium truncate">{contact.value}</p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
-                          onClick={() => copyToClipboard(contact.value, contactKey)}
-                        >
-                          {copiedContact === contactKey ? (
-                            <Check className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isWhatsApp && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                              asChild
+                            >
+                              <a 
+                                href={`https://wa.me/${contact.value.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Phone className="w-4 h-4" />
+                              </a>
+                            </Button>
                           )}
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                            onClick={() => copyToClipboard(contact.value, contactKey)}
+                          >
+                            {copiedContact === contactKey ? (
+                              <Check className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
@@ -217,7 +296,7 @@ export default function SquadDetailPage() {
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Members</span>
-                  <span className="text-foreground font-medium">{squad.member_count}/5</span>
+                  <span className="text-foreground font-medium">{squad.member_count}/{maxMembers}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Open Spots</span>
@@ -225,7 +304,7 @@ export default function SquadDetailPage() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Server</span>
-                  <span className="text-foreground">{server?.name}</span>
+                  <span className="text-foreground">Asia (India)</span>
                 </div>
               </div>
             </div>

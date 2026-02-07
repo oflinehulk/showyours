@@ -9,8 +9,9 @@ interface SquadInput {
   description?: string | null;
   min_rank: RankId;
   needed_roles?: RoleId[];
-  server: ServerId;
+  server?: ServerId;
   member_count?: number;
+  max_members?: number;
   contacts?: { type: ContactTypeId; value: string }[];
   is_recruiting?: boolean;
 }
@@ -75,10 +76,21 @@ export function useCreateSquad() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Check if user already has a squad
+      const { data: existingSquads } = await supabase
+        .from('squads')
+        .select('id')
+        .eq('owner_id', user.id);
+
+      if (existingSquads && existingSquads.length > 0) {
+        throw new Error('You can only create one squad. Please manage your existing squad.');
+      }
+
       const { data, error } = await supabase
         .from('squads')
         .insert({
           owner_id: user.id,
+          server: 'sea', // Always Asia for India
           ...squad,
           contacts: JSON.stringify(squad.contacts || []),
         })

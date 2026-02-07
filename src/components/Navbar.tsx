@@ -3,7 +3,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn } from 'lucide-react';
+import { useMyProfile } from '@/hooks/useProfiles';
+import { useMySquads } from '@/hooks/useSquads';
+import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -15,7 +17,12 @@ const navLinks = [
 export function Navbar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { data: myProfile } = useMyProfile();
+  const { data: mySquads } = useMySquads();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const hasProfile = !!myProfile;
+  const hasSquad = mySquads && mySquads.length > 0;
 
   const handleSignOut = async () => {
     await signOut();
@@ -54,15 +61,32 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                  <Link to="/create-profile">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Create Profile
-                  </Link>
-                </Button>
-                <Button size="sm" className="btn-gaming" asChild>
-                  <Link to="/create-squad">Post Squad</Link>
-                </Button>
+                {hasProfile ? (
+                  <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                    <Link to={`/player/${myProfile.id}`}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Profile
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                    <Link to="/create-profile">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Create Profile
+                    </Link>
+                  </Button>
+                )}
+                {hasSquad ? (
+                  <Button size="sm" className="btn-gaming" asChild>
+                    <Link to={`/squad/${mySquads[0].id}`}>Manage Squad</Link>
+                  </Button>
+                ) : (
+                  hasProfile && (
+                    <Button size="sm" className="btn-gaming" asChild>
+                      <Link to="/create-squad">Post Squad</Link>
+                    </Button>
+                  )
+                )}
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -110,17 +134,36 @@ export function Navbar() {
               <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border/50">
                 {user ? (
                   <>
-                    <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                      <Link to="/create-profile" onClick={() => setMobileMenuOpen(false)}>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Create Profile
-                      </Link>
-                    </Button>
-                    <Button size="sm" className="btn-gaming" asChild>
-                      <Link to="/create-squad" onClick={() => setMobileMenuOpen(false)}>
-                        Post Squad
-                      </Link>
-                    </Button>
+                    {hasProfile ? (
+                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                        <Link to={`/player/${myProfile.id}`} onClick={() => setMobileMenuOpen(false)}>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Manage Profile
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                        <Link to="/create-profile" onClick={() => setMobileMenuOpen(false)}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Create Profile
+                        </Link>
+                      </Button>
+                    )}
+                    {hasSquad ? (
+                      <Button size="sm" className="btn-gaming" asChild>
+                        <Link to={`/squad/${mySquads[0].id}`} onClick={() => setMobileMenuOpen(false)}>
+                          Manage Squad
+                        </Link>
+                      </Button>
+                    ) : (
+                      hasProfile && (
+                        <Button size="sm" className="btn-gaming" asChild>
+                          <Link to="/create-squad" onClick={() => setMobileMenuOpen(false)}>
+                            Post Squad
+                          </Link>
+                        </Button>
+                      )
+                    )}
                     <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign Out

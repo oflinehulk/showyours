@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile } from '@/lib/types';
-import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId } from '@/lib/constants';
+import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from '@/lib/constants';
 
 interface ProfileInput {
   ign: string;
@@ -11,10 +11,12 @@ interface ProfileInput {
   main_role: RoleId;
   hero_class: HeroClassId;
   favorite_heroes?: string[];
-  server: ServerId;
+  server?: ServerId;
+  state: StateId;
   bio?: string | null;
   looking_for_squad?: boolean;
   contacts?: { type: ContactTypeId; value: string }[];
+  screenshots?: string[];
 }
 
 export function useProfiles() {
@@ -24,6 +26,7 @@ export function useProfiles() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('looking_for_squad', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -80,6 +83,7 @@ export function useCreateProfile() {
         .from('profiles')
         .insert({
           user_id: user.id,
+          server: 'sea', // Always Asia for India
           ...profile,
           contacts: JSON.stringify(profile.contacts || []),
         })

@@ -4,7 +4,6 @@ import { RankBadge } from './RankBadge';
 import { RoleIcon } from './RoleIcon';
 import type { Squad } from '@/lib/types';
 import { Users, MapPin } from 'lucide-react';
-import { SERVERS } from '@/lib/constants';
 
 interface SquadCardProps {
   squad: Squad;
@@ -12,8 +11,8 @@ interface SquadCardProps {
 }
 
 export function SquadCard({ squad, className }: SquadCardProps) {
-  const server = SERVERS.find(s => s.id === squad.server);
   const neededRoles = squad.needed_roles || [];
+  const maxMembers = squad.max_members || 5;
 
   return (
     <Link
@@ -39,7 +38,7 @@ export function SquadCard({ squad, className }: SquadCardProps) {
           
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{squad.member_count}/5 members</span>
+            <span>{squad.member_count}/{maxMembers} members</span>
           </div>
 
           <div className="mt-2">
@@ -76,7 +75,7 @@ export function SquadCard({ squad, className }: SquadCardProps) {
       {/* Server */}
       <div className="flex items-center gap-1 mt-3 text-sm text-muted-foreground">
         <MapPin className="w-3 h-3" />
-        <span>{server?.name}</span>
+        <span>Asia Server • India</span>
       </div>
     </Link>
   );

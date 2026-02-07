@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSquads } from '@/hooks/useSquads';
-import { RANKS, ROLES, SERVERS } from '@/lib/constants';
+import { RANKS, ROLES } from '@/lib/constants';
 import { Search, Filter, Shield, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -22,7 +22,6 @@ export default function SquadsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [serverFilter, setServerFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredSquads = useMemo(() => {
@@ -52,24 +51,17 @@ export default function SquadsPage() {
       squadList = squadList.filter((s) => (s.needed_roles || []).includes(roleFilter as any));
     }
 
-    // Server filter
-    if (serverFilter !== 'all') {
-      squadList = squadList.filter((s) => s.server === serverFilter);
-    }
-
     // Sort by most recent
     squadList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return squadList;
-  }, [squads, searchQuery, rankFilter, roleFilter, serverFilter]);
+  }, [squads, searchQuery, rankFilter, roleFilter]);
 
-  const hasActiveFilters =
-    rankFilter !== 'all' || roleFilter !== 'all' || serverFilter !== 'all';
+  const hasActiveFilters = rankFilter !== 'all' || roleFilter !== 'all';
 
   const clearFilters = () => {
     setRankFilter('all');
     setRoleFilter('all');
-    setServerFilter('all');
   };
 
   return (
@@ -80,7 +72,7 @@ export default function SquadsPage() {
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Squad Listings</h1>
             <p className="text-muted-foreground">
-              Find teams recruiting new members
+              Find teams recruiting new members in India
             </p>
           </div>
           <Button className="btn-gaming" asChild>
@@ -131,7 +123,7 @@ export default function SquadsPage() {
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select value={rankFilter} onValueChange={setRankFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Your Rank" />
@@ -155,20 +147,6 @@ export default function SquadsPage() {
                   {ROLES.map((role) => (
                     <SelectItem key={role.id} value={role.id}>
                       {role.icon} {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={serverFilter} onValueChange={setServerFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Server" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Servers</SelectItem>
-                  {SERVERS.map((server) => (
-                    <SelectItem key={server.id} value={server.id}>
-                      {server.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

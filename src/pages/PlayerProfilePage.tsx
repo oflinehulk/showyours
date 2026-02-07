@@ -1,12 +1,15 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { HeroClassBadge } from '@/components/HeroClassBadge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProfile } from '@/hooks/useProfiles';
-import { SERVERS, CONTACT_TYPES } from '@/lib/constants';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
+import { useAuth } from '@/contexts/AuthContext';
+import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -14,14 +17,40 @@ import {
   MessageCircle,
   Copy,
   Check,
+  Edit,
+  Phone,
+  Image,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: player, isLoading } = useProfile(id || '');
+  const { data: myProfile } = useMyProfile();
+  const updateProfile = useUpdateProfile();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
+
+  const isOwner = user && myProfile && myProfile.id === id;
+
+  const handleToggleLookingForSquad = async () => {
+    if (!player || !isOwner) return;
+    
+    try {
+      await updateProfile.mutateAsync({
+        id: player.id,
+        looking_for_squad: !player.looking_for_squad,
+      });
+      toast.success(player.looking_for_squad 
+        ? 'You are now marked as recruited! Your profile is hidden from listings.' 
+        : 'You are now visible in the recruitment listings!'
+      );
+    } catch (error: any) {
+      toast.error('Failed to update status', { description: error.message });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -48,10 +77,11 @@ export default function PlayerProfilePage() {
     );
   }
 
-  const server = SERVERS.find((s) => s.id === player.server);
+  const state = INDIAN_STATES.find((s) => s.id === player.state);
   const contacts = typeof player.contacts === 'string' 
     ? JSON.parse(player.contacts) 
     : player.contacts || [];
+  const screenshots = player.screenshots || [];
 
   const copyToClipboard = (text: string, contactId: string) => {
     navigator.clipboard.writeText(text);
@@ -72,6 +102,8 @@ export default function PlayerProfilePage() {
         return '📷';
       case 'twitter':
         return '🐦';
+      case 'whatsapp':
+        return '📱';
       default:
         return '📱';
     }
@@ -127,7 +159,7 @@ export default function PlayerProfilePage() {
                     <span className="text-muted-foreground">•</span>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4" />
-                      {server?.name}
+                      {state?.name || 'India'}
                     </div>
                   </div>
 
@@ -146,6 +178,36 @@ export default function PlayerProfilePage() {
                   <p className="text-sm text-muted-foreground">Win Rate</p>
                 </div>
               </div>
+
+              {/* Owner Controls */}
+              {isOwner && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="lookingForSquad"
+                        checked={player.looking_for_squad}
+                        onCheckedChange={handleToggleLookingForSquad}
+                        disabled={updateProfile.isPending}
+                      />
+                      <Label htmlFor="lookingForSquad" className="cursor-pointer">
+                        <span className="font-medium">Looking for Squad</span>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {player.looking_for_squad 
+                            ? 'Your profile is visible in recruitment listings' 
+                            : 'Your profile is hidden (recruited)'}
+                        </p>
+                      </Label>
+                    </div>
+                    <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                      <Link to="/create-profile">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bio */}
@@ -158,7 +220,7 @@ export default function PlayerProfilePage() {
 
             {/* Favorite Heroes */}
             {player.favorite_heroes && player.favorite_heroes.length > 0 && (
-              <div className="glass-card p-6">
+              <div className="glass-card p-6 mb-6">
                 <h2 className="text-lg font-semibold text-foreground mb-4">Favorite Heroes</h2>
                 <div className="flex flex-wrap gap-3">
                   {player.favorite_heroes.map((hero) => (
@@ -168,6 +230,29 @@ export default function PlayerProfilePage() {
                     >
                       {hero}
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Screenshots */}
+            {screenshots.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Image className="w-5 h-5 text-primary" />
+                  In-Game Screenshots
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {screenshots.map((url, index) => (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="aspect-video rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
+                    >
+                      <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
+                    </a>
                   ))}
                 </div>
               </div>
@@ -187,6 +272,7 @@ export default function PlayerProfilePage() {
                   {contacts.map((contact: { type: string; value: string }, index: number) => {
                     const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
                     const contactKey = `${contact.type}-${index}`;
+                    const isWhatsApp = contact.type === 'whatsapp';
                     
                     return (
                       <div
@@ -200,18 +286,36 @@ export default function PlayerProfilePage() {
                             <p className="text-foreground font-medium truncate">{contact.value}</p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
-                          onClick={() => copyToClipboard(contact.value, contactKey)}
-                        >
-                          {copiedContact === contactKey ? (
-                            <Check className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isWhatsApp && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                              asChild
+                            >
+                              <a 
+                                href={`https://wa.me/${contact.value.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Phone className="w-4 h-4" />
+                              </a>
+                            </Button>
                           )}
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                            onClick={() => copyToClipboard(contact.value, contactKey)}
+                          >
+                            {copiedContact === contactKey ? (
+                              <Check className="w-4 h-4 text-primary" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProfiles } from '@/hooks/useProfiles';
-import { RANKS, ROLES, HERO_CLASSES, SERVERS } from '@/lib/constants';
+import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { Search, Filter, Trophy, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +26,7 @@ export default function PlayersPage() {
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
-  const [serverFilter, setServerFilter] = useState<string>('all');
+  const [stateFilter, setStateFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
@@ -59,9 +59,9 @@ export default function PlayersPage() {
       players = players.filter((p) => p.hero_class === classFilter);
     }
 
-    // Server filter
-    if (serverFilter !== 'all') {
-      players = players.filter((p) => p.server === serverFilter);
+    // State filter
+    if (stateFilter !== 'all') {
+      players = players.filter((p) => p.state === stateFilter);
     }
 
     // Sort
@@ -82,16 +82,16 @@ export default function PlayersPage() {
     }
 
     return players;
-  }, [profiles, searchQuery, rankFilter, roleFilter, classFilter, serverFilter, sortBy]);
+  }, [profiles, searchQuery, rankFilter, roleFilter, classFilter, stateFilter, sortBy]);
 
   const hasActiveFilters =
-    rankFilter !== 'all' || roleFilter !== 'all' || classFilter !== 'all' || serverFilter !== 'all';
+    rankFilter !== 'all' || roleFilter !== 'all' || classFilter !== 'all' || stateFilter !== 'all';
 
   const clearFilters = () => {
     setRankFilter('all');
     setRoleFilter('all');
     setClassFilter('all');
-    setServerFilter('all');
+    setStateFilter('all');
   };
 
   return (
@@ -101,7 +101,7 @@ export default function PlayersPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Find Players</h1>
           <p className="text-muted-foreground">
-            Discover talented MLBB players looking for squads
+            Discover talented MLBB players looking for squads in India
           </p>
         </div>
 
@@ -218,15 +218,15 @@ export default function PlayersPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={serverFilter} onValueChange={setServerFilter}>
+              <Select value={stateFilter} onValueChange={setStateFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Server" />
+                  <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Servers</SelectItem>
-                  {SERVERS.map((server) => (
-                    <SelectItem key={server.id} value={server.id}>
-                      {server.name}
+                  <SelectItem value="all">All States</SelectItem>
+                  {INDIAN_STATES.map((state) => (
+                    <SelectItem key={state.id} value={state.id}>
+                      {state.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -281,12 +281,13 @@ export default function PlayersPage() {
                     <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Rank</th>
                     <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Win Rate</th>
                     <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Role</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">State</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, index) => {
                     const role = ROLES.find((r) => r.id === player.main_role);
+                    const state = INDIAN_STATES.find((s) => s.id === player.state);
                     return (
                       <tr
                         key={player.id}
@@ -298,7 +299,7 @@ export default function PlayersPage() {
                             <img
                               src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                               alt={player.ign}
-                              className="w-10 h-10 rounded-lg bg-muted"
+                              className="w-10 h-10 rounded-lg bg-muted object-cover"
                             />
                             <span className="font-semibold text-foreground">{player.ign}</span>
                           </div>
@@ -307,20 +308,13 @@ export default function PlayersPage() {
                           <RankBadge rank={player.rank} size="sm" />
                         </td>
                         <td className="p-4">
-                          <span className="text-green-400 font-semibold">{player.win_rate || '—'}%</span>
+                          <span className="text-primary font-semibold">{player.win_rate || '—'}%</span>
                         </td>
                         <td className="p-4 text-muted-foreground">
                           {role?.icon} {role?.name}
                         </td>
-                        <td className="p-4">
-                          {player.looking_for_squad ? (
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                              Looking
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">In Squad</span>
-                          )}
+                        <td className="p-4 text-muted-foreground text-sm">
+                          {state?.name || 'India'}
                         </td>
                       </tr>
                     );

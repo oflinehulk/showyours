@@ -15,9 +15,9 @@ import {
 } from '@/components/ui/select';
 import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreateProfile, useMyProfile } from '@/hooks/useProfiles';
-import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES, CONTACT_TYPES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
-import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2, AlertCircle } from 'lucide-react';
+import { useCreateProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
+import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
+import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -26,9 +26,11 @@ type Step = 1 | 2 | 3 | 4 | 5;
 export default function CreateProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: existingProfile } = useMyProfile();
+  const { data: existingProfile, isLoading: profileLoading } = useMyProfile();
   const createProfile = useCreateProfile();
+  const updateProfile = useUpdateProfile();
   const [currentStep, setCurrentStep] = useState<Step>(1);
+  const [isEditMode, setIsEditMode] = useState(false);
   
   // Form state
   const [ign, setIgn] = useState('');
@@ -57,12 +59,45 @@ export default function CreateProfilePage() {
     }
   }, [user, navigate]);
 
+  // Populate form with existing profile data for editing
   useEffect(() => {
     if (existingProfile) {
-      toast.info('You already have a profile');
-      navigate(`/player/${existingProfile.id}`);
+      setIsEditMode(true);
+      setIgn(existingProfile.ign || '');
+      setAvatarUrl(existingProfile.avatar_url || null);
+      setState(existingProfile.state || '');
+      setRank(existingProfile.rank || '');
+      setWinRate(existingProfile.win_rate?.toString() || '');
+      setMainRole(existingProfile.main_role || '');
+      setHeroClass(existingProfile.hero_class || '');
+      setFavoriteHeroes(existingProfile.favorite_heroes || []);
+      setBio(existingProfile.bio || '');
+      setLookingForSquad(existingProfile.looking_for_squad ?? true);
+      setScreenshots(existingProfile.screenshots || []);
+      
+      // Parse contacts
+      const contacts = typeof existingProfile.contacts === 'string' 
+        ? JSON.parse(existingProfile.contacts) 
+        : existingProfile.contacts || [];
+      
+      contacts.forEach((contact: { type: string; value: string }) => {
+        switch (contact.type) {
+          case 'game-id':
+            setGameId(contact.value);
+            break;
+          case 'whatsapp':
+            setWhatsapp(contact.value);
+            break;
+          case 'discord':
+            setDiscord(contact.value);
+            break;
+          case 'instagram':
+            setInstagram(contact.value);
+            break;
+        }
+      });
     }
-  }, [existingProfile, navigate]);
+  }, [existingProfile]);
 
   const steps = [
     { number: 1, title: 'Basic Info' },
@@ -123,41 +158,72 @@ export default function CreateProfilePage() {
   };
 
   const handleSubmit = async () => {
+    const profileData = {
+      ign: ign.trim(),
+      avatar_url: avatarUrl,
+      rank: rank as any,
+      state: state as any,
+      win_rate: winRate ? parseFloat(winRate) : null,
+      main_role: mainRole as any,
+      hero_class: heroClass as any,
+      favorite_heroes: favoriteHeroes,
+      bio: bio.trim() || null,
+      looking_for_squad: lookingForSquad,
+      contacts: buildContacts() as any,
+      screenshots,
+    };
+
     try {
-      await createProfile.mutateAsync({
-        ign: ign.trim(),
-        avatar_url: avatarUrl,
-        rank: rank as any,
-        state: state as any,
-        win_rate: winRate ? parseFloat(winRate) : null,
-        main_role: mainRole as any,
-        hero_class: heroClass as any,
-        favorite_heroes: favoriteHeroes,
-        bio: bio.trim() || null,
-        looking_for_squad: lookingForSquad,
-        contacts: buildContacts() as any,
-        screenshots,
-      });
-      
-      toast.success('Profile created successfully!', {
-        description: 'Your profile is now visible to squads.',
-      });
-      navigate('/players');
+      if (isEditMode && existingProfile) {
+        await updateProfile.mutateAsync({
+          id: existingProfile.id,
+          ...profileData,
+        });
+        toast.success('Profile updated successfully!', {
+          description: 'Your changes have been saved.',
+        });
+        navigate(`/player/${existingProfile.id}`);
+      } else {
+        const result = await createProfile.mutateAsync(profileData);
+        toast.success('Profile created successfully!', {
+          description: 'Your profile is now visible to squads.',
+        });
+        navigate('/players');
+      }
     } catch (error: any) {
-      toast.error('Failed to create profile', {
+      toast.error(isEditMode ? 'Failed to update profile' : 'Failed to create profile', {
         description: error.message,
       });
     }
   };
+
+  const isPending = createProfile.isPending || updateProfile.isPending;
+
+  if (profileLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create Your Profile</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {isEditMode ? 'Edit Your Profile' : 'Create Your Profile'}
+          </h1>
           <p className="text-muted-foreground">
-            Showcase your skills and get discovered by squads
+            {isEditMode 
+              ? 'Update your details and showcase your latest achievements'
+              : 'Showcase your skills and get discovered by squads'
+            }
           </p>
         </div>
 
@@ -511,13 +577,13 @@ export default function CreateProfilePage() {
               <Button
                 className="btn-gaming"
                 onClick={handleSubmit}
-                disabled={!canProceed() || createProfile.isPending}
+                disabled={!canProceed() || isPending}
               >
-                {createProfile.isPending ? (
+                {isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Create Profile
+                    {isEditMode ? 'Save Changes' : 'Create Profile'}
                     <Check className="w-4 h-4 ml-2" />
                   </>
                 )}

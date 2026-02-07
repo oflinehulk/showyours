@@ -4,43 +4,43 @@
 
 /* MLBB Recruitment Platform - Dark Gaming Design System
    All colors in HSL format for Tailwind compatibility
-   NO PURPLE/VIOLET - Cyan and Gold theme only
+   Navy Blue and Red theme
 */
 
 @layer base {
   :root {
     /* Dark gaming theme - always dark mode */
-    --background: 220 20% 4%;
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
 
-    --card: 220 18% 8%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 220 18% 8%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
 
-    /* Primary - Cyan neon */
-    --primary: 185 95% 50%;
-    --primary-foreground: 220 20% 4%;
+    /* Primary - Navy Blue */
+    --primary: 217 91% 50%;
+    --primary-foreground: 210 40% 98%;
 
-    /* Secondary - Teal (no purple) */
-    --secondary: 170 80% 45%;
+    /* Secondary - Red */
+    --secondary: 0 84% 55%;
     --secondary-foreground: 210 40% 98%;
 
     /* Muted - Subtle dark tones */
-    --muted: 220 15% 14%;
+    --muted: 222 40% 12%;
     --muted-foreground: 215 20% 55%;
 
-    /* Accent - Gold/Yellow for highlights */
-    --accent: 42 95% 55%;
-    --accent-foreground: 220 20% 4%;
+    /* Accent - Red for highlights */
+    --accent: 0 84% 55%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 85% 55%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 15% 18%;
-    --input: 220 15% 14%;
-    --ring: 185 95% 50%;
+    --border: 222 30% 18%;
+    --input: 222 40% 12%;
+    --ring: 217 91% 50%;
 
     --radius: 0.75rem;
 
@@ -49,50 +49,50 @@
     --rank-elite: 200 70% 50%;
     --rank-master: 170 70% 45%;
     --rank-grandmaster: 42 90% 55%;
-    --rank-epic: 185 80% 50%;
-    --rank-legend: 340 80% 55%;
+    --rank-epic: 217 80% 55%;
+    --rank-legend: 0 75% 55%;
     --rank-mythic: 0 90% 50%;
     --rank-mythical-honor: 15 90% 55%;
     --rank-mythical-glory: 25 100% 60%;
     --rank-immortal: 50 100% 55%;
 
     /* Glow effects */
-    --glow-primary: 185 95% 50%;
-    --glow-secondary: 170 80% 45%;
-    --glow-accent: 42 95% 55%;
+    --glow-primary: 217 91% 50%;
+    --glow-secondary: 0 84% 55%;
+    --glow-accent: 0 84% 55%;
 
     /* Sidebar - matching dark theme */
-    --sidebar-background: 220 18% 6%;
+    --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 185 95% 50%;
-    --sidebar-primary-foreground: 220 20% 4%;
-    --sidebar-accent: 220 15% 12%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 40% 12%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 220 15% 18%;
-    --sidebar-ring: 185 95% 50%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 217 91% 50%;
   }
 
   /* No light mode - always dark for gaming aesthetic */
   .dark {
-    --background: 220 20% 4%;
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
-    --card: 220 18% 8%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 220 18% 8%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 185 95% 50%;
-    --primary-foreground: 220 20% 4%;
-    --secondary: 170 80% 45%;
+    --primary: 217 91% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 0 84% 55%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 220 15% 14%;
+    --muted: 222 40% 12%;
     --muted-foreground: 215 20% 55%;
-    --accent: 42 95% 55%;
-    --accent-foreground: 220 20% 4%;
+    --accent: 0 84% 55%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 85% 55%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 15% 18%;
-    --input: 220 15% 14%;
-    --ring: 185 95% 50%;
+    --border: 222 30% 18%;
+    --input: 222 40% 12%;
+    --ring: 217 91% 50%;
   }
 }
 
@@ -158,11 +158,11 @@
     transform: translateY(-2px);
   }
 
-  /* Gaming button styles - No purple gradient */
+  /* Gaming button styles - Navy Blue and Red gradient */
   .btn-gaming {
     @apply relative overflow-hidden font-bold uppercase tracking-wider;
-    @apply bg-gradient-to-r from-primary to-accent;
-    @apply hover:from-primary/90 hover:to-accent/90;
+    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply hover:from-primary/90 hover:to-secondary/90;
     @apply transition-all duration-300;
     @apply active:scale-95;
   }
@@ -196,9 +196,9 @@
     background: inherit;
   }
 
-  /* Text gradient - No purple */
+  /* Text gradient - Navy Blue and Red */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent;
     background-size: 200% auto;
     animation: text-shimmer 3s linear infinite;
   }

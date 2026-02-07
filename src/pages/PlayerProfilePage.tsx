@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
@@ -7,7 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useProfile, useMyProfile, useUpdateProfile, useDeleteProfile } from '@/hooks/useProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
 import { 
@@ -20,8 +32,9 @@ import {
   Edit,
   Phone,
   Image,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
-import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function PlayerProfilePage() {
@@ -31,6 +44,7 @@ export default function PlayerProfilePage() {
   const { data: player, isLoading } = useProfile(id || '');
   const { data: myProfile } = useMyProfile();
   const updateProfile = useUpdateProfile();
+  const deleteProfile = useDeleteProfile();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
 
   const isOwner = user && myProfile && myProfile.id === id;
@@ -49,6 +63,18 @@ export default function PlayerProfilePage() {
       );
     } catch (error: any) {
       toast.error('Failed to update status', { description: error.message });
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!player || !isOwner) return;
+    
+    try {
+      await deleteProfile.mutateAsync(player.id);
+      toast.success('Profile deleted successfully');
+      navigate('/');
+    } catch (error: any) {
+      toast.error('Failed to delete profile', { description: error.message });
     }
   };
 
@@ -199,12 +225,44 @@ export default function PlayerProfilePage() {
                         </p>
                       </Label>
                     </div>
-                    <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                      <Link to="/create-profile">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                      </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                        <Link to="/create-profile">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Profile
+                        </Link>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm" className="btn-interactive">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete your profile?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Your profile will be permanently deleted 
+                              and you will no longer appear in the recruitment listings.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={handleDeleteProfile}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              disabled={deleteProfile.isPending}
+                            >
+                              {deleteProfile.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Delete Profile
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               )}

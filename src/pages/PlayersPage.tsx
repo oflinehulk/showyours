@@ -286,7 +286,13 @@ export default function PlayersPage() {
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, index) => {
-                    const role = ROLES.find((r) => r.id === player.main_role);
+                    const mainRoles = (player as any).main_roles?.length > 0 
+                      ? (player as any).main_roles 
+                      : [player.main_role];
+                    const roleDisplay = mainRoles.map((roleId: string) => {
+                      const role = ROLES.find((r) => r.id === roleId);
+                      return role ? `${role.icon} ${role.name}` : roleId;
+                    }).join(', ');
                     const state = INDIAN_STATES.find((s) => s.id === player.state);
                     return (
                       <tr
@@ -311,7 +317,7 @@ export default function PlayersPage() {
                           <span className="text-primary font-semibold">{player.win_rate || '—'}%</span>
                         </td>
                         <td className="p-4 text-muted-foreground">
-                          {role?.icon} {role?.name}
+                          {roleDisplay}
                         </td>
                         <td className="p-4 text-muted-foreground text-sm">
                           {state?.name || 'India'}

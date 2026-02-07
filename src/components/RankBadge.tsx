@@ -2,13 +2,13 @@ import { cn } from '@/lib/utils';
 import { RANKS, type RankId } from '@/lib/constants';
 
 interface RankBadgeProps {
-  rank: RankId;
+  rank: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
   className?: string;
 }
 
-const rankColors: Record<RankId, string> = {
+const rankColors: Record<string, string> = {
   warrior: 'bg-rank-warrior',
   elite: 'bg-rank-elite',
   master: 'bg-rank-master',
@@ -21,7 +21,7 @@ const rankColors: Record<RankId, string> = {
   immortal: 'bg-rank-immortal',
 };
 
-const rankIcons: Record<RankId, string> = {
+const rankIcons: Record<string, string> = {
   warrior: '⚔️',
   elite: '🔷',
   master: '💎',
@@ -47,13 +47,13 @@ export function RankBadge({ rank, size = 'md', showName = true, className }: Ran
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full font-semibold text-white rank-glow',
-        rankColors[rank],
+        rankColors[rank] || 'bg-muted',
         sizeClasses[size],
         className
       )}
     >
-      <span>{rankIcons[rank]}</span>
-      {showName && <span>{rankData?.name}</span>}
+      <span>{rankIcons[rank] || '⚔️'}</span>
+      {showName && <span>{rankData?.name || rank}</span>}
     </span>
   );
 }

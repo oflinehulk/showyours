@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      heroes: {
+        Row: {
+          created_at: string
+          hero_class: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hero_class?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hero_class?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -26,6 +53,7 @@ export type Database = {
           ign: string
           looking_for_squad: boolean
           main_role: string
+          main_roles: string[] | null
           rank: string
           screenshots: string[] | null
           server: string
@@ -45,6 +73,7 @@ export type Database = {
           ign: string
           looking_for_squad?: boolean
           main_role?: string
+          main_roles?: string[] | null
           rank?: string
           screenshots?: string[] | null
           server?: string
@@ -64,6 +93,7 @@ export type Database = {
           ign?: string
           looking_for_squad?: boolean
           main_role?: string
+          main_roles?: string[] | null
           rank?: string
           screenshots?: string[] | null
           server?: string

@@ -9,9 +9,28 @@ import { toast } from 'sonner';
 import { Loader2, Mail, Lock, ArrowRight, Gamepad2 } from 'lucide-react';
 import { z } from 'zod';
 
-const authSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+const emailSchema = z.string()
+  .trim()
+  .min(1, 'Email is required')
+  .email('Please enter a valid email address')
+  .max(255, 'Email must be less than 255 characters');
+
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(72, 'Password must be less than 72 characters')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character');
+
+const signUpSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required'),
 });
 
 export default function AuthPage() {
@@ -31,7 +50,8 @@ export default function AuthPage() {
 
   const validateForm = () => {
     try {
-      authSchema.parse({ email, password });
+      const schema = isLogin ? signInSchema : signUpSchema;
+      schema.parse({ email, password });
       setErrors({});
       return true;
     } catch (error) {

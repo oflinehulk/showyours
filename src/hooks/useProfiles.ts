@@ -9,6 +9,7 @@ interface ProfileInput {
   rank: RankId;
   win_rate?: number | null;
   main_role: RoleId;
+  main_roles?: string[];
   hero_class: HeroClassId;
   favorite_heroes?: string[];
   server?: ServerId;
@@ -85,8 +86,9 @@ export function useCreateProfile() {
           user_id: user.id,
           server: 'sea', // Always Asia for India
           ...profile,
+          main_roles: profile.main_roles || [profile.main_role],
           contacts: JSON.stringify(profile.contacts || []),
-        })
+        } as any)
         .select()
         .single();
       
@@ -105,12 +107,18 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async ({ id, ...profile }: Partial<ProfileInput> & { id: string }) => {
+      const updateData: any = {
+        ...profile,
+        contacts: profile.contacts ? JSON.stringify(profile.contacts) : undefined,
+      };
+      
+      if (profile.main_roles) {
+        updateData.main_roles = profile.main_roles;
+      }
+      
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          ...profile,
-          contacts: profile.contacts ? JSON.stringify(profile.contacts) : undefined,
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();

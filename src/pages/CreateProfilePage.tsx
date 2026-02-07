@@ -16,10 +16,12 @@ import {
 import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
-import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
+import { RANKS, HERO_CLASSES, INDIAN_STATES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
 import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { MultiRoleSelect } from '@/components/MultiRoleSelect';
+import { useHeroes } from '@/hooks/useHeroes';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -29,6 +31,7 @@ export default function CreateProfilePage() {
   const { data: existingProfile, isLoading: profileLoading } = useMyProfile();
   const createProfile = useCreateProfile();
   const updateProfile = useUpdateProfile();
+  const { data: dbHeroes } = useHeroes();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isEditMode, setIsEditMode] = useState(false);
   
@@ -38,7 +41,7 @@ export default function CreateProfilePage() {
   const [state, setState] = useState('');
   const [rank, setRank] = useState('');
   const [winRate, setWinRate] = useState('');
-  const [mainRole, setMainRole] = useState('');
+  const [mainRoles, setMainRoles] = useState<string[]>([]);
   const [heroClass, setHeroClass] = useState('');
   const [favoriteHeroes, setFavoriteHeroes] = useState<string[]>([]);
   const [heroInput, setHeroInput] = useState('');
@@ -68,7 +71,13 @@ export default function CreateProfilePage() {
       setState(existingProfile.state || '');
       setRank(existingProfile.rank || '');
       setWinRate(existingProfile.win_rate?.toString() || '');
-      setMainRole(existingProfile.main_role || '');
+      // Handle both old main_role and new main_roles
+      const roles = (existingProfile as any).main_roles;
+      if (roles && roles.length > 0) {
+        setMainRoles(roles);
+      } else if (existingProfile.main_role) {
+        setMainRoles([existingProfile.main_role]);
+      }
       setHeroClass(existingProfile.hero_class || '');
       setFavoriteHeroes(existingProfile.favorite_heroes || []);
       setBio(existingProfile.bio || '');
@@ -112,7 +121,7 @@ export default function CreateProfilePage() {
       case 1:
         return ign.trim() && state;
       case 2:
-        return rank && mainRole && heroClass;
+        return rank && mainRoles.length > 0 && heroClass;
       case 3:
         return true;
       case 4:
@@ -164,7 +173,8 @@ export default function CreateProfilePage() {
       rank: rank as any,
       state: state as any,
       win_rate: winRate ? parseFloat(winRate) : null,
-      main_role: mainRole as any,
+      main_role: mainRoles[0] || 'gold' as any,
+      main_roles: mainRoles,
       hero_class: heroClass as any,
       favorite_heroes: favoriteHeroes,
       bio: bio.trim() || null,
@@ -355,19 +365,13 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="mainRole">Main Role *</Label>
-                <Select value={mainRole} onValueChange={setMainRole}>
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Select your main role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.icon} {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Main Roles * (Select all that apply)</Label>
+                <div className="mt-2">
+                  <MultiRoleSelect 
+                    selectedRoles={mainRoles}
+                    onRolesChange={setMainRoles}
+                  />
+                </div>
               </div>
 
               <div>

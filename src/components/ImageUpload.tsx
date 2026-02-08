@@ -6,12 +6,12 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
-  bucket: 'avatars' | 'squad-logos' | 'screenshots';
+  bucket: 'avatars' | 'squad-logos' | 'screenshots' | 'tournament-assets';
   currentUrl?: string | null;
   onUpload: (url: string) => void;
   onRemove?: () => void;
   className?: string;
-  shape?: 'circle' | 'square';
+  shape?: 'circle' | 'square' | 'wide';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -28,9 +28,9 @@ export function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
-    sm: 'w-16 h-16',
-    md: 'w-24 h-24',
-    lg: 'w-32 h-32',
+    sm: shape === 'wide' ? 'w-full h-24' : 'w-16 h-16',
+    md: shape === 'wide' ? 'w-full h-32' : 'w-24 h-24',
+    lg: shape === 'wide' ? 'w-full h-40' : 'w-32 h-32',
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +100,8 @@ export function ImageUpload({
           'hover:border-primary/50 hover:bg-muted transition-all cursor-pointer',
           'flex items-center justify-center',
           sizeClasses[size],
-          shape === 'circle' ? 'rounded-full' : 'rounded-xl'
+          shape === 'circle' ? 'rounded-full' : 'rounded-xl',
+          shape === 'wide' && 'aspect-[3/1]'
         )}
         onClick={() => fileInputRef.current?.click()}
       >

@@ -11,6 +11,9 @@ import PlayerProfilePage from "./pages/PlayerProfilePage";
 import SquadDetailPage from "./pages/SquadDetailPage";
 import CreateProfilePage from "./pages/CreateProfilePage";
 import CreateSquadPage from "./pages/CreateSquadPage";
+import TournamentsPage from "./pages/TournamentsPage";
+import CreateTournamentPage from "./pages/CreateTournamentPage";
+import TournamentDetailPage from "./pages/TournamentDetailPage";
 import AuthPage from "./pages/AuthPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
@@ -33,6 +36,9 @@ const App = () => (
             <Route path="/squad/:id" element={<SquadDetailPage />} />
             <Route path="/create-profile" element={<CreateProfilePage />} />
             <Route path="/create-squad" element={<CreateSquadPage />} />
+            <Route path="/tournaments" element={<TournamentsPage />} />
+            <Route path="/create-tournament" element={<CreateTournamentPage />} />
+            <Route path="/tournament/:id" element={<TournamentDetailPage />} />
             <Route path="/admin" element={<AdminPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

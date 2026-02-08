@@ -104,6 +104,51 @@ export type Database = {
         }
         Relationships: []
       }
+      roster_changes: {
+        Row: {
+          changed_at: string
+          id: string
+          player_in_ign: string
+          player_in_mlbb_id: string
+          player_out_ign: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Insert: {
+          changed_at?: string
+          id?: string
+          player_in_ign: string
+          player_in_mlbb_id: string
+          player_out_ign: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Update: {
+          changed_at?: string
+          id?: string
+          player_in_ign?: string
+          player_in_mlbb_id?: string
+          player_out_ign?: string
+          tournament_id?: string
+          tournament_squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_changes_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_changes_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squads: {
         Row: {
           contacts: Json | null
@@ -155,6 +200,261 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_matches: {
+        Row: {
+          best_of: number
+          bracket_type: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          match_number: number
+          result_screenshot: string | null
+          round: number
+          scheduled_time: string | null
+          squad_a_id: string | null
+          squad_a_score: number | null
+          squad_b_id: string | null
+          squad_b_score: number | null
+          status: Database["public"]["Enums"]["match_status"]
+          tournament_id: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          best_of?: number
+          bracket_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          match_number: number
+          result_screenshot?: string | null
+          round: number
+          scheduled_time?: string | null
+          squad_a_id?: string | null
+          squad_a_score?: number | null
+          squad_b_id?: string | null
+          squad_b_score?: number | null
+          status?: Database["public"]["Enums"]["match_status"]
+          tournament_id: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          best_of?: number
+          bracket_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          match_number?: number
+          result_screenshot?: string | null
+          round?: number
+          scheduled_time?: string | null
+          squad_a_id?: string | null
+          squad_a_score?: number | null
+          squad_b_id?: string | null
+          squad_b_score?: number | null
+          status?: Database["public"]["Enums"]["match_status"]
+          tournament_id?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_matches_squad_a_id_fkey"
+            columns: ["squad_a_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_squad_b_id_fkey"
+            columns: ["squad_b_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_registrations: {
+        Row: {
+          id: string
+          registered_at: string
+          status: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Insert: {
+          id?: string
+          registered_at?: string
+          status?: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Update: {
+          id?: string
+          registered_at?: string
+          status?: string
+          tournament_id?: string
+          tournament_squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registrations_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_registrations_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_squad_members: {
+        Row: {
+          created_at: string
+          id: string
+          ign: string
+          mlbb_id: string
+          position: number
+          role: Database["public"]["Enums"]["squad_member_role"]
+          tournament_squad_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ign: string
+          mlbb_id: string
+          position: number
+          role?: Database["public"]["Enums"]["squad_member_role"]
+          tournament_squad_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ign?: string
+          mlbb_id?: string
+          position?: number
+          role?: Database["public"]["Enums"]["squad_member_role"]
+          tournament_squad_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_squad_members_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_squads: {
+        Row: {
+          created_at: string
+          existing_squad_id: string | null
+          id: string
+          leader_id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          existing_squad_id?: string | null
+          id?: string
+          leader_id: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          existing_squad_id?: string | null
+          id?: string
+          leader_id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_squads_existing_squad_id_fkey"
+            columns: ["existing_squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournaments: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          date_time: string
+          description: string | null
+          format: Database["public"]["Enums"]["tournament_format"] | null
+          host_id: string
+          id: string
+          max_squads: number
+          name: string
+          prize_wallet: string | null
+          rules: string | null
+          status: Database["public"]["Enums"]["tournament_status"]
+          updated_at: string
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          date_time: string
+          description?: string | null
+          format?: Database["public"]["Enums"]["tournament_format"] | null
+          host_id: string
+          id?: string
+          max_squads?: number
+          name: string
+          prize_wallet?: string | null
+          rules?: string | null
+          status?: Database["public"]["Enums"]["tournament_status"]
+          updated_at?: string
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          date_time?: string
+          description?: string | null
+          format?: Database["public"]["Enums"]["tournament_format"] | null
+          host_id?: string
+          id?: string
+          max_squads?: number
+          name?: string
+          prize_wallet?: string | null
+          rules?: string | null
+          status?: Database["public"]["Enums"]["tournament_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -192,6 +492,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      match_status: "pending" | "ongoing" | "completed" | "disputed"
+      squad_member_role: "main" | "substitute"
+      tournament_format:
+        | "single_elimination"
+        | "double_elimination"
+        | "round_robin"
+      tournament_status:
+        | "registration_open"
+        | "registration_closed"
+        | "bracket_generated"
+        | "ongoing"
+        | "completed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -320,6 +633,21 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      match_status: ["pending", "ongoing", "completed", "disputed"],
+      squad_member_role: ["main", "substitute"],
+      tournament_format: [
+        "single_elimination",
+        "double_elimination",
+        "round_robin",
+      ],
+      tournament_status: [
+        "registration_open",
+        "registration_closed",
+        "bracket_generated",
+        "ongoing",
+        "completed",
+        "cancelled",
+      ],
     },
   },
 } as const

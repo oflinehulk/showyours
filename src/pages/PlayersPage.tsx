@@ -101,7 +101,7 @@ export default function PlayersPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Find Players</h1>
           <p className="text-muted-foreground">
-            Discover talented MLBB players looking for squads in India
+            Looking for players to join your squad? Browse registered players open for recruitment.
           </p>
         </div>
 

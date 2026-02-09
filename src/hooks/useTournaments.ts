@@ -692,22 +692,27 @@ export function useMakeRosterChange() {
       playerOutIgn,
       playerInIgn,
       playerInMlbbId,
+      reason,
     }: {
       squadId: string;
       tournamentId: string;
       playerOutIgn: string;
       playerInIgn: string;
       playerInMlbbId: string;
+      reason?: string;
     }) => {
-      // Check if max changes reached (2 max)
+      // Check if max approved changes reached (2 max)
       const { data: existingChanges, error: checkError } = await supabase
         .from('roster_changes')
-        .select('id')
+        .select('id, status')
         .eq('tournament_squad_id', squadId)
-        .eq('tournament_id', tournamentId);
+        .eq('tournament_id', tournamentId)
+        .in('status', ['approved', 'pending']);
 
       if (checkError) throw checkError;
-      if (existingChanges.length >= 2) {
+      
+      const approvedCount = existingChanges.filter(c => c.status === 'approved').length;
+      if (approvedCount >= 2) {
         throw new Error('Maximum roster changes (2) reached for this tournament');
       }
 
@@ -719,6 +724,8 @@ export function useMakeRosterChange() {
           player_out_ign: playerOutIgn,
           player_in_ign: playerInIgn,
           player_in_mlbb_id: playerInMlbbId,
+          reason: reason || null,
+          status: 'pending',
         })
         .select()
         .single();
@@ -728,6 +735,68 @@ export function useMakeRosterChange() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['roster-changes', variables.squadId, variables.tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-roster-changes', variables.tournamentId] });
+    },
+  });
+}
+
+// Fetch all roster changes for a tournament (for hosts)
+export function useTournamentRosterChanges(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: ['tournament-roster-changes', tournamentId],
+    queryFn: async () => {
+      if (!tournamentId) return [];
+
+      const { data, error } = await supabase
+        .from('roster_changes')
+        .select(`
+          *,
+          tournament_squads (id, name, logo_url)
+        `)
+        .eq('tournament_id', tournamentId)
+        .order('changed_at', { ascending: false });
+
+      if (error) throw error;
+      return data as (RosterChange & { tournament_squads: { id: string; name: string; logo_url: string | null } })[];
+    },
+    enabled: !!tournamentId,
+  });
+}
+
+// Host approves or rejects roster change
+export function useUpdateRosterChangeStatus() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      changeId,
+      status,
+      tournamentId,
+    }: {
+      changeId: string;
+      status: 'approved' | 'rejected';
+      tournamentId: string;
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('roster_changes')
+        .update({
+          status,
+          approved_by: user.id,
+          approved_at: new Date().toISOString(),
+        })
+        .eq('id', changeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, tournamentId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-roster-changes', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['roster-changes'] });
     },
   });
 }

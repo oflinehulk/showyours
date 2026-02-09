@@ -6,8 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, ArrowRight, Gamepad2 } from 'lucide-react';
+import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { z } from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const emailSchema = z.string()
   .trim()
@@ -35,12 +43,16 @@ const signInSchema = z.object({
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -104,6 +116,31 @@ export default function AuthPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    try {
+      emailSchema.parse(resetEmail);
+    } catch {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await resetPassword(resetEmail);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Password reset email sent!', {
+          description: 'Check your inbox for the reset link.',
+        });
+        setShowForgotPassword(false);
+        setResetEmail('');
+      }
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Background animation */}
@@ -147,21 +184,48 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <div className="relative mt-1.5">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
                 {errors.password && (
                   <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                )}
+                {!isLogin && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Min 8 chars with uppercase, lowercase, number & special character
+                  </p>
                 )}
               </div>
 
@@ -203,6 +267,54 @@ export default function AuthPage() {
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <Label htmlFor="reset-email">Email</Label>
+            <div className="relative mt-1.5">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="pl-10"
+                disabled={resetLoading}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForgotPassword(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleForgotPassword}
+              disabled={resetLoading || !resetEmail}
+              className="btn-gaming"
+            >
+              {resetLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Send Reset Link'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

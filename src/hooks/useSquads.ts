@@ -20,14 +20,35 @@ export function useSquads() {
   return useQuery({
     queryKey: ['squads'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch squads with actual member count from squad_members
+      const { data: squads, error } = await supabase
         .from('squads')
         .select('*')
         .eq('is_recruiting', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Squad[];
+
+      // Get member counts for all squads
+      const squadIds = squads.map(s => s.id);
+      const { data: memberCounts, error: countError } = await supabase
+        .from('squad_members')
+        .select('squad_id')
+        .in('squad_id', squadIds);
+
+      if (countError) throw countError;
+
+      // Count members per squad
+      const countMap: Record<string, number> = {};
+      memberCounts?.forEach(m => {
+        countMap[m.squad_id] = (countMap[m.squad_id] || 0) + 1;
+      });
+
+      // Merge counts into squads
+      return squads.map(squad => ({
+        ...squad,
+        member_count: countMap[squad.id] || 0,
+      })) as Squad[];
     },
   });
 }

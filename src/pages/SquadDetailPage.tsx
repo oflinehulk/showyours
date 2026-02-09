@@ -10,7 +10,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSquad, useMySquads, useUpdateSquad } from '@/hooks/useSquads';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useSquad, useMySquads, useUpdateSquad, useDeleteSquad } from '@/hooks/useSquads';
 import { 
   useSquadMembers, 
   useAddSquadMember, 
@@ -31,6 +42,8 @@ import {
   UserPlus,
   Crown,
   AlertCircle,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +56,7 @@ export default function SquadDetailPage() {
   const { data: members } = useSquadMembers(id);
   const { data: myProfile } = useMyProfile();
   const updateSquad = useUpdateSquad();
+  const deleteSquad = useDeleteSquad();
   const addMember = useAddSquadMember();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
 
@@ -71,6 +85,18 @@ export default function SquadDetailPage() {
       );
     } catch (error: any) {
       toast.error('Failed to update status', { description: error.message });
+    }
+  };
+
+  const handleDeleteSquad = async () => {
+    if (!squad || !isOwner) return;
+    
+    try {
+      await deleteSquad.mutateAsync(squad.id);
+      toast.success('Squad deleted successfully');
+      navigate('/squads');
+    } catch (error: any) {
+      toast.error('Failed to delete squad', { description: error.message });
     }
   };
 
@@ -225,12 +251,44 @@ export default function SquadDetailPage() {
                         </p>
                       </Label>
                     </div>
-                    <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                      <Link to="/create-squad">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Squad
-                      </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                        <Link to={`/squad/${squad.id}/edit`}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Squad
+                        </Link>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm" className="btn-interactive">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete your squad?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. Your squad and all member associations 
+                              will be permanently deleted. Any tournament registrations will also be affected.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={handleDeleteSquad}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              disabled={deleteSquad.isPending}
+                            >
+                              {deleteSquad.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              ) : null}
+                              Delete Squad
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               )}

@@ -33,6 +33,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { CONTACT_TYPES } from '@/lib/constants';
+import { parseContacts } from '@/lib/contacts';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -160,9 +161,7 @@ export default function SquadDetailPage() {
     );
   }
 
-  const contacts = typeof squad.contacts === 'string' 
-    ? JSON.parse(squad.contacts) 
-    : squad.contacts || [];
+  const contacts = parseContacts(squad.contacts);
   const neededRoles = squad.needed_roles || [];
   const maxMembers = squad.max_members || 10;
   const memberCount = members?.length || 0;

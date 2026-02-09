@@ -25,6 +25,7 @@ import {
   useTournamentSquadMembers 
 } from '@/hooks/useTournaments';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
+import { getContactValue } from '@/lib/contacts';
 import { 
   Check, 
   X, 
@@ -234,15 +235,8 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
     const leaders = squadMembers.filter(m => m.role === 'leader' || m.role === 'co_leader');
     const members = squadMembers.filter(m => m.role === 'member');
 
-    const getWhatsAppNumber = (contacts: any) => {
-      const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
-      return parsed?.find?.((c: any) => c.type === 'whatsapp')?.value;
-    };
-
-    const getDiscordId = (contacts: any) => {
-      const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
-      return parsed?.find?.((c: any) => c.type === 'discord')?.value;
-    };
+    const getWhatsAppNumber = (contacts: unknown) => getContactValue(contacts, 'whatsapp');
+    const getDiscordId = (contacts: unknown) => getContactValue(contacts, 'discord');
 
     return (
       <div className="space-y-4">

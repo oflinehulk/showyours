@@ -16,6 +16,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquad, useUpdateSquad } from '@/hooks/useSquads';
 import { RANKS, ROLES } from '@/lib/constants';
+import { parseContacts } from '@/lib/contacts';
 import { ArrowLeft, Check, Shield, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -65,9 +66,7 @@ export default function EditSquadPage() {
       setMaxMembers((squad.max_members || 10).toString());
       
       // Parse contacts
-      const contacts = typeof squad.contacts === 'string' 
-        ? JSON.parse(squad.contacts) 
-        : squad.contacts || [];
+      const contacts = parseContacts(squad.contacts);
       
       contacts.forEach((contact: { type: string; value: string }) => {
         if (contact.type === 'whatsapp') setWhatsapp(contact.value);

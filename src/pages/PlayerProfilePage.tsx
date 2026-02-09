@@ -22,6 +22,7 @@ import {
 import { useProfile, useMyProfile, useUpdateProfile, useDeleteProfile } from '@/hooks/useProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
+import { parseContacts } from '@/lib/contacts';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -104,9 +105,7 @@ export default function PlayerProfilePage() {
   }
 
   const state = INDIAN_STATES.find((s) => s.id === player.state);
-  const contacts = typeof player.contacts === 'string' 
-    ? JSON.parse(player.contacts) 
-    : player.contacts || [];
+  const contacts = parseContacts(player.contacts);
   const screenshots = player.screenshots || [];
 
   const copyToClipboard = (text: string, contactId: string) => {

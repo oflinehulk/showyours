@@ -14,9 +14,6 @@ interface PlayerCardProps {
 
 export function PlayerCard({ player, className }: PlayerCardProps) {
   const state = INDIAN_STATES.find(s => s.id === player.state);
-  const contacts = typeof player.contacts === 'string' 
-    ? JSON.parse(player.contacts) 
-    : player.contacts || [];
 
   return (
     <Link

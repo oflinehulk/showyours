@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES } from '@/lib/constants';
+import { hasContactType } from '@/lib/contacts';
 import { ArrowLeft, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -61,13 +62,7 @@ export default function CreateSquadPage() {
   const hasProfile = !!myProfile;
 
   // Check if profile has WhatsApp
-  const hasWhatsAppContact = (() => {
-    if (!myProfile) return false;
-    const contacts = typeof myProfile.contacts === 'string' 
-      ? JSON.parse(myProfile.contacts) 
-      : myProfile.contacts || [];
-    return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
-  })();
+  const hasWhatsAppContact = hasContactType(myProfile?.contacts, 'whatsapp');
 
   const toggleRole = (roleId: string) => {
     if (neededRoles.includes(roleId)) {

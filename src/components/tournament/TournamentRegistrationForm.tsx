@@ -19,6 +19,7 @@ import {
   useCreateTournamentSquad,
   useRegisterForTournament,
 } from '@/hooks/useTournaments';
+import { hasContactType, getContactValue } from '@/lib/contacts';
 import { 
   Users, 
   Loader2, 
@@ -67,11 +68,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
 
   // Check if user has WhatsApp contact
   const hasRequiredContacts = useMemo(() => {
-    if (!myProfile) return false;
-    const contacts = typeof myProfile.contacts === 'string' 
-      ? JSON.parse(myProfile.contacts) 
-      : myProfile.contacts || [];
-    return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
+    return hasContactType(myProfile?.contacts, 'whatsapp');
   }, [myProfile]);
 
   // Get leaders and co-leaders from squad members
@@ -83,12 +80,9 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
   // Check if all leaders have required contacts
   const allLeadersHaveContacts = useMemo(() => {
     if (!leadersAndCoLeaders.length) return false;
-    return leadersAndCoLeaders.every(member => {
-      const contacts = typeof member.profile?.contacts === 'string'
-        ? JSON.parse(member.profile.contacts)
-        : member.profile?.contacts || [];
-      return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
-    });
+    return leadersAndCoLeaders.every(member => 
+      hasContactType(member.profile?.contacts, 'whatsapp')
+    );
   }, [leadersAndCoLeaders]);
 
   // Filter squads with 5+ members
@@ -280,11 +274,8 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
                 <p className="text-xs text-muted-foreground mb-2">Leaders & Co-Leaders (Contact Points)</p>
                 <div className="space-y-2">
                   {leadersAndCoLeaders.map((member) => {
-                    const contacts = typeof member.profile?.contacts === 'string'
-                      ? JSON.parse(member.profile.contacts)
-                      : member.profile?.contacts || [];
-                    const whatsapp = contacts.find((c: any) => c.type === 'whatsapp')?.value;
-                    const discord = contacts.find((c: any) => c.type === 'discord')?.value;
+                    const whatsapp = getContactValue(member.profile?.contacts, 'whatsapp');
+                    const discord = getContactValue(member.profile?.contacts, 'discord');
 
                     return (
                       <div key={member.id} className="flex items-center gap-3 p-2 bg-primary/5 rounded-lg">

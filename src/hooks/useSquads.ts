@@ -125,7 +125,7 @@ export function useCreateSquad() {
           owner_id: user.id,
           server: 'sea', // Always Asia for India
           ...squad,
-          contacts: JSON.stringify(squad.contacts || []),
+          contacts: squad.contacts || [],
         })
         .select()
         .single();
@@ -168,7 +168,7 @@ export function useUpdateSquad() {
         .from('squads')
         .update({
           ...squad,
-          contacts: squad.contacts ? JSON.stringify(squad.contacts) : undefined,
+          contacts: squad.contacts || undefined,
         })
         .eq('id', id)
         .select()

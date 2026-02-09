@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import { useHeroes } from '@/hooks/useHeroes';
 import { profileSchema } from '@/lib/validations';
+import { parseContacts } from '@/lib/contacts';
 import { z } from 'zod';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -89,9 +90,7 @@ export default function CreateProfilePage() {
       setMlbbId((existingProfile as any).mlbb_id || '');
       
       // Parse contacts
-      const contacts = typeof existingProfile.contacts === 'string' 
-        ? JSON.parse(existingProfile.contacts) 
-        : existingProfile.contacts || [];
+      const contacts = parseContacts(existingProfile.contacts);
       
       contacts.forEach((contact: { type: string; value: string }) => {
         switch (contact.type) {

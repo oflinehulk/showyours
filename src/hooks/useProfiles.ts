@@ -88,7 +88,7 @@ export function useCreateProfile() {
           server: 'sea', // Always Asia for India
           ...profile,
           main_roles: profile.main_roles || [profile.main_role],
-          contacts: JSON.stringify(profile.contacts || []),
+          contacts: profile.contacts || [],
           mlbb_id: profile.mlbb_id || null,
         } as any)
         .select()
@@ -111,7 +111,7 @@ export function useUpdateProfile() {
     mutationFn: async ({ id, ...profile }: Partial<ProfileInput> & { id: string }) => {
       const updateData: any = {
         ...profile,
-        contacts: profile.contacts ? JSON.stringify(profile.contacts) : undefined,
+        contacts: profile.contacts || undefined,
       };
       
       if (profile.main_roles) {

@@ -20,6 +20,7 @@ import {
   type SquadMemberRole 
 } from '@/hooks/useSquadMembers';
 import { useAuth } from '@/contexts/AuthContext';
+import { getContactValue } from '@/lib/contacts';
 import { 
   User, 
   Crown, 
@@ -91,16 +92,12 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     }
   };
 
-  const getWhatsAppNumber = (contacts: any) => {
-    const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
-    const whatsapp = parsed?.find?.((c: any) => c.type === 'whatsapp');
-    return whatsapp?.value;
+  const getWhatsAppNumber = (contacts: unknown) => {
+    return getContactValue(contacts, 'whatsapp');
   };
 
-  const getDiscordId = (contacts: any) => {
-    const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
-    const discord = parsed?.find?.((c: any) => c.type === 'discord');
-    return discord?.value;
+  const getDiscordId = (contacts: unknown) => {
+    return getContactValue(contacts, 'discord');
   };
 
   if (isLoading) {

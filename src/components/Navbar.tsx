@@ -6,14 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
-import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy } from 'lucide-react';
+import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 const navLinks = [
-  { to: '/players', label: 'Find Players', icon: Users },
-  { to: '/squads', label: 'Squad Listings', icon: Shield },
-  { to: '/tournaments', label: 'Tournaments', icon: Trophy },
+  { to: '/players', label: 'Find Players', icon: Users, description: 'Squads looking for players' },
+  { to: '/squads', label: 'Find Squads', icon: Search, description: 'Players looking for squads' },
+  { to: '/tournaments', label: 'Tournaments', icon: Trophy, description: 'Compete with your squad' },
 ];
 
 export function Navbar() {

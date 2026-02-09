@@ -70,15 +70,15 @@ export default function SquadsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Squad Listings</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Find Squads</h1>
             <p className="text-muted-foreground">
-              Find teams recruiting new members in India
+              Looking for a team? Browse squads actively recruiting new members.
             </p>
           </div>
           <Button className="btn-gaming" asChild>
             <Link to="/create-squad">
               <Plus className="w-4 h-4 mr-2" />
-              Post Your Squad
+              Create Squad
             </Link>
           </Button>
         </div>

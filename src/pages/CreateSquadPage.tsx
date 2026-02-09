@@ -16,15 +16,15 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
 import { useMyProfile } from '@/hooks/useProfiles';
-import { RANKS, ROLES, CONTACT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Plus, X, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
+import { RANKS, ROLES } from '@/lib/constants';
+import { ArrowLeft, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function CreateSquadPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: existingSquads } = useMySquads();
+  const { data: existingSquads, isLoading: squadsLoading } = useMySquads();
   const { data: myProfile, isLoading: profileLoading } = useMyProfile();
   const createSquad = useCreateSquad();
   
@@ -34,10 +34,9 @@ export default function CreateSquadPage() {
   const [description, setDescription] = useState('');
   const [minRank, setMinRank] = useState('');
   const [neededRoles, setNeededRoles] = useState<string[]>([]);
-  const [memberCount, setMemberCount] = useState('1');
-  const [maxMembers, setMaxMembers] = useState('5');
+  const [maxMembers, setMaxMembers] = useState('10');
   
-  // Contact state
+  // Contact state for squad listing
   const [whatsapp, setWhatsapp] = useState('');
   const [discord, setDiscord] = useState('');
 
@@ -49,13 +48,16 @@ export default function CreateSquadPage() {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (existingSquads && existingSquads.length > 0) {
+    if (!squadsLoading && existingSquads && existingSquads.length > 0) {
       toast.info('You already have a squad. You can only create one squad.');
       navigate(`/squad/${existingSquads[0].id}`);
     }
-  }, [existingSquads, navigate]);
+  }, [existingSquads, squadsLoading, navigate]);
 
-  // Check if profile exists with WhatsApp
+  // Check if user has a profile
+  const hasProfile = !!myProfile;
+
+  // Check if profile has WhatsApp
   const hasWhatsAppContact = (() => {
     if (!myProfile) return false;
     const contacts = typeof myProfile.contacts === 'string' 
@@ -81,40 +83,129 @@ export default function CreateSquadPage() {
 
   const canSubmit = () => {
     return (
+      hasProfile &&
+      hasWhatsAppContact &&
       name.trim() &&
       description.trim() &&
       minRank &&
       neededRoles.length > 0 &&
-      whatsapp.trim() // WhatsApp is required
+      whatsapp.trim()
     );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!hasProfile) {
+      toast.error('You must create a profile first');
+      return;
+    }
+
+    if (!hasWhatsAppContact) {
+      toast.error('Your profile must have WhatsApp contact');
+      return;
+    }
+    
     try {
-      await createSquad.mutateAsync({
+      const result = await createSquad.mutateAsync({
         name: name.trim(),
         logo_url: logoUrl,
         description: description.trim(),
         min_rank: minRank as any,
         needed_roles: neededRoles as any,
-        member_count: parseInt(memberCount) || 1,
-        max_members: parseInt(maxMembers) || 5,
+        max_members: parseInt(maxMembers) || 10,
         contacts: buildContacts() as any,
         is_recruiting: true,
       });
       
-      toast.success('Squad listing created!', {
-        description: 'Players can now find your squad.',
+      toast.success('Squad created!', {
+        description: 'Now add members by searching for registered players.',
       });
-      navigate('/squads');
+      navigate(`/squad/${result.id}`);
     } catch (error: any) {
       toast.error('Failed to create squad', {
         description: error.message,
       });
     }
   };
+
+  // Show loading state
+  if (profileLoading || squadsLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Profile required - block creation
+  if (!hasProfile) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
+            <Link to="/squads">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Squads
+            </Link>
+          </Button>
+
+          <div className="glass-card p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">Profile Required</h2>
+            <p className="text-muted-foreground mb-6">
+              You must create a profile with WhatsApp contact before creating a squad. 
+              This allows tournament hosts to contact you.
+            </p>
+            <Button asChild className="btn-gaming">
+              <Link to="/create-profile">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create Profile First
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Profile exists but no WhatsApp
+  if (!hasWhatsAppContact) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
+            <Link to="/squads">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Squads
+            </Link>
+          </Button>
+
+          <div className="glass-card p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">WhatsApp Required</h2>
+            <p className="text-muted-foreground mb-6">
+              As a squad leader, you must have WhatsApp contact in your profile 
+              so tournament hosts can reach you.
+            </p>
+            <Button asChild className="btn-gaming">
+              <Link to="/create-profile">
+                Update Profile
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -134,62 +225,24 @@ export default function CreateSquadPage() {
               <Shield className="w-6 h-6 text-secondary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Post Squad Listing</h1>
-              <p className="text-muted-foreground">Recruit new members for your team</p>
+              <h1 className="text-3xl font-bold text-foreground">Create Squad</h1>
+              <p className="text-muted-foreground">Build your team for tournaments</p>
             </div>
           </div>
         </div>
 
-        {/* Profile required notice */}
-        {!profileLoading && !myProfile && (
-          <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-destructive">Profile Required</p>
-                <p className="text-muted-foreground mt-1">
-                  You must create a profile before creating a squad. As a squad leader, your profile will be visible to tournament hosts.
-                </p>
-                <Button asChild variant="outline" size="sm" className="mt-3">
-                  <Link to="/create-profile">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Create Profile First
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* WhatsApp required notice */}
-        {!profileLoading && myProfile && !hasWhatsAppContact && (
-          <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-destructive">WhatsApp Required</p>
-                <p className="text-muted-foreground mt-1">
-                  Squad leaders must have WhatsApp contact info so tournament hosts can reach you.
-                </p>
-                <Button asChild variant="outline" size="sm" className="mt-3">
-                  <Link to="/create-profile">
-                    Update Profile
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Notice */}
+        {/* Info Notice */}
         <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/20 mb-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-secondary mt-0.5" />
+            <Shield className="w-5 h-5 text-secondary mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-secondary">One squad per player</p>
-              <p className="text-muted-foreground mt-1">
-                You can only create one squad listing. Once created, you can add players by searching for registered users.
-              </p>
+              <p className="font-medium text-secondary">How it works</p>
+              <ul className="text-muted-foreground mt-1 space-y-1">
+                <li>• You can only create one squad</li>
+                <li>• Add players by searching for registered users (IGN or MLBB ID)</li>
+                <li>• You'll be the Leader - you can promote Co-Leaders</li>
+                <li>• Minimum 5 members required to register for tournaments</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -234,15 +287,15 @@ export default function CreateSquadPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="memberCount">Current Members</Label>
-              <Select value={memberCount} onValueChange={setMemberCount}>
+              <Label htmlFor="minRank">Minimum Rank Required *</Label>
+              <Select value={minRank} onValueChange={setMinRank}>
                 <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="How many?" />
+                  <SelectValue placeholder="Select minimum rank" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                    <SelectItem key={n} value={n.toString()}>
-                      {n} member{n > 1 ? 's' : ''}
+                  {RANKS.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -256,9 +309,9 @@ export default function CreateSquadPage() {
                   <SelectValue placeholder="Max size?" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  {[5, 6, 7, 8, 9, 10].map((n) => (
                     <SelectItem key={n} value={n.toString()}>
-                      {n} member{n > 1 ? 's' : ''}
+                      {n} members
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -266,25 +319,9 @@ export default function CreateSquadPage() {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="minRank">Minimum Rank Required *</Label>
-            <Select value={minRank} onValueChange={setMinRank}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select minimum rank" />
-              </SelectTrigger>
-              <SelectContent>
-                {RANKS.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Needed Roles */}
           <div>
-            <Label className="mb-3 block">Positions Needed *</Label>
+            <Label className="mb-3 block">Positions Looking For *</Label>
             <div className="flex flex-wrap gap-3">
               {ROLES.map((role) => (
                 <button
@@ -306,11 +343,11 @@ export default function CreateSquadPage() {
             </div>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info for listing */}
           <div className="space-y-4">
-            <Label className="mb-3 block">Contact Info *</Label>
+            <Label className="mb-3 block">Squad Contact Info</Label>
             <p className="text-sm text-muted-foreground">
-              WhatsApp is required so players can reach you.
+              This will be shown on your squad listing for players to contact you.
             </p>
 
             <div>
@@ -352,10 +389,13 @@ export default function CreateSquadPage() {
               ) : (
                 <>
                   <Shield className="w-4 h-4 mr-2" />
-                  Post Squad Listing
+                  Create Squad
                 </>
               )}
             </Button>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              After creating, you'll add members by searching for registered players
+            </p>
           </div>
         </form>
       </div>

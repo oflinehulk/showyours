@@ -43,12 +43,24 @@ export interface TournamentSquadMember {
   created_at: string;
 }
 
+export interface RosterSnapshotEntry {
+  id: string;
+  ign: string;
+  mlbb_id: string;
+  role: SquadMemberRole;
+  position: number;
+}
+
 export interface TournamentRegistration {
   id: string;
   tournament_id: string;
   tournament_squad_id: string;
   registered_at: string;
   status: 'pending' | 'approved' | 'rejected';
+  // Roster lock fields
+  roster_locked: boolean;
+  roster_locked_at: string | null;
+  roster_snapshot: Json | null; // Parsed as RosterSnapshotEntry[]
 }
 
 export interface TournamentMatch {
@@ -74,6 +86,8 @@ export interface TournamentMatch {
   squad_b?: TournamentSquad;
 }
 
+export type RosterChangeStatus = 'pending' | 'approved' | 'rejected';
+
 export interface RosterChange {
   id: string;
   tournament_squad_id: string;
@@ -81,6 +95,10 @@ export interface RosterChange {
   player_out_ign: string;
   player_in_ign: string;
   player_in_mlbb_id: string;
+  status: RosterChangeStatus;
+  reason: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
   changed_at: string;
 }
 

@@ -109,29 +109,41 @@ export type Database = {
       }
       roster_changes: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           changed_at: string
           id: string
           player_in_ign: string
           player_in_mlbb_id: string
           player_out_ign: string
+          reason: string | null
+          status: string | null
           tournament_id: string
           tournament_squad_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           changed_at?: string
           id?: string
           player_in_ign: string
           player_in_mlbb_id: string
           player_out_ign: string
+          reason?: string | null
+          status?: string | null
           tournament_id: string
           tournament_squad_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           changed_at?: string
           id?: string
           player_in_ign?: string
           player_in_mlbb_id?: string
           player_out_ign?: string
+          reason?: string | null
+          status?: string | null
           tournament_id?: string
           tournament_squad_id?: string
         }
@@ -389,6 +401,9 @@ export type Database = {
         Row: {
           id: string
           registered_at: string
+          roster_locked: boolean | null
+          roster_locked_at: string | null
+          roster_snapshot: Json | null
           status: string
           tournament_id: string
           tournament_squad_id: string
@@ -396,6 +411,9 @@ export type Database = {
         Insert: {
           id?: string
           registered_at?: string
+          roster_locked?: boolean | null
+          roster_locked_at?: string | null
+          roster_snapshot?: Json | null
           status?: string
           tournament_id: string
           tournament_squad_id: string
@@ -403,6 +421,9 @@ export type Database = {
         Update: {
           id?: string
           registered_at?: string
+          roster_locked?: boolean | null
+          roster_locked_at?: string | null
+          roster_snapshot?: Json | null
           status?: string
           tournament_id?: string
           tournament_squad_id?: string

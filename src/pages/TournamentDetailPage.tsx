@@ -10,6 +10,7 @@ import { TournamentBracket } from '@/components/tournament/TournamentBracket';
 import { TournamentRegistrations } from '@/components/tournament/TournamentRegistrations';
 import { TournamentRegistrationForm } from '@/components/tournament/TournamentRegistrationForm';
 import { TournamentHostControls } from '@/components/tournament/TournamentHostControls';
+import { TournamentRosterManagement } from '@/components/tournament/TournamentRosterManagement';
 import { 
   useTournament, 
   useTournamentRegistrations,
@@ -187,6 +188,9 @@ export default function TournamentDetailPage() {
               tournament.status === 'completed') && (
               <TabsTrigger value="bracket">Bracket</TabsTrigger>
             )}
+            {isHost && tournament.status !== 'registration_open' && (
+              <TabsTrigger value="rosters">Rosters</TabsTrigger>
+            )}
             {canRegister && user && !isHost && (
               <TabsTrigger value="register">Register</TabsTrigger>
             )}
@@ -276,6 +280,15 @@ export default function TournamentDetailPage() {
               <TournamentRegistrationForm
                 tournament={tournament}
                 onSuccess={() => setActiveTab('teams')}
+              />
+            </TabsContent>
+          )}
+
+          {isHost && tournament.status !== 'registration_open' && (
+            <TabsContent value="rosters">
+              <TournamentRosterManagement
+                tournament={tournament}
+                isHost={isHost}
               />
             </TabsContent>
           )}

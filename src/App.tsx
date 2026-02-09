@@ -11,6 +11,7 @@ import PlayerProfilePage from "./pages/PlayerProfilePage";
 import SquadDetailPage from "./pages/SquadDetailPage";
 import CreateProfilePage from "./pages/CreateProfilePage";
 import CreateSquadPage from "./pages/CreateSquadPage";
+import EditSquadPage from "./pages/EditSquadPage";
 import TournamentsPage from "./pages/TournamentsPage";
 import CreateTournamentPage from "./pages/CreateTournamentPage";
 import TournamentDetailPage from "./pages/TournamentDetailPage";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/squads" element={<SquadsPage />} />
             <Route path="/player/:id" element={<PlayerProfilePage />} />
             <Route path="/squad/:id" element={<SquadDetailPage />} />
+            <Route path="/squad/:id/edit" element={<EditSquadPage />} />
             <Route path="/create-profile" element={<CreateProfilePage />} />
             <Route path="/create-squad" element={<CreateSquadPage />} />
             <Route path="/tournaments" element={<TournamentsPage />} />

@@ -163,3 +163,32 @@ export function useUpdateSquad() {
     },
   });
 }
+
+export function useDeleteSquad() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // First delete squad members
+      const { error: membersError } = await supabase
+        .from('squad_members')
+        .delete()
+        .eq('squad_id', id);
+      
+      if (membersError) throw membersError;
+
+      // Then delete the squad
+      const { error } = await supabase
+        .from('squads')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['squads'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+    },
+  });
+}

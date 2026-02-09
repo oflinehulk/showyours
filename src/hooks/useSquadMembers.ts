@@ -86,10 +86,12 @@ export function useMySquadMembership() {
   });
 }
 
-// Search profiles by IGN or MLBB ID
-export function useSearchProfiles(searchTerm: string, excludeSquadId?: string) {
+// Search profiles by IGN, MLBB ID, or WhatsApp
+// forTournament: true = search all registered players (for tournament registration)
+// forTournament: false = only search players looking for squad (for recruitment)
+export function useSearchProfiles(searchTerm: string, excludeSquadId?: string, forTournament: boolean = false) {
   return useQuery({
-    queryKey: ['search-profiles', searchTerm, excludeSquadId],
+    queryKey: ['search-profiles', searchTerm, excludeSquadId, forTournament],
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
 
@@ -97,6 +99,7 @@ export function useSearchProfiles(searchTerm: string, excludeSquadId?: string) {
         .rpc('search_profiles', {
           search_term: searchTerm,
           exclude_squad_id: excludeSquadId || null,
+          for_tournament: forTournament,
         });
 
       if (error) throw error;

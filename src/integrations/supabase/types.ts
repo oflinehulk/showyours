@@ -637,6 +637,24 @@ export type Database = {
               user_id: string
             }[]
           }
+        | {
+            Args: {
+              add_to_squad?: boolean
+              exclude_squad_id?: string
+              for_tournament?: boolean
+              search_term: string
+            }
+            Returns: {
+              avatar_url: string
+              contacts: Json
+              id: string
+              ign: string
+              main_role: string
+              mlbb_id: string
+              rank: string
+              user_id: string
+            }[]
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

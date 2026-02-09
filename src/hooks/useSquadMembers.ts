@@ -87,11 +87,18 @@ export function useMySquadMembership() {
 }
 
 // Search profiles by IGN, MLBB ID, or WhatsApp
-// forTournament: true = search all registered players (for tournament registration)
-// forTournament: false = only search players looking for squad (for recruitment)
-export function useSearchProfiles(searchTerm: string, excludeSquadId?: string, forTournament: boolean = false) {
+// Modes:
+// - default: only players looking for squad and not in any squad (for "Find Players" page)
+// - forTournament: all registered players (for tournament searches)
+// - addToSquad: all registered players except those in target squad (for squad owners adding teammates)
+export function useSearchProfiles(
+  searchTerm: string, 
+  excludeSquadId?: string, 
+  forTournament: boolean = false,
+  addToSquad: boolean = false
+) {
   return useQuery({
-    queryKey: ['search-profiles', searchTerm, excludeSquadId, forTournament],
+    queryKey: ['search-profiles', searchTerm, excludeSquadId, forTournament, addToSquad],
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
 
@@ -100,6 +107,7 @@ export function useSearchProfiles(searchTerm: string, excludeSquadId?: string, f
           search_term: searchTerm,
           exclude_squad_id: excludeSquadId || null,
           for_tournament: forTournament,
+          add_to_squad: addToSquad,
         });
 
       if (error) throw error;

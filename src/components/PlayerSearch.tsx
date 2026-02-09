@@ -14,7 +14,8 @@ interface PlayerSearchProps {
   excludeUserIds?: string[];
   placeholder?: string;
   disabled?: boolean;
-  forTournament?: boolean; // true = search all registered players, false = only looking for squad
+  forTournament?: boolean; // true = search all registered players for tournaments
+  addToSquad?: boolean; // true = search all registered players for squad building
 }
 
 export function PlayerSearch({
@@ -24,12 +25,13 @@ export function PlayerSearch({
   placeholder = 'Search by IGN, MLBB ID, or WhatsApp...',
   disabled = false,
   forTournament = false,
+  addToSquad = false,
 }: PlayerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const { data: results, isLoading } = useSearchProfiles(searchTerm, excludeSquadId, forTournament);
+  const { data: results, isLoading } = useSearchProfiles(searchTerm, excludeSquadId, forTournament, addToSquad);
 
   // Filter out excluded users
   const filteredResults = results?.filter(

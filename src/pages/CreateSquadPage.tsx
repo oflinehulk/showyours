@@ -15,8 +15,9 @@ import {
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
+import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES, CONTACT_TYPES } from '@/lib/constants';
-import { ArrowLeft, Plus, X, Check, Shield, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, X, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -24,6 +25,7 @@ export default function CreateSquadPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: existingSquads } = useMySquads();
+  const { data: myProfile, isLoading: profileLoading } = useMyProfile();
   const createSquad = useCreateSquad();
   
   // Form state
@@ -52,6 +54,15 @@ export default function CreateSquadPage() {
       navigate(`/squad/${existingSquads[0].id}`);
     }
   }, [existingSquads, navigate]);
+
+  // Check if profile exists with WhatsApp
+  const hasWhatsAppContact = (() => {
+    if (!myProfile) return false;
+    const contacts = typeof myProfile.contacts === 'string' 
+      ? JSON.parse(myProfile.contacts) 
+      : myProfile.contacts || [];
+    return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
+  })();
 
   const toggleRole = (roleId: string) => {
     if (neededRoles.includes(roleId)) {
@@ -129,6 +140,47 @@ export default function CreateSquadPage() {
           </div>
         </div>
 
+        {/* Profile required notice */}
+        {!profileLoading && !myProfile && (
+          <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">Profile Required</p>
+                <p className="text-muted-foreground mt-1">
+                  You must create a profile before creating a squad. As a squad leader, your profile will be visible to tournament hosts.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-3">
+                  <Link to="/create-profile">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create Profile First
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* WhatsApp required notice */}
+        {!profileLoading && myProfile && !hasWhatsAppContact && (
+          <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">WhatsApp Required</p>
+                <p className="text-muted-foreground mt-1">
+                  Squad leaders must have WhatsApp contact info so tournament hosts can reach you.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-3">
+                  <Link to="/create-profile">
+                    Update Profile
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Notice */}
         <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/20 mb-6">
           <div className="flex items-start gap-3">
@@ -136,7 +188,7 @@ export default function CreateSquadPage() {
             <div className="text-sm">
               <p className="font-medium text-secondary">One squad per player</p>
               <p className="text-muted-foreground mt-1">
-                You can only create one squad listing. Once created, you can manage and update it anytime.
+                You can only create one squad listing. Once created, you can add players by searching for registered users.
               </p>
             </div>
           </div>

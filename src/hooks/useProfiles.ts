@@ -18,6 +18,7 @@ interface ProfileInput {
   looking_for_squad?: boolean;
   contacts?: { type: ContactTypeId; value: string }[];
   screenshots?: string[];
+  mlbb_id?: string | null;
 }
 
 export function useProfiles() {
@@ -88,6 +89,7 @@ export function useCreateProfile() {
           ...profile,
           main_roles: profile.main_roles || [profile.main_role],
           contacts: JSON.stringify(profile.contacts || []),
+          mlbb_id: profile.mlbb_id || null,
         } as any)
         .select()
         .single();

@@ -1,13 +1,23 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
+import { PlayerSearch } from '@/components/PlayerSearch';
+import { SquadMemberList } from '@/components/SquadMemberList';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSquad, useMySquads, useUpdateSquad } from '@/hooks/useSquads';
+import { 
+  useSquadMembers, 
+  useAddSquadMember, 
+  type SearchedProfile 
+} from '@/hooks/useSquadMembers';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMyProfile } from '@/hooks/useProfiles';
 import { CONTACT_TYPES } from '@/lib/constants';
 import { 
   ArrowLeft, 
@@ -18,8 +28,10 @@ import {
   Check,
   Edit,
   Phone,
+  UserPlus,
+  Crown,
+  AlertCircle,
 } from 'lucide-react';
-import { useState } from 'react';
 import { toast } from 'sonner';
 
 export default function SquadDetailPage() {
@@ -28,10 +40,22 @@ export default function SquadDetailPage() {
   const { user } = useAuth();
   const { data: squad, isLoading } = useSquad(id || '');
   const { data: mySquads } = useMySquads();
+  const { data: members } = useSquadMembers(id);
+  const { data: myProfile } = useMyProfile();
   const updateSquad = useUpdateSquad();
+  const addMember = useAddSquadMember();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
 
   const isOwner = user && mySquads && mySquads.some(s => s.id === id);
+  
+  // Check if user is leader or co-leader
+  const myMembership = members?.find(m => m.user_id === user?.id);
+  const isLeader = isOwner || myMembership?.role === 'leader';
+  const isCoLeader = myMembership?.role === 'co_leader';
+  const canManageMembers = isLeader || isCoLeader;
+
+  // Get list of user IDs already in the squad
+  const existingUserIds = members?.map(m => m.user_id) || [];
 
   const handleToggleRecruiting = async () => {
     if (!squad || !isOwner) return;
@@ -47,6 +71,22 @@ export default function SquadDetailPage() {
       );
     } catch (error: any) {
       toast.error('Failed to update status', { description: error.message });
+    }
+  };
+
+  const handleAddMember = async (profile: SearchedProfile) => {
+    if (!squad) return;
+
+    try {
+      await addMember.mutateAsync({
+        squadId: squad.id,
+        profileId: profile.id,
+        userId: profile.user_id,
+        role: 'member',
+      });
+      toast.success(`${profile.ign} added to squad!`);
+    } catch (error: any) {
+      toast.error('Failed to add member', { description: error.message });
     }
   };
 
@@ -79,7 +119,8 @@ export default function SquadDetailPage() {
     ? JSON.parse(squad.contacts) 
     : squad.contacts || [];
   const neededRoles = squad.needed_roles || [];
-  const maxMembers = squad.max_members || 5;
+  const maxMembers = squad.max_members || 10;
+  const memberCount = members?.length || 0;
 
   const copyToClipboard = (text: string, contactId: string) => {
     navigator.clipboard.writeText(text);
@@ -148,7 +189,7 @@ export default function SquadDetailPage() {
                   <div className="flex flex-wrap items-center gap-3 mb-4">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Users className="w-4 h-4" />
-                      <span>{squad.member_count}/{maxMembers} members</span>
+                      <span>{memberCount}/{maxMembers} members</span>
                     </div>
                     <span className="text-muted-foreground">•</span>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -202,6 +243,64 @@ export default function SquadDetailPage() {
                 <p className="text-muted-foreground leading-relaxed">{squad.description}</p>
               </div>
             )}
+
+            {/* Squad Members */}
+            <Card className="mb-6">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-secondary" />
+                  Squad Members
+                </CardTitle>
+                <span className="text-sm text-muted-foreground">
+                  {memberCount}/{maxMembers}
+                </span>
+              </CardHeader>
+              <CardContent>
+                {/* Add Member - only for leaders/co-leaders */}
+                {canManageMembers && memberCount < maxMembers && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <UserPlus className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">Add Player</span>
+                    </div>
+                    <PlayerSearch
+                      onSelect={handleAddMember}
+                      excludeSquadId={squad.id}
+                      excludeUserIds={existingUserIds}
+                      placeholder="Search registered players by IGN or MLBB ID..."
+                      disabled={addMember.isPending}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Only players with registered profiles can be added
+                    </p>
+                  </div>
+                )}
+
+                {/* No profile warning for leaders */}
+                {canManageMembers && !myProfile && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-destructive mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-destructive">Profile Required</p>
+                        <p className="text-muted-foreground">
+                          As a leader/co-leader, you must have a profile with WhatsApp contact.{' '}
+                          <Link to="/create-profile" className="text-primary hover:underline">
+                            Create profile
+                          </Link>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <SquadMemberList
+                  squadId={squad.id}
+                  isLeader={isLeader}
+                  isCoLeader={isCoLeader}
+                />
+              </CardContent>
+            </Card>
 
             {/* Needed Roles */}
             {neededRoles.length > 0 && (
@@ -296,7 +395,7 @@ export default function SquadDetailPage() {
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Members</span>
-                  <span className="text-foreground font-medium">{squad.member_count}/{maxMembers}</span>
+                  <span className="text-foreground font-medium">{memberCount}/{maxMembers}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Open Spots</span>

@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -22,13 +24,19 @@ import {
   useUpdateRegistrationStatus, 
   useTournamentSquadMembers 
 } from '@/hooks/useTournaments';
+import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { 
   Check, 
   X, 
   Users, 
   Eye,
   Loader2,
-  Shield
+  Shield,
+  Crown,
+  Phone,
+  MessageCircle,
+  User,
+  Copy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -47,6 +55,7 @@ export function TournamentRegistrations({
 }: TournamentRegistrationsProps) {
   const updateStatus = useUpdateRegistrationStatus();
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
+  const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string | null>(null);
 
   const handleApprove = async (registrationId: string) => {
     try {
@@ -139,19 +148,26 @@ export function TournamentRegistrations({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setSelectedSquadId(reg.tournament_squad_id)}
+                        onClick={() => {
+                          setSelectedSquadId(reg.tournament_squad_id);
+                          setSelectedExistingSquadId(reg.tournament_squads.existing_squad_id);
+                        }}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-lg">
                       <DialogHeader>
                         <DialogTitle>{reg.tournament_squads.name} Roster</DialogTitle>
                         <DialogDescription>
-                          View the team's player roster
+                          View the team's player roster and contact leaders
                         </DialogDescription>
                       </DialogHeader>
-                      <SquadRosterView squadId={reg.tournament_squad_id} />
+                      <SquadRosterView 
+                        tournamentSquadId={reg.tournament_squad_id} 
+                        existingSquadId={reg.tournament_squads.existing_squad_id}
+                        isHost={isHost}
+                      />
                     </DialogContent>
                   </Dialog>
 
@@ -191,8 +207,17 @@ export function TournamentRegistrations({
   );
 }
 
-function SquadRosterView({ squadId }: { squadId: string }) {
-  const { data: members, isLoading } = useTournamentSquadMembers(squadId);
+interface SquadRosterViewProps {
+  tournamentSquadId: string;
+  existingSquadId: string | null;
+  isHost: boolean;
+}
+
+function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRosterViewProps) {
+  const { data: tournamentMembers, isLoading: tournamentLoading } = useTournamentSquadMembers(tournamentSquadId);
+  const { data: squadMembers, isLoading: squadLoading } = useSquadMembers(existingSquadId || undefined);
+
+  const isLoading = tournamentLoading || squadLoading;
 
   if (isLoading) {
     return (
@@ -204,12 +229,136 @@ function SquadRosterView({ squadId }: { squadId: string }) {
     );
   }
 
-  if (!members || members.length === 0) {
+  // Show linked squad members if available (with profiles)
+  if (existingSquadId && squadMembers && squadMembers.length > 0) {
+    const leaders = squadMembers.filter(m => m.role === 'leader' || m.role === 'co_leader');
+    const members = squadMembers.filter(m => m.role === 'member');
+
+    const getWhatsAppNumber = (contacts: any) => {
+      const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
+      return parsed?.find?.((c: any) => c.type === 'whatsapp')?.value;
+    };
+
+    const getDiscordId = (contacts: any) => {
+      const parsed = typeof contacts === 'string' ? JSON.parse(contacts) : contacts;
+      return parsed?.find?.((c: any) => c.type === 'discord')?.value;
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Leaders/Co-Leaders with contact info */}
+        {leaders.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              <Crown className="w-4 h-4 text-yellow-500" />
+              Leaders & Co-Leaders
+            </h4>
+            <div className="space-y-2">
+              {leaders.map((member) => {
+                const whatsapp = getWhatsAppNumber(member.profile?.contacts);
+                const discord = getDiscordId(member.profile?.contacts);
+
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20"
+                  >
+                    <Link to={`/player/${member.profile?.id}`}>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={member.profile?.avatar_url || undefined} />
+                        <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                      </Avatar>
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <Link 
+                        to={`/player/${member.profile?.id}`}
+                        className="font-medium text-foreground hover:text-primary"
+                      >
+                        {member.profile?.ign || 'Unknown'}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {member.role === 'leader' ? 'Leader' : 'Co-Leader'}
+                      </p>
+                    </div>
+                    
+                    {/* Contact buttons - visible to host */}
+                    {isHost && (
+                      <div className="flex items-center gap-1">
+                        {whatsapp && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            asChild
+                          >
+                            <a
+                              href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`WhatsApp: ${whatsapp}`}
+                            >
+                              <Phone className="w-4 h-4 text-green-500" />
+                            </a>
+                          </Button>
+                        )}
+                        {discord && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              navigator.clipboard.writeText(discord);
+                              toast.success('Discord ID copied!');
+                            }}
+                            title={`Discord: ${discord}`}
+                          >
+                            <MessageCircle className="w-4 h-4 text-indigo-500" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Regular Members */}
+        {members.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              Members
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {members.map((member) => (
+                <Link
+                  key={member.id}
+                  to={`/player/${member.profile?.id}`}
+                  className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={member.profile?.avatar_url || undefined} />
+                    <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium truncate">{member.profile?.ign || 'Unknown'}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback to tournament squad members (old format without profiles)
+  if (!tournamentMembers || tournamentMembers.length === 0) {
     return <p className="text-muted-foreground text-center py-4">No roster data</p>;
   }
 
-  const mainPlayers = members.filter(m => m.role === 'main');
-  const substitutes = members.filter(m => m.role === 'substitute');
+  const mainPlayers = tournamentMembers.filter(m => m.role === 'main');
+  const substitutes = tournamentMembers.filter(m => m.role === 'substitute');
 
   return (
     <div className="space-y-4">

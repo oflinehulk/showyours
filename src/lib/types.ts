@@ -23,6 +23,7 @@ export interface Profile {
   looking_for_squad: boolean;
   contacts: Json;
   screenshots: string[];
+  mlbb_id: string | null;
   created_at: string;
   updated_at: string;
 }

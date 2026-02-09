@@ -86,7 +86,19 @@ export function useCreateSquad() {
         throw new Error('You can only create one squad. Please manage your existing squad.');
       }
 
-      const { data, error } = await supabase
+      // Check if user has a profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!profile) {
+        throw new Error('You must create a profile before creating a squad.');
+      }
+
+      // Create the squad
+      const { data: squadData, error } = await supabase
         .from('squads')
         .insert({
           owner_id: user.id,
@@ -98,11 +110,30 @@ export function useCreateSquad() {
         .single();
       
       if (error) throw error;
-      return data as Squad;
+
+      // Add creator as leader in squad_members
+      const { error: memberError } = await supabase
+        .from('squad_members')
+        .insert({
+          squad_id: squadData.id,
+          user_id: user.id,
+          profile_id: profile.id,
+          role: 'leader',
+          position: 1,
+        });
+
+      if (memberError) {
+        // If member creation fails, delete the squad
+        await supabase.from('squads').delete().eq('id', squadData.id);
+        throw memberError;
+      }
+
+      return squadData as Squad;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
     },
   });
 }

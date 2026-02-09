@@ -119,7 +119,11 @@ export default function TournamentsPage() {
         {!isLoading && filteredTournaments.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTournaments.map((tournament) => (
-              <TournamentCard key={tournament.id} tournament={tournament} />
+              <TournamentCard 
+                key={tournament.id} 
+                tournament={tournament} 
+                registrationCount={tournament.registrations_count || 0}
+              />
             ))}
           </div>
         )}

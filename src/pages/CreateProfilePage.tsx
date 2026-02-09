@@ -48,6 +48,7 @@ export default function CreateProfilePage() {
   const [bio, setBio] = useState('');
   const [lookingForSquad, setLookingForSquad] = useState(true);
   const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [mlbbId, setMlbbId] = useState('');
   
   // Contact state
   const [gameId, setGameId] = useState('');
@@ -83,6 +84,7 @@ export default function CreateProfilePage() {
       setBio(existingProfile.bio || '');
       setLookingForSquad(existingProfile.looking_for_squad ?? true);
       setScreenshots(existingProfile.screenshots || []);
+      setMlbbId((existingProfile as any).mlbb_id || '');
       
       // Parse contacts
       const contacts = typeof existingProfile.contacts === 'string' 
@@ -181,6 +183,7 @@ export default function CreateProfilePage() {
       looking_for_squad: lookingForSquad,
       contacts: buildContacts() as any,
       screenshots,
+      mlbb_id: mlbbId.trim() || null,
     };
 
     try {
@@ -300,6 +303,20 @@ export default function CreateProfilePage() {
                   placeholder="Your MLBB username"
                   className="mt-1.5"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="mlbbId">MLBB ID (Optional but recommended)</Label>
+                <Input
+                  id="mlbbId"
+                  value={mlbbId}
+                  onChange={(e) => setMlbbId(e.target.value)}
+                  placeholder="e.g., 123456789"
+                  className="mt-1.5"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Makes it easier for squad leaders to find and add you
+                </p>
               </div>
 
               <div>

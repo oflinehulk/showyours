@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,128 +10,155 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMyProfile } from '@/hooks/useProfiles';
+import { useMySquads } from '@/hooks/useSquads';
+import { useSquadMembers, type SquadMember } from '@/hooks/useSquadMembers';
 import { 
   useMyTournamentSquads, 
   useCreateTournamentSquad,
   useRegisterForTournament,
-  useTournamentSquadMembers
 } from '@/hooks/useTournaments';
-import { useMySquads } from '@/hooks/useSquads';
 import { ImageUpload } from '@/components/ImageUpload';
 import { 
   Users, 
   Plus, 
-  Trash2, 
   Loader2, 
   Check, 
   Shield,
   UserPlus,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Phone,
+  MessageCircle,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { Tournament, TournamentSquad, SquadMemberRole } from '@/lib/tournament-types';
+import type { Tournament, SquadMemberRole } from '@/lib/tournament-types';
 
 interface TournamentRegistrationFormProps {
   tournament: Tournament;
   onSuccess: () => void;
 }
 
-interface MemberInput {
-  ign: string;
-  mlbb_id: string;
-  role: SquadMemberRole;
-  position: number;
-}
+const SQUAD_MEMBER_ROLE_LABELS: Record<string, string> = {
+  leader: 'Leader',
+  co_leader: 'Co-Leader',
+  member: 'Member',
+};
 
 export function TournamentRegistrationForm({ tournament, onSuccess }: TournamentRegistrationFormProps) {
   const { user } = useAuth();
-  const { data: existingSquads } = useMySquads();
+  const { data: myProfile } = useMyProfile();
+  const { data: mySquads } = useMySquads();
   const { data: myTournamentSquads } = useMyTournamentSquads();
   const createTournamentSquad = useCreateTournamentSquad();
   const registerForTournament = useRegisterForTournament();
 
-  const [useExisting, setUseExisting] = useState<boolean | null>(null);
-  const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string>('');
+  const [useExisting, setUseExisting] = useState<'existing_squad' | 'tournament_squad' | null>(null);
+  const [selectedSquadId, setSelectedSquadId] = useState<string>('');
   const [selectedTournamentSquadId, setSelectedTournamentSquadId] = useState<string>('');
   
-  // New squad form state
-  const [squadName, setSquadName] = useState('');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [members, setMembers] = useState<MemberInput[]>([
-    { ign: '', mlbb_id: '', role: 'main', position: 1 },
-    { ign: '', mlbb_id: '', role: 'main', position: 2 },
-    { ign: '', mlbb_id: '', role: 'main', position: 3 },
-    { ign: '', mlbb_id: '', role: 'main', position: 4 },
-    { ign: '', mlbb_id: '', role: 'main', position: 5 },
-  ]);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const addSubstitute = () => {
-    if (members.length >= 7) return;
-    setMembers([
-      ...members,
-      { ign: '', mlbb_id: '', role: 'substitute', position: members.length + 1 }
-    ]);
-  };
+  // Get members of selected squad
+  const { data: squadMembers } = useSquadMembers(selectedSquadId || undefined);
 
-  const removeMember = (index: number) => {
-    if (members.length <= 5) return; // Keep minimum 5 main players
-    if (members[index].role === 'main') return; // Can't remove main players
-    setMembers(members.filter((_, i) => i !== index));
-  };
+  // Check if user is leader/co-leader of any squad
+  const isLeaderOrCoLeader = useMemo(() => {
+    if (!squadMembers || !user) return false;
+    const myMembership = squadMembers.find(m => m.user_id === user.id);
+    return myMembership?.role === 'leader' || myMembership?.role === 'co_leader';
+  }, [squadMembers, user]);
 
-  const updateMember = (index: number, field: keyof MemberInput, value: string) => {
-    const updated = [...members];
-    updated[index] = { ...updated[index], [field]: value };
-    setMembers(updated);
-  };
+  // Check if user has WhatsApp contact
+  const hasRequiredContacts = useMemo(() => {
+    if (!myProfile) return false;
+    const contacts = typeof myProfile.contacts === 'string' 
+      ? JSON.parse(myProfile.contacts) 
+      : myProfile.contacts || [];
+    return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
+  }, [myProfile]);
 
-  const canSubmitNewSquad = () => {
-    const mainPlayers = members.filter(m => m.role === 'main');
-    return (
-      squadName.trim() &&
-      mainPlayers.length === 5 &&
-      mainPlayers.every(m => m.ign.trim() && m.mlbb_id.trim())
-    );
-  };
+  // Get leaders and co-leaders from squad members
+  const leadersAndCoLeaders = useMemo(() => {
+    if (!squadMembers) return [];
+    return squadMembers.filter(m => m.role === 'leader' || m.role === 'co_leader');
+  }, [squadMembers]);
 
-  const handleSubmitNewSquad = async () => {
-    if (!canSubmitNewSquad()) return;
+  // Check if all leaders have required contacts
+  const allLeadersHaveContacts = useMemo(() => {
+    if (!leadersAndCoLeaders.length) return false;
+    return leadersAndCoLeaders.every(member => {
+      const contacts = typeof member.profile?.contacts === 'string'
+        ? JSON.parse(member.profile.contacts)
+        : member.profile?.contacts || [];
+      return contacts.some((c: any) => c.type === 'whatsapp' && c.value);
+    });
+  }, [leadersAndCoLeaders]);
+
+  // Validate squad for tournament registration
+  const squadValidation = useMemo(() => {
+    if (!squadMembers) return { valid: false, errors: [] as string[] };
     
+    const errors: string[] = [];
+    
+    // Check minimum 5 members
+    if (squadMembers.length < 5) {
+      errors.push(`Minimum 5 players required (currently ${squadMembers.length})`);
+    }
+    
+    // Check maximum 7 members
+    if (squadMembers.length > 7) {
+      errors.push(`Maximum 7 players allowed (currently ${squadMembers.length})`);
+    }
+    
+    // Check leaders have contacts
+    if (!allLeadersHaveContacts) {
+      errors.push('All leaders/co-leaders must have WhatsApp contact');
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }, [squadMembers, allLeadersHaveContacts]);
+
+  const handleRegisterExistingSquad = async () => {
+    if (!selectedSquadId || !squadMembers) return;
+    
+    if (!squadValidation.valid) {
+      toast.error('Squad does not meet requirements');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Create tournament squad
-      const squad = await createTournamentSquad.mutateAsync({
+      // Find the selected squad
+      const squad = mySquads?.find(s => s.id === selectedSquadId);
+      if (!squad) throw new Error('Squad not found');
+
+      // Create tournament squad from existing squad
+      const tournamentSquad = await createTournamentSquad.mutateAsync({
         squad: {
-          name: squadName.trim(),
-          existing_squad_id: null,
-          logo_url: logoUrl,
+          name: squad.name,
+          existing_squad_id: squad.id,
+          logo_url: squad.logo_url,
         },
-        members: members.filter(m => m.ign.trim() && m.mlbb_id.trim()).map(m => ({
-          ign: m.ign.trim(),
-          mlbb_id: m.mlbb_id.trim(),
-          role: m.role,
-          position: m.position,
-          user_id: null, // Can be linked later
+        members: squadMembers.map((m, index) => ({
+          ign: m.profile?.ign || 'Unknown',
+          mlbb_id: m.profile?.mlbb_id || '',
+          role: index < 5 ? 'main' : 'substitute',
+          position: index + 1,
+          user_id: m.user_id,
         })),
       });
 
       // Register for tournament
       await registerForTournament.mutateAsync({
         tournamentId: tournament.id,
-        squadId: squad.id,
+        squadId: tournamentSquad.id,
       });
 
       toast.success('Squad registered successfully!', {
@@ -163,7 +191,52 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
     }
   };
 
-  // Step 1: Choose method
+  // Check if user can register
+  if (!myProfile) {
+    return (
+      <div className="glass-card p-6">
+        <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-destructive">Profile Required</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              You must create a profile before registering for tournaments.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link to="/create-profile">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create Profile
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasRequiredContacts) {
+    return (
+      <div className="glass-card p-6">
+        <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-destructive">WhatsApp Required</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              Leaders and co-leaders must have WhatsApp contact info to register for tournaments.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link to="/create-profile">
+                <Phone className="w-4 h-4 mr-2" />
+                Update Profile
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 1: Choose registration method
   if (useExisting === null) {
     return (
       <div className="glass-card p-6">
@@ -174,51 +247,219 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
 
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
-            Choose how you want to register:
+            Only squad leaders and co-leaders can register for tournaments.
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {myTournamentSquads && myTournamentSquads.length > 0 && (
+            {/* Use existing platform squad */}
+            {mySquads && mySquads.length > 0 && (
               <button
-                onClick={() => setUseExisting(true)}
+                onClick={() => setUseExisting('existing_squad')}
                 className="p-6 rounded-xl border border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left group"
               >
                 <Users className="w-8 h-8 text-primary mb-3" />
                 <h4 className="font-semibold text-foreground mb-1">
-                  Use Existing Tournament Squad
+                  Use Your Squad
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Register with a squad you've already created for tournaments
+                  Register with your existing squad ({mySquads.length} squad{mySquads.length > 1 ? 's' : ''} available)
                 </p>
               </button>
             )}
 
-            <button
-              onClick={() => setUseExisting(false)}
-              className="p-6 rounded-xl border border-border bg-card hover:border-secondary hover:bg-secondary/5 transition-all text-left group"
-            >
-              <UserPlus className="w-8 h-8 text-secondary mb-3" />
-              <h4 className="font-semibold text-foreground mb-1">
-                Create New Tournament Squad
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Create a new roster with 5 main players and up to 2 substitutes
-              </p>
-            </button>
+            {/* Use existing tournament squad */}
+            {myTournamentSquads && myTournamentSquads.length > 0 && (
+              <button
+                onClick={() => setUseExisting('tournament_squad')}
+                className="p-6 rounded-xl border border-border bg-card hover:border-secondary hover:bg-secondary/5 transition-all text-left group"
+              >
+                <Shield className="w-8 h-8 text-secondary mb-3" />
+                <h4 className="font-semibold text-foreground mb-1">
+                  Previous Tournament Squad
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Reuse a squad from a previous tournament
+                </p>
+              </button>
+            )}
           </div>
+
+          {/* No squads available */}
+          {(!mySquads || mySquads.length === 0) && (
+            <div className="p-4 bg-muted rounded-lg border border-border">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    You don't have a squad yet. Create a squad and add at least 5 registered players to participate.
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="mt-3">
+                    <Link to="/create-squad">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Squad
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  // Step 2a: Select existing tournament squad
-  if (useExisting) {
+  // Step 2a: Select existing platform squad
+  if (useExisting === 'existing_squad') {
     return (
       <div className="glass-card p-6">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setUseExisting(null)}
+          onClick={() => {
+            setUseExisting(null);
+            setSelectedSquadId('');
+          }}
+          className="mb-4"
+        >
+          ← Back
+        </Button>
+
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Select Your Squad
+        </h3>
+
+        <div className="space-y-4">
+          <Select value={selectedSquadId} onValueChange={setSelectedSquadId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a squad" />
+            </SelectTrigger>
+            <SelectContent>
+              {mySquads?.map((squad) => (
+                <SelectItem key={squad.id} value={squad.id}>
+                  {squad.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Squad preview and validation */}
+          {selectedSquadId && squadMembers && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-secondary" />
+                  Squad Roster ({squadMembers.length} players)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Validation errors */}
+                {!squadValidation.valid && (
+                  <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-destructive mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-destructive">Cannot register:</p>
+                        <ul className="list-disc list-inside mt-1 text-muted-foreground">
+                          {squadValidation.errors.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Leaders/Co-leaders */}
+                <div className="mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">Leaders & Co-Leaders (Contact Points)</p>
+                  <div className="space-y-2">
+                    {leadersAndCoLeaders.map((member) => {
+                      const contacts = typeof member.profile?.contacts === 'string'
+                        ? JSON.parse(member.profile.contacts)
+                        : member.profile?.contacts || [];
+                      const whatsapp = contacts.find((c: any) => c.type === 'whatsapp')?.value;
+                      const discord = contacts.find((c: any) => c.type === 'discord')?.value;
+
+                      return (
+                        <div key={member.id} className="flex items-center gap-3 p-2 bg-primary/5 rounded-lg">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={member.profile?.avatar_url || undefined} />
+                            <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm truncate">
+                                {member.profile?.ign || 'Unknown'}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {SQUAD_MEMBER_ROLE_LABELS[member.role]}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {whatsapp && (
+                              <Phone className="w-4 h-4 text-green-500" />
+                            )}
+                            {discord && (
+                              <MessageCircle className="w-4 h-4 text-indigo-500" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* All members */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">All Members</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {squadMembers.map((member, index) => (
+                      <div key={member.id} className="flex items-center gap-2 p-2 bg-muted rounded">
+                        <span className="text-xs text-muted-foreground w-4">{index + 1}</span>
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={member.profile?.avatar_url || undefined} />
+                          <AvatarFallback><User className="w-3 h-3" /></AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm truncate">{member.profile?.ign || 'Unknown'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Button
+            onClick={handleRegisterExistingSquad}
+            disabled={!selectedSquadId || !squadValidation.valid || isSubmitting}
+            className="w-full btn-gaming"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Register for Tournament
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2b: Select existing tournament squad
+  if (useExisting === 'tournament_squad') {
+    return (
+      <div className="glass-card p-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setUseExisting(null);
+            setSelectedTournamentSquadId('');
+          }}
           className="mb-4"
         >
           ← Back
@@ -261,137 +502,5 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
     );
   }
 
-  // Step 2b: Create new tournament squad
-  return (
-    <div className="glass-card p-6">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setUseExisting(null)}
-        className="mb-4"
-      >
-        ← Back
-      </Button>
-
-      <h3 className="text-lg font-semibold text-foreground mb-4">
-        Create Tournament Squad
-      </h3>
-
-      {/* Info notice */}
-      <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 mb-6">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground">
-            <p>Roster requirements:</p>
-            <ul className="list-disc list-inside mt-1 space-y-0.5">
-              <li>Exactly 5 main players (required)</li>
-              <li>Up to 2 substitutes (optional)</li>
-              <li>Max 2 roster changes after tournament starts</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {/* Squad Info */}
-        <div className="flex items-start gap-4">
-          <ImageUpload
-            bucket="tournament-assets"
-            currentUrl={logoUrl}
-            onUpload={setLogoUrl}
-            onRemove={() => setLogoUrl(null)}
-            shape="square"
-            size="md"
-          />
-          <div className="flex-1">
-            <Label htmlFor="squadName">Squad Name *</Label>
-            <Input
-              id="squadName"
-              value={squadName}
-              onChange={(e) => setSquadName(e.target.value)}
-              placeholder="Your tournament squad name"
-              className="mt-1.5"
-            />
-          </div>
-        </div>
-
-        {/* Players */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <Label>Roster *</Label>
-            {members.length < 7 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addSubstitute}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Substitute
-              </Button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            {members.map((member, index) => (
-              <div
-                key={index}
-                className={cn(
-                  'p-3 rounded-lg border',
-                  member.role === 'main' 
-                    ? 'bg-primary/5 border-primary/20' 
-                    : 'bg-secondary/5 border-secondary/20'
-                )}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant={member.role === 'main' ? 'default' : 'secondary'}>
-                    {member.role === 'main' ? `Player ${index + 1}` : `Sub ${index - 4}`}
-                  </Badge>
-                  {member.role === 'substitute' && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 ml-auto"
-                      onClick={() => removeMember(index)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="In-Game Name"
-                    value={member.ign}
-                    onChange={(e) => updateMember(index, 'ign', e.target.value)}
-                  />
-                  <Input
-                    placeholder="MLBB ID (e.g., 12345678)"
-                    value={member.mlbb_id}
-                    onChange={(e) => updateMember(index, 'mlbb_id', e.target.value)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Submit */}
-        <Button
-          onClick={handleSubmitNewSquad}
-          disabled={!canSubmitNewSquad() || isSubmitting}
-          className="w-full btn-gaming"
-        >
-          {isSubmitting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Register for Tournament
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
-  );
+  return null;
 }

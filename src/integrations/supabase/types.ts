@@ -54,6 +54,7 @@ export type Database = {
           looking_for_squad: boolean
           main_role: string
           main_roles: string[] | null
+          mlbb_id: string | null
           rank: string
           screenshots: string[] | null
           server: string
@@ -74,6 +75,7 @@ export type Database = {
           looking_for_squad?: boolean
           main_role?: string
           main_roles?: string[] | null
+          mlbb_id?: string | null
           rank?: string
           screenshots?: string[] | null
           server?: string
@@ -94,6 +96,7 @@ export type Database = {
           looking_for_squad?: boolean
           main_role?: string
           main_roles?: string[] | null
+          mlbb_id?: string | null
           rank?: string
           screenshots?: string[] | null
           server?: string
@@ -145,6 +148,51 @@ export type Database = {
             columns: ["tournament_squad_id"]
             isOneToOne: false
             referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      squad_members: {
+        Row: {
+          id: string
+          joined_at: string
+          position: number
+          profile_id: string
+          role: Database["public"]["Enums"]["squad_member_squad_role"]
+          squad_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          position?: number
+          profile_id: string
+          role?: Database["public"]["Enums"]["squad_member_squad_role"]
+          squad_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          position?: number
+          profile_id?: string
+          role?: Database["public"]["Enums"]["squad_member_squad_role"]
+          squad_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squad_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "squad_members_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
             referencedColumns: ["id"]
           },
         ]
@@ -489,11 +537,25 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_profiles: {
+        Args: { exclude_squad_id?: string; search_term: string }
+        Returns: {
+          avatar_url: string
+          contacts: Json
+          id: string
+          ign: string
+          main_role: string
+          mlbb_id: string
+          rank: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
       match_status: "pending" | "ongoing" | "completed" | "disputed"
       squad_member_role: "main" | "substitute"
+      squad_member_squad_role: "leader" | "co_leader" | "member"
       tournament_format:
         | "single_elimination"
         | "double_elimination"
@@ -635,6 +697,7 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       match_status: ["pending", "ongoing", "completed", "disputed"],
       squad_member_role: ["main", "substitute"],
+      squad_member_squad_role: ["leader", "co_leader", "member"],
       tournament_format: [
         "single_elimination",
         "double_elimination",

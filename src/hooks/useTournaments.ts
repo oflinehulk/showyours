@@ -14,18 +14,35 @@ import type {
   RosterChange
 } from '@/lib/tournament-types';
 
-// Fetch all tournaments
+// Fetch all tournaments with registration counts
 export function useTournaments() {
   return useQuery({
     queryKey: ['tournaments'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch tournaments
+      const { data: tournaments, error } = await supabase
         .from('tournaments')
         .select('*')
         .order('date_time', { ascending: true });
 
       if (error) throw error;
-      return data as Tournament[];
+
+      // Fetch registration counts for all tournaments
+      const { data: registrations } = await supabase
+        .from('tournament_registrations')
+        .select('tournament_id');
+
+      // Count registrations per tournament
+      const counts: Record<string, number> = {};
+      registrations?.forEach((r) => {
+        counts[r.tournament_id] = (counts[r.tournament_id] || 0) + 1;
+      });
+
+      // Attach counts to tournaments
+      return (tournaments || []).map((t) => ({
+        ...t,
+        registrations_count: counts[t.id] || 0,
+      })) as TournamentWithDetails[];
     },
   });
 }

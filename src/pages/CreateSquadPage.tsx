@@ -91,7 +91,6 @@ export default function CreateSquadPage() {
       name.trim() &&
       description.trim() &&
       minRank &&
-      neededRoles.length > 0 &&
       whatsapp.trim()
     );
   };
@@ -356,7 +355,7 @@ export default function CreateSquadPage() {
 
           {/* Needed Roles */}
           <div>
-            <Label className="mb-3 block">Positions Looking For *</Label>
+            <Label className="mb-3 block">Positions Looking For <span className="text-xs text-muted-foreground">(Optional)</span></Label>
             <div className="flex flex-wrap gap-3">
               {ROLES.map((role) => (
                 <button

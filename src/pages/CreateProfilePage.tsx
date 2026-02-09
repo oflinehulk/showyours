@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import { useHeroes } from '@/hooks/useHeroes';
+import { profileSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -55,7 +57,7 @@ export default function CreateProfilePage() {
   const [whatsapp, setWhatsapp] = useState('');
   const [discord, setDiscord] = useState('');
   const [instagram, setInstagram] = useState('');
-
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!user) {
       toast.error('Please sign in to create a profile');
@@ -168,7 +170,37 @@ export default function CreateProfilePage() {
     return contacts;
   };
 
+  const validateForm = () => {
+    try {
+      profileSchema.parse({
+        ign,
+        mlbbId,
+        bio,
+        winRate,
+        whatsapp,
+        gameId,
+        discord,
+        instagram,
+      });
+      setValidationErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          const field = err.path[0] as string;
+          errors[field] = err.message;
+        });
+        setValidationErrors(errors);
+        toast.error('Please fix the validation errors');
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+
     const profileData = {
       ign: ign.trim(),
       avatar_url: avatarUrl,

@@ -5,6 +5,8 @@ import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { PlayerSearch } from '@/components/PlayerSearch';
 import { SquadMemberList } from '@/components/SquadMemberList';
+import { SquadApplications } from '@/components/SquadApplications';
+import { ApplyToSquadButton } from '@/components/ApplyToSquadButton';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
@@ -25,6 +27,7 @@ import { useSquad, useMySquads, useUpdateSquad, useDeleteSquad } from '@/hooks/u
 import { 
   useSquadMembers, 
   useAddSquadMember, 
+  useLeaveSquad,
   type SearchedProfile 
 } from '@/hooks/useSquadMembers';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +47,7 @@ import {
   AlertCircle,
   Trash2,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,6 +62,7 @@ export default function SquadDetailPage() {
   const updateSquad = useUpdateSquad();
   const deleteSquad = useDeleteSquad();
   const addMember = useAddSquadMember();
+  const leaveSquad = useLeaveSquad();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
 
   const isOwner = user && mySquads && mySquads.some(s => s.id === id);
@@ -67,6 +72,8 @@ export default function SquadDetailPage() {
   const isLeader = isOwner || myMembership?.role === 'leader';
   const isCoLeader = myMembership?.role === 'co_leader';
   const canManageMembers = isLeader || isCoLeader;
+  const isMember = !!myMembership;
+  const canLeave = isMember && !isOwner; // Members can leave but owners can't (they delete)
 
   // Get list of user IDs already in the squad
   const existingUserIds = members?.map(m => m.user_id) || [];
@@ -113,6 +120,18 @@ export default function SquadDetailPage() {
       toast.success(`${profile.ign} added to squad!`);
     } catch (error: any) {
       toast.error('Failed to add member', { description: error.message });
+    }
+  };
+
+  const handleLeaveSquad = async () => {
+    if (!squad || !canLeave) return;
+    
+    try {
+      await leaveSquad.mutateAsync(squad.id);
+      toast.success('You have left the squad');
+      navigate('/squads');
+    } catch (error: any) {
+      toast.error('Failed to leave squad', { description: error.message });
     }
   };
 
@@ -292,6 +311,48 @@ export default function SquadDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Leave Squad Button for non-owner members */}
+              {canLeave && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="text-destructive border-destructive/50 hover:bg-destructive/10">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Leave Squad
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Leave this squad?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          You will be removed from the squad. You can request to join again later.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleLeaveSquad}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={leaveSquad.isPending}
+                        >
+                          {leaveSquad.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : null}
+                          Leave Squad
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
+
+              {/* Apply Button for non-members */}
+              {!isMember && !isOwner && squad.is_recruiting && (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <ApplyToSquadButton squadId={squad.id} squadName={squad.name} />
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -300,6 +361,15 @@ export default function SquadDetailPage() {
                 <h2 className="text-lg font-semibold text-foreground mb-3">About Us</h2>
                 <p className="text-muted-foreground leading-relaxed">{squad.description}</p>
               </div>
+            )}
+
+            {/* Squad Applications - only for leaders */}
+            {canManageMembers && (
+              <SquadApplications
+                squadId={squad.id}
+                maxMembers={maxMembers}
+                currentMemberCount={memberCount}
+              />
             )}
 
             {/* Squad Members */}

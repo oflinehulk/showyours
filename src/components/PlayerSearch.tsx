@@ -14,13 +14,14 @@ interface PlayerSearchProps {
   excludeUserIds?: string[];
   placeholder?: string;
   disabled?: boolean;
+  showSquadMembers?: boolean; // If true, search includes players already in squads
 }
 
 export function PlayerSearch({
   onSelect,
   excludeSquadId,
   excludeUserIds = [],
-  placeholder = 'Search by IGN or MLBB ID...',
+  placeholder = 'Search by IGN, MLBB ID, or WhatsApp...',
   disabled = false,
 }: PlayerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');

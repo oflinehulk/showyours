@@ -397,6 +397,7 @@ export default function SquadDetailPage() {
                       excludeUserIds={existingUserIds}
                       placeholder="Search registered players by IGN or MLBB ID..."
                       disabled={addMember.isPending}
+                      addToSquad={true}
                     />
                     <p className="text-xs text-muted-foreground mt-2">
                       Only players with registered profiles can be added

@@ -154,15 +154,28 @@ export default function CreateProfilePage() {
   const handleSubmit = async () => {
     // Simple inline validation
     if (!ign.trim()) {
-      toast.error('IGN is required');
+      toast.error('Please enter your In-Game Name');
+      setCurrentStep(1);
       return;
     }
     if (!gameId.trim()) {
-      toast.error('Game ID is required');
+      toast.error('Please enter your Game ID');
+      setCurrentStep(1);
+      return;
+    }
+    if (!rank) {
+      toast.error('Please select your rank');
+      setCurrentStep(2);
+      return;
+    }
+    if (mainRoles.length === 0) {
+      toast.error('Please select at least one role');
+      setCurrentStep(2);
       return;
     }
     if (!whatsapp.trim()) {
-      toast.error('WhatsApp number is required');
+      toast.error('Please enter your WhatsApp number');
+      setCurrentStep(3);
       return;
     }
 

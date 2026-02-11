@@ -361,6 +361,34 @@ export function useWithdrawFromTournament() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    },
+  });
+}
+
+// Delete registration (host only)
+export function useDeleteRegistration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      registrationId,
+      tournamentId,
+    }: {
+      registrationId: string;
+      tournamentId: string;
+    }) => {
+      const { error } = await supabase
+        .from('tournament_registrations')
+        .delete()
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
     },
   });
 }

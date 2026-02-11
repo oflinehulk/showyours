@@ -18,6 +18,7 @@ import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { 
   useCreateTournamentSquad,
   useRegisterForTournament,
+  useTournamentRegistrations,
 } from '@/hooks/useTournaments';
 import { hasContactType, getContactValue } from '@/lib/contacts';
 import { 
@@ -56,6 +57,9 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
   const [selectedSquadId, setSelectedSquadId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch existing registrations to check for duplicates
+  const { data: existingRegistrations } = useTournamentRegistrations(tournament.id);
+
   // Get members of selected squad
   const { data: squadMembers } = useSquadMembers(selectedSquadId || undefined);
 
@@ -85,12 +89,21 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
     );
   }, [leadersAndCoLeaders]);
 
-  // Filter squads with 5+ members
+  // Check which of user's squads are already registered
+  const alreadyRegisteredSquadIds = useMemo(() => {
+    if (!existingRegistrations) return new Set<string>();
+    return new Set(
+      existingRegistrations
+        .map((r) => r.tournament_squads?.existing_squad_id)
+        .filter(Boolean) as string[]
+    );
+  }, [existingRegistrations]);
+
+  // Filter squads - exclude already registered ones
   const eligibleSquads = useMemo(() => {
     if (!mySquads) return [];
-    // We'll check member count when squad is selected
-    return mySquads;
-  }, [mySquads]);
+    return mySquads.filter((s) => !alreadyRegisteredSquadIds.has(s.id));
+  }, [mySquads, alreadyRegisteredSquadIds]);
 
   // Validate squad for tournament registration
   const squadValidation = useMemo(() => {
@@ -134,6 +147,13 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
       // Find the selected squad
       const squad = mySquads?.find(s => s.id === selectedSquadId);
       if (!squad) throw new Error('Squad not found');
+
+      // Double-check duplicate on submit
+      if (alreadyRegisteredSquadIds.has(squad.id)) {
+        toast.error('This squad is already registered for this tournament');
+        setIsSubmitting(false);
+        return;
+      }
 
       // Create tournament squad from existing squad
       const tournamentSquad = await createTournamentSquad.mutateAsync({
@@ -191,7 +211,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
     );
   }
 
-  // No squads - prompt to create one
+  // No squads or all already registered
   if (!mySquads || mySquads.length === 0) {
     return (
       <div className="glass-card p-6">
@@ -208,6 +228,22 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
                 Create Squad
               </Link>
             </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (eligibleSquads.length === 0) {
+    return (
+      <div className="glass-card p-6">
+        <div className="flex items-start gap-3 p-4 bg-primary/10 rounded-lg border border-primary/20">
+          <Check className="w-5 h-5 text-primary mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-foreground">Already Registered</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              All your squads are already registered for this tournament.
+            </p>
           </div>
         </div>
       </div>

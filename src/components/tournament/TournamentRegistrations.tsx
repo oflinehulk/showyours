@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/dialog';
 import { 
   useUpdateRegistrationStatus, 
-  useTournamentSquadMembers 
+  useTournamentSquadMembers,
+  useDeleteRegistration,
 } from '@/hooks/useTournaments';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { getContactValue } from '@/lib/contacts';
@@ -38,6 +39,7 @@ import {
   MessageCircle,
   User,
   Copy,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -55,6 +57,7 @@ export function TournamentRegistrations({
   isHost,
 }: TournamentRegistrationsProps) {
   const updateStatus = useUpdateRegistrationStatus();
+  const deleteRegistration = useDeleteRegistration();
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
   const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string | null>(null);
 
@@ -81,6 +84,16 @@ export function TournamentRegistrations({
       toast.success('Registration rejected');
     } catch (error: any) {
       toast.error('Failed to reject', { description: error.message });
+    }
+  };
+
+  const handleDelete = async (registrationId: string) => {
+    if (!confirm('Are you sure you want to remove this registration?')) return;
+    try {
+      await deleteRegistration.mutateAsync({ registrationId, tournamentId });
+      toast.success('Registration removed');
+    } catch (error: any) {
+      toast.error('Failed to remove', { description: error.message });
     }
   };
 
@@ -197,6 +210,19 @@ export function TournamentRegistrations({
                         <X className="w-4 h-4" />
                       </Button>
                     </>
+                  )}
+
+                  {isHost && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(reg.id)}
+                      disabled={deleteRegistration.isPending}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Remove registration"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   )}
                 </div>
               </TableCell>

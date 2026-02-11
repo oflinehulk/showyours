@@ -21,8 +21,6 @@ import { hasContactType } from '@/lib/contacts';
 import { ArrowLeft, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { squadSchema } from '@/lib/validations';
-import { z } from 'zod';
 
 export default function CreateSquadPage() {
   const navigate = useNavigate();
@@ -42,7 +40,7 @@ export default function CreateSquadPage() {
   // Contact state for squad listing
   const [whatsapp, setWhatsapp] = useState('');
   const [discord, setDiscord] = useState('');
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) {
@@ -91,27 +89,19 @@ export default function CreateSquadPage() {
   };
 
   const validateForm = () => {
-    try {
-      squadSchema.parse({
-        name,
-        description,
-        whatsapp,
-        discord,
-      });
-      setValidationErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          const field = err.path[0] as string;
-          errors[field] = err.message;
-        });
-        setValidationErrors(errors);
-        toast.error('Please fix the validation errors');
-      }
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = 'Squad name is required';
+    else if (name.trim().length > 50) errors.name = 'Squad name must be less than 50 characters';
+    if (!description.trim()) errors.description = 'Description is required';
+    else if (description.trim().length > 1000) errors.description = 'Description must be less than 1000 characters';
+    if (!whatsapp.trim()) errors.whatsapp = 'WhatsApp number is required';
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please fill in all required fields');
       return false;
     }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -293,10 +283,10 @@ export default function CreateSquadPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your squad name"
-              className={cn("mt-1.5", validationErrors.name && "border-destructive")}
+              className={cn("mt-1.5", formErrors.name && "border-destructive")}
             />
-            {validationErrors.name && (
-              <p className="text-sm text-destructive mt-1">{validationErrors.name}</p>
+            {formErrors.name && (
+              <p className="text-sm text-destructive mt-1">{formErrors.name}</p>
             )}
           </div>
 
@@ -307,10 +297,10 @@ export default function CreateSquadPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Tell players about your squad, practice schedule, goals..."
-              className={cn("mt-1.5 min-h-[120px]", validationErrors.description && "border-destructive")}
+              className={cn("mt-1.5 min-h-[120px]", formErrors.description && "border-destructive")}
             />
-            {validationErrors.description && (
-              <p className="text-sm text-destructive mt-1">{validationErrors.description}</p>
+            {formErrors.description && (
+              <p className="text-sm text-destructive mt-1">{formErrors.description}</p>
             )}
           </div>
 
@@ -388,10 +378,10 @@ export default function CreateSquadPage() {
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 placeholder="e.g., +91 98765 43210"
-                className={cn("mt-1.5", validationErrors.whatsapp && "border-destructive")}
+                className={cn("mt-1.5", formErrors.whatsapp && "border-destructive")}
               />
-              {validationErrors.whatsapp && (
-                <p className="text-sm text-destructive mt-1">{validationErrors.whatsapp}</p>
+              {formErrors.whatsapp && (
+                <p className="text-sm text-destructive mt-1">{formErrors.whatsapp}</p>
               )}
             </div>
 

@@ -16,17 +16,15 @@ import {
 import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
-import { RANKS, HERO_CLASSES, INDIAN_STATES, ALL_HEROES, MLBB_HEROES } from '@/lib/constants';
+import { RANKS, INDIAN_STATES, ALL_HEROES } from '@/lib/constants';
 import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import { useHeroes } from '@/hooks/useHeroes';
-import { profileSchema } from '@/lib/validations';
 import { parseContacts } from '@/lib/contacts';
-import { z } from 'zod';
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4;
 
 export default function CreateProfilePage() {
   const navigate = useNavigate();
@@ -45,20 +43,18 @@ export default function CreateProfilePage() {
   const [rank, setRank] = useState('');
   const [winRate, setWinRate] = useState('');
   const [mainRoles, setMainRoles] = useState<string[]>([]);
-  const [heroClass, setHeroClass] = useState('');
   const [favoriteHeroes, setFavoriteHeroes] = useState<string[]>([]);
   const [heroInput, setHeroInput] = useState('');
   const [bio, setBio] = useState('');
   const [lookingForSquad, setLookingForSquad] = useState(true);
   const [screenshots, setScreenshots] = useState<string[]>([]);
-  const [mlbbId, setMlbbId] = useState('');
+  const [gameId, setGameId] = useState('');
   
   // Contact state
-  const [gameId, setGameId] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [discord, setDiscord] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!user) {
       toast.error('Please sign in to create a profile');
@@ -75,28 +71,24 @@ export default function CreateProfilePage() {
       setState(existingProfile.state || '');
       setRank(existingProfile.rank || '');
       setWinRate(existingProfile.win_rate?.toString() || '');
-      // Handle both old main_role and new main_roles
       const roles = (existingProfile as any).main_roles;
       if (roles && roles.length > 0) {
         setMainRoles(roles);
       } else if (existingProfile.main_role) {
         setMainRoles([existingProfile.main_role]);
       }
-      setHeroClass(existingProfile.hero_class || '');
       setFavoriteHeroes(existingProfile.favorite_heroes || []);
       setBio(existingProfile.bio || '');
       setLookingForSquad(existingProfile.looking_for_squad ?? true);
       setScreenshots(existingProfile.screenshots || []);
-      setMlbbId((existingProfile as any).mlbb_id || '');
       
-      // Parse contacts
+      // Parse contacts - use game-id as the single Game ID field
       const contacts = parseContacts(existingProfile.contacts);
+      const gameIdContact = contacts.find((c: { type: string }) => c.type === 'game-id');
+      setGameId(gameIdContact?.value || (existingProfile as any).mlbb_id || '');
       
       contacts.forEach((contact: { type: string; value: string }) => {
         switch (contact.type) {
-          case 'game-id':
-            setGameId(contact.value);
-            break;
           case 'whatsapp':
             setWhatsapp(contact.value);
             break;
@@ -113,23 +105,20 @@ export default function CreateProfilePage() {
 
   const steps = [
     { number: 1, title: 'Basic Info' },
-    { number: 2, title: 'Stats' },
-    { number: 3, title: 'Heroes' },
-    { number: 4, title: 'Contact' },
-    { number: 5, title: 'Media' },
+    { number: 2, title: 'Game Stats' },
+    { number: 3, title: 'Contact' },
+    { number: 4, title: 'Extras' },
   ];
 
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return ign.trim() && state;
+        return ign.trim() && gameId.trim() && state;
       case 2:
-        return rank && mainRoles.length > 0 && heroClass;
+        return rank && mainRoles.length > 0;
       case 3:
-        return true;
+        return whatsapp.trim();
       case 4:
-        return gameId.trim() && whatsapp.trim();
-      case 5:
         return true;
       default:
         return false;
@@ -147,14 +136,7 @@ export default function CreateProfilePage() {
     setFavoriteHeroes(favoriteHeroes.filter((h) => h !== hero));
   };
 
-  // Get heroes filtered by selected hero class
-  const getHeroesForClass = () => {
-    if (!heroClass) return ALL_HEROES;
-    const classHeroes = MLBB_HEROES[heroClass as keyof typeof MLBB_HEROES] || [];
-    return classHeroes as string[];
-  };
-
-  const suggestedHeroes = getHeroesForClass().filter(
+  const suggestedHeroes = ALL_HEROES.filter(
     (h) => 
       h.toLowerCase().includes(heroInput.toLowerCase()) && 
       !favoriteHeroes.includes(h)
@@ -169,36 +151,20 @@ export default function CreateProfilePage() {
     return contacts;
   };
 
-  const validateForm = () => {
-    try {
-      profileSchema.parse({
-        ign,
-        mlbbId,
-        bio,
-        winRate,
-        whatsapp,
-        gameId,
-        discord,
-        instagram,
-      });
-      setValidationErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          const field = err.path[0] as string;
-          errors[field] = err.message;
-        });
-        setValidationErrors(errors);
-        toast.error('Please fix the validation errors');
-      }
-      return false;
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    // Simple inline validation
+    if (!ign.trim()) {
+      toast.error('IGN is required');
+      return;
+    }
+    if (!gameId.trim()) {
+      toast.error('Game ID is required');
+      return;
+    }
+    if (!whatsapp.trim()) {
+      toast.error('WhatsApp number is required');
+      return;
+    }
 
     const profileData = {
       ign: ign.trim(),
@@ -208,13 +174,13 @@ export default function CreateProfilePage() {
       win_rate: winRate ? parseFloat(winRate) : null,
       main_role: mainRoles[0] || 'gold' as any,
       main_roles: mainRoles,
-      hero_class: heroClass as any,
+      hero_class: 'fighter' as any, // default, not user-facing
       favorite_heroes: favoriteHeroes,
       bio: bio.trim() || null,
       looking_for_squad: lookingForSquad,
       contacts: buildContacts() as any,
       screenshots,
-      mlbb_id: mlbbId.trim() || null,
+      mlbb_id: gameId.trim() || null, // use same Game ID for mlbb_id
     };
 
     try {
@@ -223,15 +189,11 @@ export default function CreateProfilePage() {
           id: existingProfile.id,
           ...profileData,
         });
-        toast.success('Profile updated successfully!', {
-          description: 'Your changes have been saved.',
-        });
+        toast.success('Profile updated successfully!');
         navigate(`/player/${existingProfile.id}`);
       } else {
-        const result = await createProfile.mutateAsync(profileData);
-        toast.success('Profile created successfully!', {
-          description: 'Your profile is now visible to squads.',
-        });
+        await createProfile.mutateAsync(profileData);
+        toast.success('Profile created successfully!');
         navigate('/players');
       }
     } catch (error: any) {
@@ -300,7 +262,7 @@ export default function CreateProfilePage() {
               {index < steps.length - 1 && (
                 <div
                   className={cn(
-                    'w-6 sm:w-12 h-0.5 mx-2 transition-colors flex-shrink-0',
+                    'w-8 sm:w-16 h-0.5 mx-2 transition-colors flex-shrink-0',
                     currentStep > step.number ? 'bg-primary' : 'bg-muted'
                   )}
                 />
@@ -337,16 +299,16 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="mlbbId">MLBB ID (Optional but recommended)</Label>
+                <Label htmlFor="gameId">Game ID *</Label>
                 <Input
-                  id="mlbbId"
-                  value={mlbbId}
-                  onChange={(e) => setMlbbId(e.target.value)}
-                  placeholder="e.g., 123456789"
+                  id="gameId"
+                  value={gameId}
+                  onChange={(e) => setGameId(e.target.value)}
+                  placeholder="e.g., 123456789 (1234)"
                   className="mt-1.5"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Makes it easier for squad leaders to find and add you
+                  Your MLBB numeric ID with server number in brackets
                 </p>
               </div>
 
@@ -365,21 +327,10 @@ export default function CreateProfilePage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <Label htmlFor="bio">Bio (Optional)</Label>
-                <Textarea
-                  id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell squads about yourself..."
-                  className="mt-1.5 min-h-[100px]"
-                />
-              </div>
             </div>
           )}
 
-          {/* Step 2: Stats */}
+          {/* Step 2: Game Stats */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-fade-in">
               <div>
@@ -421,33 +372,69 @@ export default function CreateProfilePage() {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Step 3: Contact */}
+          {currentStep === 3 && (
+            <div className="space-y-6 animate-fade-in">
+              <div>
+                <Label htmlFor="whatsapp">
+                  WhatsApp Number * <span className="text-xs text-muted-foreground">(Required)</span>
+                </Label>
+                <Input
+                  id="whatsapp"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  placeholder="e.g., +91 98765 43210"
+                  className="mt-1.5"
+                />
+              </div>
 
               <div>
-                <Label htmlFor="heroClass">Hero Class *</Label>
-                <Select value={heroClass} onValueChange={setHeroClass}>
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Select your hero class" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {HERO_CLASSES.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.icon} {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="discord">
+                  Discord <span className="text-xs text-muted-foreground">(Optional)</span>
+                </Label>
+                <Input
+                  id="discord"
+                  value={discord}
+                  onChange={(e) => setDiscord(e.target.value)}
+                  placeholder="e.g., username#1234"
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="instagram">
+                  Instagram <span className="text-xs text-muted-foreground">(Optional)</span>
+                </Label>
+                <Input
+                  id="instagram"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="e.g., @username"
+                  className="mt-1.5"
+                />
               </div>
             </div>
           )}
 
-          {/* Step 3: Heroes */}
-          {currentStep === 3 && (
+          {/* Step 4: Extras */}
+          {currentStep === 4 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <Label htmlFor="heroes">Favorite Heroes (up to 5)</Label>
-                <p className="text-sm text-muted-foreground mt-1 mb-2">
-                  {heroClass ? `Showing ${HERO_CLASSES.find(c => c.id === heroClass)?.name} heroes` : 'Select a hero class first to filter heroes'}
-                </p>
+                <Label htmlFor="bio">Bio (Optional)</Label>
+                <Textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell squads about yourself..."
+                  className="mt-1.5 min-h-[80px]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="heroes">Favorite Heroes (up to 5, optional)</Label>
                 <div className="relative mt-1.5">
                   <Input
                     id="heroes"
@@ -498,6 +485,20 @@ export default function CreateProfilePage() {
                 </div>
               )}
 
+              <div>
+                <Label className="mb-3 block">Screenshots (Optional)</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Add screenshots of your stats, rank, or gameplay
+                </p>
+                <MultiImageUpload
+                  bucket="screenshots"
+                  images={screenshots}
+                  maxImages={5}
+                  onUpload={(url) => setScreenshots([...screenshots, url])}
+                  onRemove={(url) => setScreenshots(screenshots.filter(s => s !== url))}
+                />
+              </div>
+
               <div className="flex items-center gap-2 pt-4 border-t border-border">
                 <Checkbox
                   id="lookingForSquad"
@@ -507,99 +508,6 @@ export default function CreateProfilePage() {
                 <Label htmlFor="lookingForSquad" className="cursor-pointer">
                   I'm actively looking for a squad
                 </Label>
-              </div>
-
-              <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-secondary mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium text-secondary">Note about recruitment visibility</p>
-                    <p className="text-muted-foreground mt-1">
-                      When you get recruited to a squad, you can uncheck "looking for squad" to hide your profile from the recruitment listings.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Contact */}
-          {currentStep === 4 && (
-            <div className="space-y-6 animate-fade-in">
-              <p className="text-sm text-muted-foreground">
-                In-Game ID and WhatsApp are required. Others are optional.
-              </p>
-
-              <div>
-                <Label htmlFor="gameId">
-                  In-Game ID * <span className="text-xs text-muted-foreground">(Required)</span>
-                </Label>
-                <Input
-                  id="gameId"
-                  value={gameId}
-                  onChange={(e) => setGameId(e.target.value)}
-                  placeholder="e.g., 123456789 (1234)"
-                  className="mt-1.5"
-                />
-                <p className="text-xs text-muted-foreground mt-1">Your MLBB Game ID with server number</p>
-              </div>
-
-              <div>
-                <Label htmlFor="whatsapp">
-                  WhatsApp Number * <span className="text-xs text-muted-foreground">(Required)</span>
-                </Label>
-                <Input
-                  id="whatsapp"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="e.g., +91 98765 43210"
-                  className="mt-1.5"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="discord">
-                  Discord <span className="text-xs text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  id="discord"
-                  value={discord}
-                  onChange={(e) => setDiscord(e.target.value)}
-                  placeholder="e.g., username#1234"
-                  className="mt-1.5"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="instagram">
-                  Instagram <span className="text-xs text-muted-foreground">(Optional)</span>
-                </Label>
-                <Input
-                  id="instagram"
-                  value={instagram}
-                  onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="e.g., @username"
-                  className="mt-1.5"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Media */}
-          {currentStep === 5 && (
-            <div className="space-y-6 animate-fade-in">
-              <div>
-                <Label className="mb-3 block">In-Game Screenshots (Optional)</Label>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add screenshots of your stats, rank, or gameplay to showcase your skills
-                </p>
-                <MultiImageUpload
-                  bucket="screenshots"
-                  images={screenshots}
-                  maxImages={5}
-                  onUpload={(url) => setScreenshots([...screenshots, url])}
-                  onRemove={(url) => setScreenshots(screenshots.filter(s => s !== url))}
-                />
               </div>
             </div>
           )}
@@ -616,7 +524,7 @@ export default function CreateProfilePage() {
               Back
             </Button>
 
-            {currentStep < 5 ? (
+            {currentStep < 4 ? (
               <Button
                 onClick={() => setCurrentStep((currentStep + 1) as Step)}
                 disabled={!canProceed()}

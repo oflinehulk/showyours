@@ -169,11 +169,20 @@ export function useAddSquadMember() {
         .single();
 
       if (error) throw error;
+
+      // Auto-hide player from recruitment listings when they join a squad
+      await supabase
+        .from('profiles')
+        .update({ looking_for_squad: false })
+        .eq('id', profileId);
+
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
       queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] });
     },
   });
 }

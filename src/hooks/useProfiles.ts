@@ -25,6 +25,12 @@ export function useProfiles() {
   return useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
+      // Get users already in a squad
+      const { data: squadMembers } = await supabase
+        .from('squad_members')
+        .select('user_id');
+      const inSquadUserIds = new Set((squadMembers || []).map(m => m.user_id));
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -32,7 +38,8 @@ export function useProfiles() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Profile[];
+      // Exclude players already in a squad
+      return (data as Profile[]).filter(p => !inSquadUserIds.has(p.user_id));
     },
   });
 }

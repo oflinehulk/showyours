@@ -95,21 +95,21 @@ export default function HomePage() {
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-secondary/10 text-secondary mb-4">
-                <UserPlus className="w-6 h-6" />
+                <Shield className="w-6 h-6" />
               </div>
               <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
-                {profiles?.length || 0}
+                {squads?.length || 0}
               </div>
-              <div className="text-muted-foreground">Available to Join</div>
+              <div className="text-muted-foreground">Total Squads</div>
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 text-accent mb-4">
-                <Shield className="w-6 h-6" />
+                <UserPlus className="w-6 h-6" />
               </div>
               <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
                 {recruitingSquads}
               </div>
-              <div className="text-muted-foreground">Squads Recruiting</div>
+              <div className="text-muted-foreground">Squads Available to Join</div>
             </div>
           </div>
         </div>

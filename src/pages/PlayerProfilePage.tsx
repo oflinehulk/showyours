@@ -22,6 +22,8 @@ import {
 import { useProfile, useMyProfile, useUpdateProfile, useDeleteProfile } from '@/hooks/useProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { parseContacts } from '@/lib/contacts';
 import { 
   ArrowLeft, 
@@ -48,10 +50,30 @@ export default function PlayerProfilePage() {
   const deleteProfile = useDeleteProfile();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
 
+  // Check if player is in a squad
+  const { data: isInSquad } = useQuery({
+    queryKey: ['player-in-squad', player?.user_id],
+    queryFn: async () => {
+      if (!player) return false;
+      const { data } = await supabase
+        .from('squad_members')
+        .select('id')
+        .eq('user_id', player.user_id)
+        .limit(1);
+      return (data && data.length > 0);
+    },
+    enabled: !!player,
+  });
   const isOwner = user && myProfile && myProfile.id === id;
 
   const handleToggleLookingForSquad = async () => {
     if (!player || !isOwner) return;
+    
+    // Prevent enabling "looking for squad" if already in a squad
+    if (!player.looking_for_squad && isInSquad) {
+      toast.error('You are already in a squad. Leave your current squad first to appear in recruitment listings.');
+      return;
+    }
     
     try {
       await updateProfile.mutateAsync({
@@ -219,14 +241,16 @@ export default function PlayerProfilePage() {
                         id="lookingForSquad"
                         checked={player.looking_for_squad}
                         onCheckedChange={handleToggleLookingForSquad}
-                        disabled={updateProfile.isPending}
+                        disabled={updateProfile.isPending || (!player.looking_for_squad && isInSquad)}
                       />
                       <Label htmlFor="lookingForSquad" className="cursor-pointer">
                         <span className="font-medium">Looking for Squad</span>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {player.looking_for_squad 
-                            ? 'Your profile is visible in recruitment listings' 
-                            : 'Your profile is hidden (recruited)'}
+                          {isInSquad && !player.looking_for_squad
+                            ? 'Leave your squad first to enable this'
+                            : player.looking_for_squad 
+                              ? 'Your profile is visible in recruitment listings' 
+                              : 'Your profile is hidden (recruited)'}
                         </p>
                       </Label>
                     </div>

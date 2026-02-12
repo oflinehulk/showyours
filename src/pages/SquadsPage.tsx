@@ -24,7 +24,7 @@ export default function SquadsPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const filteredSquads = useMemo(() => {
+  const { recruitingSquads, otherSquads } = useMemo(() => {
     let squadList = [...(squads || [])];
 
     // Search filter
@@ -54,8 +54,13 @@ export default function SquadsPage() {
     // Sort by most recent
     squadList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    return squadList;
+    const recruiting = squadList.filter((s) => s.is_recruiting);
+    const other = squadList.filter((s) => !s.is_recruiting);
+
+    return { recruitingSquads: recruiting, otherSquads: other };
   }, [squads, searchQuery, rankFilter, roleFilter]);
+
+  const totalFiltered = recruitingSquads.length + otherSquads.length;
 
   const hasActiveFilters = rankFilter !== 'all' || roleFilter !== 'all';
 
@@ -157,7 +162,7 @@ export default function SquadsPage() {
 
         {/* Results count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredSquads.length} squad{filteredSquads.length !== 1 ? 's' : ''}
+          Showing {totalFiltered} squad{totalFiltered !== 1 ? 's' : ''}
         </div>
 
         {/* Loading state */}
@@ -169,17 +174,40 @@ export default function SquadsPage() {
           </div>
         )}
 
-        {/* Squad Grid */}
-        {!isLoading && filteredSquads.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredSquads.map((squad) => (
-              <SquadCard key={squad.id} squad={squad} />
-            ))}
+        {/* Looking for Members */}
+        {!isLoading && recruitingSquads.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              Looking for Members
+              <span className="text-sm font-normal text-muted-foreground">({recruitingSquads.length})</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {recruitingSquads.map((squad) => (
+                <SquadCard key={squad.id} squad={squad} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Not Recruiting / Full Squads */}
+        {!isLoading && otherSquads.length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+              Not Recruiting
+              <span className="text-sm font-normal text-muted-foreground">({otherSquads.length})</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {otherSquads.map((squad) => (
+                <SquadCard key={squad.id} squad={squad} />
+              ))}
+            </div>
           </div>
         )}
 
         {/* Empty state */}
-        {!isLoading && filteredSquads.length === 0 && (
+        {!isLoading && totalFiltered === 0 && (
           <div className="text-center py-16">
             <Shield className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No squads found</h3>

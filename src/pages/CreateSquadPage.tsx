@@ -83,7 +83,6 @@ export default function CreateSquadPage() {
       hasWhatsAppContact &&
       name.trim() &&
       description.trim() &&
-      minRank &&
       whatsapp.trim()
     );
   };
@@ -306,7 +305,7 @@ export default function CreateSquadPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="minRank">Minimum Rank Required *</Label>
+              <Label htmlFor="minRank">Minimum Rank Required <span className="text-xs text-muted-foreground">(Optional)</span></Label>
               <Select value={minRank} onValueChange={setMinRank}>
                 <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Select minimum rank" />

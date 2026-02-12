@@ -7,19 +7,31 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useSquads } from '@/hooks/useSquads';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Users, Shield, Zap, UserPlus, ChevronRight, Trophy, TrendingUp, Target } from 'lucide-react';
 
 export default function HomePage() {
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
   const { data: squads, isLoading: squadsLoading } = useSquads();
 
+  // Total registered players (all profiles)
+  const { data: totalPlayers } = useQuery({
+    queryKey: ['total-players-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  // Squads actively recruiting
+  const recruitingSquads = squads?.filter(s => s.is_recruiting).length || 0;
+
   const featuredPlayers = profiles?.filter(p => p.looking_for_squad).slice(0, 3) || [];
   const featuredSquads = squads?.slice(0, 2) || [];
-
-  const stats = {
-    totalPlayers: profiles?.length || 0,
-    activeSquads: squads?.length || 0,
-  };
 
   return (
     <Layout>
@@ -77,27 +89,27 @@ export default function HomePage() {
                 <Users className="w-6 h-6" />
               </div>
               <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
-                {stats.totalPlayers}
+                {totalPlayers ?? 0}
               </div>
-              <div className="text-muted-foreground">Players Registered</div>
+              <div className="text-muted-foreground">Total Players</div>
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-secondary/10 text-secondary mb-4">
-                <Shield className="w-6 h-6" />
+                <UserPlus className="w-6 h-6" />
               </div>
               <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
-                {stats.activeSquads}
+                {profiles?.length || 0}
               </div>
-              <div className="text-muted-foreground">Active Squads</div>
+              <div className="text-muted-foreground">Available to Join</div>
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 text-accent mb-4">
-                <Trophy className="w-6 h-6" />
+                <Shield className="w-6 h-6" />
               </div>
               <div className="text-3xl md:text-4xl font-bold text-foreground mb-1">
-                ∞
+                {recruitingSquads}
               </div>
-              <div className="text-muted-foreground">Connections Made</div>
+              <div className="text-muted-foreground">Squads Recruiting</div>
             </div>
           </div>
         </div>

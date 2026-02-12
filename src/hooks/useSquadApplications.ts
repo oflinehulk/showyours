@@ -182,6 +182,17 @@ export function useApproveApplication() {
       applicantId: string;
       userId: string;
     }) => {
+      // Check if user is already in a squad
+      const { data: existingMembership } = await supabase
+        .from('squad_members')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+
+      if (existingMembership && existingMembership.length > 0) {
+        throw new Error('This player is already in a squad. A player can only be in one squad at a time.');
+      }
+
       // First, add member to squad
       const { data: existing } = await supabase
         .from('squad_members')

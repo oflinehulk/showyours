@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { RankBadge } from './RankBadge';
 import { RoleIcon } from './RoleIcon';
 import { HeroClassBadge } from './HeroClassBadge';
+import { SquadInviteButton } from './SquadInviteButton';
 import type { Profile } from '@/lib/types';
 import { TrendingUp, MapPin } from 'lucide-react';
 import { INDIAN_STATES } from '@/lib/constants';
@@ -68,9 +69,12 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
           <span className="text-muted-foreground">WR</span>
         </div>
 
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <MapPin className="w-3 h-3" />
-          <span>{state?.name || 'India'}</span>
+        <div className="flex items-center gap-2">
+          <SquadInviteButton player={player} />
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="w-3 h-3" />
+            <span>{state?.name || 'India'}</span>
+          </div>
         </div>
       </div>
 

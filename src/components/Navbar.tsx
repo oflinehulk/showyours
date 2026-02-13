@@ -10,6 +10,7 @@ import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck,
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { InvitationBadge } from '@/components/InvitationInbox';
 
 const navLinks = [
   { to: '/players', label: 'Find Players', icon: Users, description: 'Squads looking for players' },
@@ -106,6 +107,7 @@ export function Navbar() {
                     </Button>
                   )
                 )}
+                {hasProfile && <InvitationBadge />}
                 <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9" title="Hard refresh (clear cache)">
                   <RefreshCw className="w-4 h-4" />
                 </Button>

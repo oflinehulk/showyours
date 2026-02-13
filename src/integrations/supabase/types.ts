@@ -212,6 +212,57 @@ export type Database = {
           },
         ]
       }
+      squad_invitations: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string
+          invited_profile_id: string
+          invited_user_id: string
+          message: string | null
+          squad_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_profile_id: string
+          invited_user_id: string
+          message?: string | null
+          squad_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_profile_id?: string
+          invited_user_id?: string
+          message?: string | null
+          squad_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squad_invitations_invited_profile_id_fkey"
+            columns: ["invited_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "squad_invitations_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squad_members: {
         Row: {
           id: string

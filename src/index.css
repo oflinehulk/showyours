@@ -72,7 +72,39 @@
     --sidebar-ring: 217 91% 50%;
   }
 
-  /* No light mode - always dark for gaming aesthetic */
+  /* Light mode */
+  .light {
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 217 91% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 0 84% 55%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 8% 46%;
+    --accent: 0 84% 55%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 13% 87%;
+    --input: 220 14% 92%;
+    --ring: 217 91% 50%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 220 14% 92%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 87%;
+    --sidebar-ring: 217 91% 50%;
+  }
+
+  /* Dark mode */
   .dark {
     --background: 222 47% 5%;
     --foreground: 210 40% 98%;
@@ -128,7 +160,7 @@
 @layer components {
   /* Glassmorphism card effect */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-lg;
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-lg shadow-sm;
   }
 
   /* Neon glow effects */

@@ -9,6 +9,7 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const navLinks = [
   { to: '/players', label: 'Find Players', icon: Users, description: 'Squads looking for players' },
@@ -98,17 +99,21 @@ export function Navbar() {
                     </Button>
                   )
                 )}
+                <ThemeToggle />
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </>
             ) : (
-              <Button size="sm" className="btn-gaming" asChild>
-                <Link to="/auth">
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
-                </Link>
-              </Button>
+              <>
+                <ThemeToggle />
+                <Button size="sm" className="btn-gaming" asChild>
+                  <Link to="/auth">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
 
@@ -183,18 +188,24 @@ export function Navbar() {
                         </Button>
                       )
                     )}
-                    <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <ThemeToggle />
+                      <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive flex-1">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </Button>
+                    </div>
                   </>
                 ) : (
-                  <Button size="sm" className="btn-gaming" asChild>
-                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Sign In
-                    </Link>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                    <Button size="sm" className="btn-gaming flex-1" asChild>
+                      <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign In
+                      </Link>
+                    </Button>
+                  </div>
                 )}
               </div>
             </nav>

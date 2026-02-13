@@ -120,14 +120,21 @@ export function useCreateSquad() {
         throw new Error('You must create a profile before creating a squad.');
       }
 
-      // Create the squad
+      // Create the squad - explicitly pick only valid columns
       const { data: squadData, error } = await supabase
         .from('squads')
         .insert({
           owner_id: user.id,
-          server: 'sea',
-          ...squad,
+          name: squad.name,
+          server: squad.server || 'sea',
+          logo_url: squad.logo_url || null,
+          description: squad.description || null,
+          min_rank: squad.min_rank,
+          needed_roles: squad.needed_roles || [],
+          member_count: squad.member_count || 1,
+          max_members: squad.max_members || 10,
           contacts: squad.contacts || [],
+          is_recruiting: squad.is_recruiting ?? true,
         })
         .select()
         .single();

@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
-import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search } from 'lucide-react';
+import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -32,6 +32,13 @@ export function Navbar() {
     await signOut();
     toast.success('Signed out successfully');
     setMobileMenuOpen(false);
+  };
+
+  const handleHardRefresh = () => {
+    if ('caches' in window) {
+      caches.keys().then(names => names.forEach(name => caches.delete(name)));
+    }
+    window.location.reload();
   };
 
   return (
@@ -99,6 +106,9 @@ export function Navbar() {
                     </Button>
                   )
                 )}
+                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9" title="Hard refresh (clear cache)">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
                 <ThemeToggle />
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
                   <LogOut className="w-4 h-4" />
@@ -106,6 +116,9 @@ export function Navbar() {
               </>
             ) : (
               <>
+                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9" title="Hard refresh (clear cache)">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
                 <ThemeToggle />
                 <Button size="sm" className="btn-gaming" asChild>
                   <Link to="/auth">

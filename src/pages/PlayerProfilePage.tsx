@@ -26,6 +26,7 @@ import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { parseContacts } from '@/lib/contacts';
+import { InvitationSection } from '@/components/InvitationInbox';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -349,6 +350,9 @@ export default function PlayerProfilePage() {
 
           {/* Sidebar - Contact Info */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Invitations - only for owner */}
+            {isOwner && <InvitationSection />}
+            
             {/* Profile Completeness - only for owner */}
             {isOwner && <ProfileCompleteness profile={player} />}
 

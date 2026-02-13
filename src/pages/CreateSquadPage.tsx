@@ -15,6 +15,7 @@ import {
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
+import { useIsAdmin } from '@/hooks/useAdmin';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES } from '@/lib/constants';
 import { hasContactType } from '@/lib/contacts';
@@ -27,6 +28,7 @@ export default function CreateSquadPage() {
   const { user } = useAuth();
   const { data: existingSquads, isLoading: squadsLoading } = useMySquads();
   const { data: myProfile, isLoading: profileLoading } = useMyProfile();
+  const { data: isAdmin } = useIsAdmin();
   const createSquad = useCreateSquad();
   
   // Form state
@@ -50,11 +52,11 @@ export default function CreateSquadPage() {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (!squadsLoading && existingSquads && existingSquads.length > 0) {
+    if (!squadsLoading && existingSquads && existingSquads.length > 0 && !isAdmin) {
       toast.info('You already have a squad. You can only create one squad.');
       navigate(`/squad/${existingSquads[0].id}`);
     }
-  }, [existingSquads, squadsLoading, navigate]);
+  }, [existingSquads, squadsLoading, navigate, isAdmin]);
 
   // Check if user has a profile
   const hasProfile = !!myProfile;
@@ -128,7 +130,8 @@ export default function CreateSquadPage() {
         max_members: parseInt(maxMembers) || 10,
         contacts: buildContacts() as any,
         is_recruiting: true,
-      });
+        skipOwnerCheck: isAdmin,
+      } as any);
       
       toast.success('Squad created!', {
         description: 'Now add members by searching for registered players.',
@@ -250,8 +253,9 @@ export default function CreateSquadPage() {
             <div className="text-sm">
               <p className="font-medium text-secondary">How it works</p>
               <ul className="text-muted-foreground mt-1 space-y-1">
-                <li>• You can only create one squad</li>
-                <li>• Add players by searching for registered users (IGN or MLBB ID)</li>
+                {!isAdmin && <li>• You can only create one squad</li>}
+                {isAdmin && <li>• As admin, you can create multiple squads</li>}
+                <li>• Add players from the platform or manually by IGN</li>
                 <li>• You'll be the Leader - you can promote Co-Leaders</li>
                 <li>• Minimum 5 members required to register for tournaments</li>
               </ul>
@@ -415,7 +419,7 @@ export default function CreateSquadPage() {
               )}
             </Button>
             <p className="text-xs text-muted-foreground text-center mt-3">
-              After creating, you'll add members by searching for registered players
+              After creating, you can add members from the platform or manually
             </p>
           </div>
         </form>

@@ -215,30 +215,39 @@ export type Database = {
       squad_members: {
         Row: {
           id: string
+          ign: string | null
           joined_at: string
+          mlbb_id: string | null
           position: number
-          profile_id: string
+          profile_id: string | null
           role: Database["public"]["Enums"]["squad_member_squad_role"]
           squad_id: string
-          user_id: string
+          user_id: string | null
+          whatsapp: string | null
         }
         Insert: {
           id?: string
+          ign?: string | null
           joined_at?: string
+          mlbb_id?: string | null
           position?: number
-          profile_id: string
+          profile_id?: string | null
           role?: Database["public"]["Enums"]["squad_member_squad_role"]
           squad_id: string
-          user_id: string
+          user_id?: string | null
+          whatsapp?: string | null
         }
         Update: {
           id?: string
+          ign?: string | null
           joined_at?: string
+          mlbb_id?: string | null
           position?: number
-          profile_id?: string
+          profile_id?: string | null
           role?: Database["public"]["Enums"]["squad_member_squad_role"]
           squad_id?: string
-          user_id?: string
+          user_id?: string | null
+          whatsapp?: string | null
         }
         Relationships: [
           {

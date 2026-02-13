@@ -7,12 +7,16 @@ export type SquadMemberRole = 'leader' | 'co_leader' | 'member';
 export interface SquadMember {
   id: string;
   squad_id: string;
-  user_id: string;
-  profile_id: string;
+  user_id: string | null;
+  profile_id: string | null;
   role: SquadMemberRole;
   position: number;
   joined_at: string;
-  // Joined profile data
+  // Manual member fields
+  ign: string | null;
+  mlbb_id: string | null;
+  whatsapp: string | null;
+  // Joined profile data (null for manual members)
   profile?: {
     id: string;
     user_id: string;
@@ -22,7 +26,7 @@ export interface SquadMember {
     rank: string;
     main_role: string;
     contacts: any;
-  };
+  } | null;
 }
 
 export interface SearchedProfile {
@@ -117,7 +121,7 @@ export function useSearchProfiles(
   });
 }
 
-// Add member to squad
+// Add member to squad (registered player)
 export function useAddSquadMember() {
   const queryClient = useQueryClient();
 
@@ -183,6 +187,58 @@ export function useAddSquadMember() {
       queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+    },
+  });
+}
+
+// Add manual member (not registered on platform)
+export function useAddManualSquadMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      squadId,
+      ign,
+      mlbbId,
+      whatsapp,
+      role = 'member',
+    }: {
+      squadId: string;
+      ign: string;
+      mlbbId?: string;
+      whatsapp?: string;
+      role?: SquadMemberRole;
+    }) => {
+      // Get current member count for position
+      const { data: existing } = await supabase
+        .from('squad_members')
+        .select('position')
+        .eq('squad_id', squadId)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const nextPosition = (existing?.[0]?.position || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('squad_members')
+        .insert({
+          squad_id: squadId,
+          profile_id: null,
+          user_id: null,
+          ign,
+          mlbb_id: mlbbId || null,
+          whatsapp: whatsapp || null,
+          role,
+          position: nextPosition,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
     },
   });
 }

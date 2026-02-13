@@ -8,6 +8,8 @@ import { SquadMemberList } from '@/components/SquadMemberList';
 import { SquadApplications } from '@/components/SquadApplications';
 import { ApplyToSquadButton } from '@/components/ApplyToSquadButton';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -26,7 +28,8 @@ import {
 import { useSquad, useMySquads, useUpdateSquad, useDeleteSquad } from '@/hooks/useSquads';
 import { 
   useSquadMembers, 
-  useAddSquadMember, 
+  useAddSquadMember,
+  useAddManualSquadMember,
   useLeaveSquad,
   type SearchedProfile 
 } from '@/hooks/useSquadMembers';
@@ -63,8 +66,15 @@ export default function SquadDetailPage() {
   const updateSquad = useUpdateSquad();
   const deleteSquad = useDeleteSquad();
   const addMember = useAddSquadMember();
+  const addManualMember = useAddManualSquadMember();
   const leaveSquad = useLeaveSquad();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
+  
+  // Manual member form state
+  const [manualIgn, setManualIgn] = useState('');
+  const [manualMlbbId, setManualMlbbId] = useState('');
+  const [manualWhatsapp, setManualWhatsapp] = useState('');
+  const [manualRole, setManualRole] = useState<'member' | 'co_leader'>('member');
 
   const isOwner = user && mySquads && mySquads.some(s => s.id === id);
   
@@ -119,6 +129,33 @@ export default function SquadDetailPage() {
         role: 'member',
       });
       toast.success(`${profile.ign} added to squad!`);
+    } catch (error: any) {
+      toast.error('Failed to add member', { description: error.message });
+    }
+  };
+
+  const handleAddManualMember = async () => {
+    if (!squad || !manualIgn.trim()) return;
+
+    // Validate: co_leader requires WhatsApp
+    if (manualRole === 'co_leader' && !manualWhatsapp.trim()) {
+      toast.error('Co-Leaders must have a WhatsApp number');
+      return;
+    }
+
+    try {
+      await addManualMember.mutateAsync({
+        squadId: squad.id,
+        ign: manualIgn.trim(),
+        mlbbId: manualMlbbId.trim() || undefined,
+        whatsapp: manualWhatsapp.trim() || undefined,
+        role: manualRole,
+      });
+      toast.success(`${manualIgn.trim()} added to squad!`);
+      setManualIgn('');
+      setManualMlbbId('');
+      setManualWhatsapp('');
+      setManualRole('member');
     } catch (error: any) {
       toast.error('Failed to add member', { description: error.message });
     }
@@ -386,21 +423,100 @@ export default function SquadDetailPage() {
                 {/* Add Member - only for leaders/co-leaders */}
                 {canManageMembers && memberCount < maxMembers && (
                   <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <UserPlus className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium">Add Player</span>
                     </div>
-                    <PlayerSearch
-                      onSelect={handleAddMember}
-                      excludeSquadId={squad.id}
-                      excludeUserIds={existingUserIds}
-                      placeholder="Search registered players by IGN or MLBB ID..."
-                      disabled={addMember.isPending}
-                      addToSquad={true}
-                    />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Only players with registered profiles can be added
-                    </p>
+                    <Tabs defaultValue="search" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="search">Search Platform</TabsTrigger>
+                        <TabsTrigger value="manual">Add Manually</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="search" className="mt-3">
+                        <PlayerSearch
+                          onSelect={handleAddMember}
+                          excludeSquadId={squad.id}
+                          excludeUserIds={existingUserIds}
+                          placeholder="Search registered players by IGN or MLBB ID..."
+                          disabled={addMember.isPending}
+                          addToSquad={true}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Search for players registered on the platform
+                        </p>
+                      </TabsContent>
+                      <TabsContent value="manual" className="mt-3 space-y-3">
+                        <div>
+                          <Label className="text-xs">IGN *</Label>
+                          <Input
+                            value={manualIgn}
+                            onChange={(e) => setManualIgn(e.target.value)}
+                            placeholder="In-game name"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">MLBB ID <span className="text-muted-foreground">(Optional)</span></Label>
+                          <Input
+                            value={manualMlbbId}
+                            onChange={(e) => setManualMlbbId(e.target.value)}
+                            placeholder="e.g., 123456789"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Role</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Button
+                              type="button"
+                              variant={manualRole === 'member' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setManualRole('member')}
+                            >
+                              Member
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={manualRole === 'co_leader' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setManualRole('co_leader')}
+                            >
+                              Co-Leader
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">
+                            WhatsApp {manualRole === 'co_leader' ? '*' : <span className="text-muted-foreground">(Optional)</span>}
+                          </Label>
+                          <Input
+                            value={manualWhatsapp}
+                            onChange={(e) => setManualWhatsapp(e.target.value)}
+                            placeholder="e.g., +91 98765 43210"
+                            className="mt-1"
+                          />
+                          {manualRole === 'co_leader' && (
+                            <p className="text-xs text-destructive mt-1">Required for Co-Leaders</p>
+                          )}
+                        </div>
+                        <Button
+                          onClick={handleAddManualMember}
+                          disabled={!manualIgn.trim() || addManualMember.isPending}
+                          className="w-full"
+                          size="sm"
+                        >
+                          {addManualMember.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : (
+                            <UserPlus className="w-4 h-4 mr-2" />
+                          )}
+                          Add Manual Member
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          Add players who aren't registered on the platform
+                        </p>
+                      </TabsContent>
+                    </Tabs>
                   </div>
                 )}
 

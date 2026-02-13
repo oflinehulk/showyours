@@ -129,10 +129,12 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     <div className="space-y-2">
       {sortedMembers.map((member) => {
         const profile = member.profile;
+        const isManual = !member.profile_id;
+        const displayName = profile?.ign || member.ign || 'Unknown';
         const roleInfo = ROLE_LABELS[member.role];
         const isMe = user?.id === member.user_id;
-        const whatsapp = profile && getWhatsAppNumber(profile.contacts);
-        const discord = profile && getDiscordId(profile.contacts);
+        const whatsapp = isManual ? member.whatsapp : (profile && getWhatsAppNumber(profile.contacts));
+        const discord = isManual ? undefined : (profile && getDiscordId(profile.contacts));
 
         return (
           <div
@@ -144,25 +146,42 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
               member.role === 'member' && 'bg-muted/50 border-border'
             )}
           >
-            <Link to={`/player/${profile?.id}`} className="shrink-0">
-              <Avatar className="h-12 w-12 border-2 border-background">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback>
-                  <User className="w-5 h-5" />
-                </AvatarFallback>
-              </Avatar>
-            </Link>
+            {isManual ? (
+              <div className="shrink-0">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </div>
+            ) : (
+              <Link to={`/player/${profile?.id}`} className="shrink-0">
+                <Avatar className="h-12 w-12 border-2 border-background">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback>
+                    <User className="w-5 h-5" />
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            )}
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <Link 
-                  to={`/player/${profile?.id}`}
-                  className="font-semibold text-foreground hover:text-primary transition-colors truncate"
-                >
-                  {profile?.ign || 'Unknown'}
-                </Link>
+                {isManual ? (
+                  <span className="font-semibold text-foreground truncate">
+                    {displayName}
+                  </span>
+                ) : (
+                  <Link 
+                    to={`/player/${profile?.id}`}
+                    className="font-semibold text-foreground hover:text-primary transition-colors truncate"
+                  >
+                    {displayName}
+                  </Link>
+                )}
                 {isMe && (
                   <Badge variant="outline" className="text-xs">You</Badge>
+                )}
+                {isManual && (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">Manual</Badge>
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
@@ -175,6 +194,9 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
                     <RankBadge rank={profile.rank} size="sm" showName={false} />
                     <RoleIcon role={profile.main_role} size="sm" showName={false} />
                   </>
+                )}
+                {isManual && member.mlbb_id && (
+                  <span className="text-xs text-muted-foreground">#{member.mlbb_id}</span>
                 )}
               </div>
             </div>
@@ -225,13 +247,17 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to={`/player/${profile?.id}`} className="flex items-center gap-2">
-                      <ExternalLink className="w-4 h-4" />
-                      View Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                  {!isManual && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/player/${profile?.id}`} className="flex items-center gap-2">
+                          <ExternalLink className="w-4 h-4" />
+                          View Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   {isLeader && member.role !== 'co_leader' && (
                     <DropdownMenuItem onClick={() => handlePromote(member)}>
                       <ArrowUp className="w-4 h-4 mr-2" />

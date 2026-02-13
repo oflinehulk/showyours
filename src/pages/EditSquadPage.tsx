@@ -94,8 +94,6 @@ export default function EditSquadPage() {
     return (
       name.trim() &&
       description.trim() &&
-      minRank &&
-      neededRoles.length > 0 &&
       whatsapp.trim()
     );
   };
@@ -214,7 +212,7 @@ export default function EditSquadPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="minRank">Minimum Rank Required *</Label>
+              <Label htmlFor="minRank">Minimum Rank Required <span className="text-xs text-muted-foreground">(Optional)</span></Label>
               <Select value={minRank} onValueChange={setMinRank}>
                 <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Select minimum rank" />
@@ -248,7 +246,7 @@ export default function EditSquadPage() {
 
           {/* Needed Roles */}
           <div>
-            <Label className="mb-3 block">Positions Looking For *</Label>
+            <Label className="mb-3 block">Positions Looking For <span className="text-xs text-muted-foreground">(Optional)</span></Label>
             <div className="flex flex-wrap gap-3">
               {ROLES.map((role) => (
                 <button

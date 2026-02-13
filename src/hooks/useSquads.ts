@@ -20,11 +20,10 @@ export function useSquads() {
   return useQuery({
     queryKey: ['squads'],
     queryFn: async () => {
-      // Fetch squads with actual member count from squad_members
+      // Fetch all squads (both recruiting and not)
       const { data: squads, error } = await supabase
         .from('squads')
         .select('*')
-        .eq('is_recruiting', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -93,18 +92,20 @@ export function useCreateSquad() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (squad: SquadInput) => {
+    mutationFn: async (squad: SquadInput & { skipOwnerCheck?: boolean }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check if user already has a squad
-      const { data: existingSquads } = await supabase
-        .from('squads')
-        .select('id')
-        .eq('owner_id', user.id);
+      // Check if user already has a squad (skip for admins)
+      if (!squad.skipOwnerCheck) {
+        const { data: existingSquads } = await supabase
+          .from('squads')
+          .select('id')
+          .eq('owner_id', user.id);
 
-      if (existingSquads && existingSquads.length > 0) {
-        throw new Error('You can only create one squad. Please manage your existing squad.');
+        if (existingSquads && existingSquads.length > 0) {
+          throw new Error('You can only create one squad. Please manage your existing squad.');
+        }
       }
 
       // Check if user has a profile

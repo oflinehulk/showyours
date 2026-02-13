@@ -92,12 +92,13 @@ export function useCreateSquad() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (squad: SquadInput & { skipOwnerCheck?: boolean }) => {
+    mutationFn: async (input: SquadInput & { skipOwnerCheck?: boolean }) => {
+      const { skipOwnerCheck, ...squad } = input;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Check if user already has a squad (skip for admins)
-      if (!squad.skipOwnerCheck) {
+      if (!skipOwnerCheck) {
         const { data: existingSquads } = await supabase
           .from('squads')
           .select('id')
@@ -124,7 +125,7 @@ export function useCreateSquad() {
         .from('squads')
         .insert({
           owner_id: user.id,
-          server: 'sea', // Always Asia for India
+          server: 'sea',
           ...squad,
           contacts: squad.contacts || [],
         })

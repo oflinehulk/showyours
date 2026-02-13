@@ -135,7 +135,14 @@ export default function SquadDetailPage() {
   };
 
   const handleAddManualMember = async () => {
-    if (!squad || !manualIgn.trim()) return;
+    if (!squad || !manualIgn.trim()) {
+      toast.error('IGN is required');
+      return;
+    }
+    if (!manualMlbbId.trim()) {
+      toast.error('MLBB ID is required');
+      return;
+    }
 
     // Validate: co_leader requires WhatsApp
     if (manualRole === 'co_leader' && !manualWhatsapp.trim()) {

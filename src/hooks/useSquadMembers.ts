@@ -205,7 +205,7 @@ export function useAddManualSquadMember() {
     }: {
       squadId: string;
       ign: string;
-      mlbbId?: string;
+      mlbbId: string;
       whatsapp?: string;
       role?: SquadMemberRole;
     }) => {

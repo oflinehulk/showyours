@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
+import { ProfileCompleteness } from '@/components/ProfileCompleteness';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { HeroClassBadge } from '@/components/HeroClassBadge';
@@ -347,7 +348,10 @@ export default function PlayerProfilePage() {
           </div>
 
           {/* Sidebar - Contact Info */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            {/* Profile Completeness - only for owner */}
+            {isOwner && <ProfileCompleteness profile={player} />}
+
             <div className="glass-card p-6 sticky top-24">
               <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-primary" />
@@ -378,7 +382,7 @@ export default function PlayerProfilePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                              className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                               asChild
                             >
                               <a 
@@ -393,7 +397,7 @@ export default function PlayerProfilePage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                             onClick={() => copyToClipboard(contact.value, contactKey)}
                           >
                             {copiedContact === contactKey ? (

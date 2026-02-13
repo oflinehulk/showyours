@@ -1,0 +1,17 @@
+{
+  "name": "ShowYours - MLBB Recruitment",
+  "short_name": "ShowYours",
+  "description": "India's premier MLBB recruitment platform. Find squads, showcase skills.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#1d6ae5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

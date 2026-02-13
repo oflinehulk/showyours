@@ -52,6 +52,8 @@ import {
   Trash2,
   Loader2,
   LogOut,
+  Share2,
+  Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -313,7 +315,20 @@ export default function SquadDetailPage() {
                         </p>
                       </Label>
                     </div>
-                    <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="btn-interactive"
+                        onClick={() => {
+                          const url = `${window.location.origin}/squad/${squad.id}`;
+                          navigator.clipboard.writeText(url);
+                          toast.success('Invite link copied! Share it on WhatsApp or anywhere.');
+                        }}
+                      >
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Copy Invite Link
+                      </Button>
                       <Button variant="outline" size="sm" className="btn-interactive" asChild>
                         <Link to={`/squad/${squad.id}/edit`}>
                           <Edit className="w-4 h-4 mr-2" />
@@ -463,7 +478,7 @@ export default function SquadDetailPage() {
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">MLBB ID <span className="text-muted-foreground">(Optional)</span></Label>
+                          <Label className="text-xs">MLBB ID *</Label>
                           <Input
                             value={manualMlbbId}
                             onChange={(e) => setManualMlbbId(e.target.value)}
@@ -508,7 +523,7 @@ export default function SquadDetailPage() {
                         </div>
                         <Button
                           onClick={handleAddManualMember}
-                          disabled={!manualIgn.trim() || addManualMember.isPending}
+                          disabled={!manualIgn.trim() || !manualMlbbId.trim() || addManualMember.isPending}
                           className="w-full"
                           size="sm"
                         >
@@ -609,7 +624,7 @@ export default function SquadDetailPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                              className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                               asChild
                             >
                               <a 
@@ -624,7 +639,7 @@ export default function SquadDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
                             onClick={() => copyToClipboard(contact.value, contactKey)}
                           >
                             {copiedContact === contactKey ? (
@@ -641,6 +656,34 @@ export default function SquadDetailPage() {
               ) : (
                 <p className="text-muted-foreground text-sm">No contact info provided</p>
               )}
+
+              {/* Share / Invite */}
+              <div className="mt-6 pt-6 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="w-full btn-interactive"
+                  onClick={() => {
+                    const url = `${window.location.origin}/squad/${squad.id}`;
+                    const text = `🎮 Join "${squad.name}" on ShowYours! ${url}`;
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                    window.open(whatsappUrl, '_blank');
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share on WhatsApp
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full mt-2 btn-interactive"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/squad/${squad.id}`);
+                    toast.success('Link copied!');
+                  }}
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Copy Invite Link
+                </Button>
+              </div>
 
               {/* Quick Stats */}
               <div className="mt-6 pt-6 border-t border-border space-y-3">

@@ -255,7 +255,20 @@ export default function PlayersPage() {
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-64 rounded-lg" />
+              <div key={i} className="glass-card p-4 space-y-3">
+                <div className="flex items-start gap-4">
+                  <Skeleton className="w-16 h-16 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-3 border-t border-border/50">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
             ))}
           </div>
         )}

@@ -81,12 +81,14 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
     return squadMembers.filter(m => m.role === 'leader' || m.role === 'co_leader');
   }, [squadMembers]);
 
-  // Check if all leaders have required contacts
+  // Check if all leaders have required contacts (check both profile contacts and manual whatsapp field)
   const allLeadersHaveContacts = useMemo(() => {
     if (!leadersAndCoLeaders.length) return false;
-    return leadersAndCoLeaders.every(member => 
-      hasContactType(member.profile?.contacts, 'whatsapp')
-    );
+    return leadersAndCoLeaders.every(member => {
+      const isManual = !member.profile_id;
+      if (isManual) return !!member.whatsapp;
+      return hasContactType(member.profile?.contacts, 'whatsapp');
+    });
   }, [leadersAndCoLeaders]);
 
   // Check which of user's squads are already registered
@@ -309,9 +311,10 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
               <div className="mb-4">
                 <p className="text-xs text-muted-foreground mb-2">Leaders & Co-Leaders (Contact Points)</p>
                 <div className="space-y-2">
-                  {leadersAndCoLeaders.map((member) => {
-                    const whatsapp = getContactValue(member.profile?.contacts, 'whatsapp');
-                    const discord = getContactValue(member.profile?.contacts, 'discord');
+                {leadersAndCoLeaders.map((member) => {
+                    const isManual = !member.profile_id;
+                    const whatsapp = isManual ? member.whatsapp : getContactValue(member.profile?.contacts, 'whatsapp');
+                    const discord = isManual ? undefined : getContactValue(member.profile?.contacts, 'discord');
 
                     return (
                       <div key={member.id} className="flex items-center gap-3 p-2 bg-primary/5 rounded-lg">
@@ -322,7 +325,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm truncate">
-                              {member.profile?.ign || 'Unknown'}
+                              {member.profile?.ign || member.ign || 'Unknown'}
                             </span>
                             <Badge variant="outline" className="text-xs">
                               {SQUAD_MEMBER_ROLE_LABELS[member.role]}

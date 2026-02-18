@@ -165,8 +165,8 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
           logo_url: squad.logo_url,
         },
         members: squadMembers.map((m, index) => ({
-          ign: m.profile?.ign || 'Unknown',
-          mlbb_id: m.profile?.mlbb_id || '',
+          ign: m.profile?.ign || m.ign || 'Unknown',
+          mlbb_id: m.profile?.mlbb_id || m.mlbb_id || '',
           role: index < 5 ? 'main' : 'substitute',
           position: index + 1,
           user_id: m.user_id,
@@ -359,7 +359,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
                         <AvatarImage src={member.profile?.avatar_url || undefined} />
                         <AvatarFallback><User className="w-3 h-3" /></AvatarFallback>
                       </Avatar>
-                      <span className="text-sm truncate">{member.profile?.ign || 'Unknown'}</span>
+                      <span className="text-sm truncate">{member.profile?.ign || member.ign || 'Unknown'}</span>
                       {index >= 5 && (
                         <Badge variant="secondary" className="text-xs ml-auto">Sub</Badge>
                       )}

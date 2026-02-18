@@ -53,7 +53,10 @@ export default function HomePage() {
             </h1>
 
             {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              Recruit players, host tournaments effortlessly.
+            </p>
+            <p className="text-base text-muted-foreground/70 max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.15s' }}>
               India's premier MLBB recruitment platform. Showcase your skills, connect with players from your state, and join squads that match your playstyle.
             </p>
 

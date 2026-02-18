@@ -330,148 +330,180 @@ export default function TournamentDetailPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* Stats Cards Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="glass-card p-4 text-center">
-                <Calendar className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-lg font-bold text-foreground">{format(new Date(tournament.date_time), 'MMM d')}</p>
-                <p className="text-xs text-muted-foreground">{format(new Date(tournament.date_time), 'yyyy')}</p>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <Clock className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-lg font-bold text-foreground">{format(new Date(tournament.date_time), 'h:mm')}</p>
-                <p className="text-xs text-muted-foreground">{format(new Date(tournament.date_time), 'a')}</p>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <Users className="w-6 h-6 text-secondary mx-auto mb-2" />
-                <p className="text-lg font-bold text-foreground">{registrationCount}</p>
-                <p className="text-xs text-muted-foreground">of {tournament.max_squads} squads</p>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <Trophy className="w-6 h-6 text-secondary mx-auto mb-2" />
-                <p className="text-lg font-bold text-foreground">{tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD'}</p>
-                <p className="text-xs text-muted-foreground">Format</p>
-              </div>
+              {[
+                { icon: Calendar, value: format(new Date(tournament.date_time), 'MMM d'), sub: format(new Date(tournament.date_time), 'yyyy'), color: 'primary' },
+                { icon: Clock, value: format(new Date(tournament.date_time), 'h:mm'), sub: format(new Date(tournament.date_time), 'a'), color: 'primary' },
+                { icon: Users, value: String(registrationCount), sub: `of ${tournament.max_squads} squads`, color: 'secondary' },
+                { icon: Trophy, value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', sub: 'Format', color: 'secondary' },
+              ].map((stat, i) => (
+                <div key={i} className="glass-card p-4 text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
+                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-${stat.color} to-transparent opacity-50`} />
+                  <div className={`absolute -top-8 -right-8 w-16 h-16 bg-${stat.color}/5 rounded-full blur-xl group-hover:bg-${stat.color}/10 transition-colors`} />
+                  <stat.icon className={`w-6 h-6 text-${stat.color} mx-auto mb-2`} />
+                  <p className="text-lg font-black text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.sub}</p>
+                </div>
+              ))}
             </div>
 
             {/* Description Section */}
-            <div className="glass-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <div className="h-6 w-1 bg-primary rounded-full" />
-                  About Tournament
-                </h3>
-                {isHost && !isEditingDesc && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setEditDesc(tournament.description || '');
-                      setIsEditingDesc(true);
-                    }}
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    <Edit3 className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
+            <div className="glass-card relative overflow-hidden group">
+              {/* Top accent border */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/50 to-transparent" />
+              {/* Decorative corner glow */}
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/15 transition-colors duration-500" />
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
+              
+              <div className="p-6 relative">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
+                    <div className="h-8 w-1.5 bg-gradient-to-b from-primary to-primary/30 rounded-full" />
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-primary" />
+                    </div>
+                    About Tournament
+                  </h3>
+                  {isHost && !isEditingDesc && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditDesc(tournament.description || '');
+                        setIsEditingDesc(true);
+                      }}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Edit3 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                {isEditingDesc ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)}
+                      placeholder="Enter tournament description..."
+                      className="min-h-[120px] bg-muted/50"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingDesc(false)}>
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveDescription} disabled={updateTournament.isPending}>
+                        {updateTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[3.25rem]">
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {tournament.description || 'No description provided.'}
+                    </p>
+                  </div>
                 )}
               </div>
-              {isEditingDesc ? (
-                <div className="space-y-3">
-                  <Textarea
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    placeholder="Enter tournament description..."
-                    className="min-h-[120px] bg-muted/50"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingDesc(false)}>
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={handleSaveDescription} disabled={updateTournament.isPending}>
-                      {updateTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                  {tournament.description || 'No description provided.'}
-                </p>
-              )}
             </div>
 
             {/* Rules Section */}
-            <div className="glass-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <div className="h-6 w-1 bg-secondary rounded-full" />
-                  <FileText className="w-5 h-5 text-secondary" />
-                  Tournament Rules
-                </h3>
-                {isHost && !isEditingRules && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setEditRules(tournament.rules || '');
-                      setIsEditingRules(true);
-                    }}
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    <Edit3 className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-              {isEditingRules ? (
-                <div className="space-y-3">
-                  <Textarea
-                    value={editRules}
-                    onChange={(e) => setEditRules(e.target.value)}
-                    placeholder="Enter tournament rules..."
-                    className="min-h-[200px] bg-muted/50 font-mono text-sm"
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(false)}>
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel
+            <div className="glass-card relative overflow-hidden group">
+              {/* Top accent border */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-secondary/50 to-transparent" />
+              {/* Decorative elements */}
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/15 transition-colors duration-500" />
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-secondary/5 rounded-full blur-xl" />
+              {/* Grid pattern overlay */}
+              <div className="absolute inset-0 opacity-[0.02]" style={{
+                backgroundImage: 'linear-gradient(hsl(var(--secondary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--secondary)) 1px, transparent 1px)',
+                backgroundSize: '20px 20px'
+              }} />
+              
+              <div className="p-6 relative">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-lg font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
+                    <div className="h-8 w-1.5 bg-gradient-to-b from-secondary to-secondary/30 rounded-full" />
+                    <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+                      <Swords className="w-4 h-4 text-secondary" />
+                    </div>
+                    Tournament Rules
+                  </h3>
+                  {isHost && !isEditingRules && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditRules(tournament.rules || '');
+                        setIsEditingRules(true);
+                      }}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Edit3 className="w-4 h-4 mr-1" />
+                      Edit
                     </Button>
-                    <Button size="sm" onClick={handleSaveRules} disabled={updateTournament.isPending}>
-                      {updateTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="prose prose-sm prose-invert max-w-none">
-                  {tournament.rules ? (
-                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                      {tournament.rules}
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground/50 italic">No rules specified yet.</p>
                   )}
                 </div>
-              )}
+                {isEditingRules ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={editRules}
+                      onChange={(e) => setEditRules(e.target.value)}
+                      placeholder="Enter tournament rules..."
+                      className="min-h-[200px] bg-muted/50 font-mono text-sm"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(false)}>
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveRules} disabled={updateTournament.isPending}>
+                        {updateTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[3.25rem]">
+                    {tournament.rules ? (
+                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                        {tournament.rules}
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground/50 italic">No rules specified yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Prize Pool */}
             {tournament.prize_wallet && (
-              <div className="glass-card p-6 border-secondary/30 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                <h3 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
-                  <div className="h-6 w-1 bg-secondary rounded-full" />
-                  <Wallet className="w-5 h-5 text-secondary" />
-                  Prize Pool
-                </h3>
-                <p className="text-muted-foreground text-sm mb-3">
-                  Winners will receive USDT prizes to the following wallet:
-                </p>
-                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border/50">
-                  <Hash className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <code className="text-sm break-all text-foreground font-mono">
-                    {tournament.prize_wallet}
-                  </code>
+              <div className="glass-card relative overflow-hidden group">
+                {/* Top accent border */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-yellow-500/50 to-transparent" />
+                <div className="absolute -top-16 -right-16 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl group-hover:bg-yellow-500/15 transition-colors duration-500" />
+                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-yellow-500/5 rounded-full blur-xl" />
+                
+                <div className="p-6 relative">
+                  <h3 className="text-lg font-black text-foreground mb-4 flex items-center gap-3 uppercase tracking-wide">
+                    <div className="h-8 w-1.5 bg-gradient-to-b from-yellow-500 to-yellow-500/30 rounded-full" />
+                    <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                      <Wallet className="w-4 h-4 text-yellow-500" />
+                    </div>
+                    Prize Pool
+                  </h3>
+                  <div className="pl-[3.25rem]">
+                    <p className="text-muted-foreground text-sm mb-3">
+                      Winners will receive USDT prizes to the following wallet:
+                    </p>
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-yellow-500/20">
+                      <Hash className="w-4 h-4 text-yellow-500 shrink-0" />
+                      <code className="text-sm break-all text-foreground font-mono">
+                        {tournament.prize_wallet}
+                      </code>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

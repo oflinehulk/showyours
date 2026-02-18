@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ import {
 } from '@/hooks/useTournaments';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { getContactValue } from '@/lib/contacts';
+import { captureAndDownload, captureAndShare } from '@/lib/screenshot';
 import { 
   Check, 
   X, 
@@ -44,6 +45,8 @@ import {
   Trash2,
   AlertTriangle,
   Hash,
+  Download,
+  Share2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -64,6 +67,7 @@ export function TournamentRegistrations({
   const deleteRegistration = useDeleteRegistration();
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
   const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string | null>(null);
+  const teamsRef = useRef<HTMLDivElement>(null);
 
   const handleApprove = async (registrationId: string) => {
     try {
@@ -258,8 +262,8 @@ export function TournamentRegistrations({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Summary bar */}
+    <div className="space-y-6" ref={teamsRef}>
+      {/* Summary bar with screenshot actions */}
       <div className="glass-card p-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2 text-sm">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -278,8 +282,28 @@ export function TournamentRegistrations({
             <span className="font-bold text-foreground">{rejected.length}</span>
           </div>
         )}
-        <div className="ml-auto text-sm text-muted-foreground">
-          Total: <span className="font-bold text-foreground">{registrations.length}</span>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Total: <span className="font-bold text-foreground">{registrations.length}</span>
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title="Download screenshot"
+            onClick={() => teamsRef.current && captureAndDownload(teamsRef.current, `tournament-teams-${registrations.length}`)}
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title="Share screenshot"
+            onClick={() => teamsRef.current && captureAndShare(teamsRef.current, `tournament-teams-${registrations.length}`)}
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -351,8 +375,15 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
     const leaders = squadMembers.filter(m => m.role === 'leader' || m.role === 'co_leader');
     const members = squadMembers.filter(m => m.role === 'member');
 
-    const getWhatsAppNumber = (contacts: unknown) => getContactValue(contacts, 'whatsapp');
-    const getDiscordId = (contacts: unknown) => getContactValue(contacts, 'discord');
+    const getWhatsAppNumber = (member: typeof squadMembers[0]) => {
+      if (!member.profile_id) return member.whatsapp || null;
+      return getContactValue(member.profile?.contacts, 'whatsapp');
+    };
+    const getDiscordId = (member: typeof squadMembers[0]) => {
+      if (!member.profile_id) return null;
+      return getContactValue(member.profile?.contacts, 'discord');
+    };
+    const getMemberIGN = (member: typeof squadMembers[0]) => member.profile?.ign || member.ign || 'Unknown';
 
     return (
       <div className="space-y-4">
@@ -364,20 +395,30 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
             </h4>
             <div className="space-y-2">
               {leaders.map((member) => {
-                const whatsapp = getWhatsAppNumber(member.profile?.contacts);
-                const discord = getDiscordId(member.profile?.contacts);
+                const whatsapp = getWhatsAppNumber(member);
+                const discord = getDiscordId(member);
                 return (
                   <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                    <Link to={`/player/${member.profile?.id}`}>
+                    {member.profile_id ? (
+                      <Link to={`/player/${member.profile?.id}`}>
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={member.profile?.avatar_url || undefined} />
+                          <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                        </Avatar>
+                      </Link>
+                    ) : (
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={member.profile?.avatar_url || undefined} />
                         <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
                       </Avatar>
-                    </Link>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <Link to={`/player/${member.profile?.id}`} className="font-medium text-foreground hover:text-primary">
-                        {member.profile?.ign || 'Unknown'}
-                      </Link>
+                      {member.profile_id ? (
+                        <Link to={`/player/${member.profile?.id}`} className="font-medium text-foreground hover:text-primary">
+                          {getMemberIGN(member)}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-foreground">{getMemberIGN(member)}</span>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {member.role === 'leader' ? 'Leader' : 'Co-Leader'}
                       </p>
@@ -412,15 +453,25 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
               Members
             </h4>
             <div className="grid grid-cols-2 gap-2">
-              {members.map((member) => (
-                <Link key={member.id} to={`/player/${member.profile?.id}`} className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={member.profile?.avatar_url || undefined} />
-                    <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium truncate">{member.profile?.ign || 'Unknown'}</span>
-                </Link>
-              ))}
+              {members.map((member) => {
+                const ign = getMemberIGN(member);
+                return member.profile_id ? (
+                  <Link key={member.id} to={`/player/${member.profile?.id}`} className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={member.profile?.avatar_url || undefined} />
+                      <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium truncate">{ign}</span>
+                  </Link>
+                ) : (
+                  <div key={member.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium truncate">{ign}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

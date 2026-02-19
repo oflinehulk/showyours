@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -11,20 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from '@/components/ui/dropdown-menu';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { 
@@ -72,8 +61,6 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
   const updateRole = useUpdateSquadMemberRole();
   const transferLeadership = useTransferLeadership();
 
-  const [transferTarget, setTransferTarget] = useState<SquadMember | null>(null);
-  const [oldLeaderNewRole, setOldLeaderNewRole] = useState<'co_leader' | 'member'>('co_leader');
 
   const canManage = isLeader || isCoLeader;
 
@@ -131,21 +118,18 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     return false;
   };
 
-  const handleTransferLeadership = async () => {
-    if (!transferTarget) return;
-    
+  const handleTransferLeadership = async (targetMember: SquadMember, newRole: 'co_leader' | 'member') => {
     const currentLeader = members?.find(m => m.role === 'leader');
     if (!currentLeader) return;
 
     try {
       await transferLeadership.mutateAsync({
         squadId,
-        newLeaderMemberId: transferTarget.id,
+        newLeaderMemberId: targetMember.id,
         oldLeaderMemberId: currentLeader.id,
-        oldLeaderNewRole,
+        oldLeaderNewRole: newRole,
       });
-      toast.success(`Leadership transferred to ${transferTarget.profile?.ign || transferTarget.ign || 'member'}`);
-      setTransferTarget(null);
+      toast.success(`Leadership transferred to ${targetMember.profile?.ign || targetMember.ign || 'member'}`);
     } catch (error: any) {
       toast.error('Failed to transfer leadership', { description: error.message });
     }
@@ -333,10 +317,22 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
                     {canTransferTo && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setTransferTarget(member)}>
-                          <ArrowRightLeft className="w-4 h-4 mr-2" />
-                          Transfer Leadership
-                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <ArrowRightLeft className="w-4 h-4 mr-2" />
+                            Transfer Leadership
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuItem onClick={() => handleTransferLeadership(member, 'co_leader')}>
+                              <Shield className="w-4 h-4 mr-2 text-blue-400" />
+                              Become Co-Leader
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTransferLeadership(member, 'member')}>
+                              <User className="w-4 h-4 mr-2" />
+                              Become Member
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
                       </>
                     )}
                     {!canTransferTo && isLeader && !memberHasWhatsApp(member) && (
@@ -361,59 +357,6 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
         })}
       </div>
 
-      {/* Transfer Leadership Dialog */}
-      <Dialog open={!!transferTarget} onOpenChange={(open) => !open && setTransferTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-yellow-500" />
-              Transfer Leadership
-            </DialogTitle>
-            <DialogDescription>
-              You are about to make <strong>{transferTarget?.profile?.ign || transferTarget?.ign}</strong> the new squad leader. Choose your new role after the transfer.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Your new role after transfer
-              </label>
-              <Select value={oldLeaderNewRole} onValueChange={(v) => setOldLeaderNewRole(v as 'co_leader' | 'member')}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="co_leader">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-blue-400" />
-                      Co-Leader
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="member">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      Member
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTransferTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleTransferLeadership}
-              disabled={transferLeadership.isPending}
-            >
-              {transferLeadership.isPending ? 'Transferring...' : 'Confirm Transfer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

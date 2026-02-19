@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,10 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Users, Shield, Eye, Swords } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Trash2, Users, Shield, Eye, Swords, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { HeroManagement } from '@/components/admin/HeroManagement';
+import { getContactValue } from '@/lib/contacts';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -24,6 +28,53 @@ const AdminPage = () => {
   const deleteProfile = useAdminDeleteProfile();
   const deleteSquad = useAdminDeleteSquad();
   const { toast } = useToast();
+  const [playerSearch, setPlayerSearch] = useState('');
+
+  // Fetch all squad members to map profiles to squads
+  const { data: allSquadMembers } = useQuery({
+    queryKey: ['allSquadMembers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('squad_members')
+        .select('profile_id, squad_id, squads(name)');
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin === true,
+  });
+
+  // Build profile->squad map
+  const profileSquadMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    allSquadMembers?.forEach((m: any) => {
+      if (m.profile_id && m.squads?.name) {
+        map[m.profile_id] = m.squads.name;
+      }
+    });
+    return map;
+  }, [allSquadMembers]);
+
+  // Filter profiles based on search
+  const filteredProfiles = useMemo(() => {
+    if (!profiles) return [];
+    if (!playerSearch.trim()) return profiles;
+    const q = playerSearch.toLowerCase().trim();
+    return profiles.filter((p) => {
+      const whatsapp = getContactValue(p.contacts, 'whatsapp') || '';
+      const mlbbId = p.mlbb_id || '';
+      const squadName = profileSquadMap[p.id] || '';
+      return (
+        p.ign.toLowerCase().includes(q) ||
+        mlbbId.toLowerCase().includes(q) ||
+        whatsapp.includes(q) ||
+        (p.rank || '').toLowerCase().includes(q) ||
+        (p.main_role || '').toLowerCase().includes(q) ||
+        (p.state || '').toLowerCase().includes(q) ||
+        (p.favorite_heroes || []).some((h: string) => h.toLowerCase().includes(q)) ||
+        squadName.toLowerCase().includes(q)
+      );
+    });
+  }, [profiles, playerSearch, profileSquadMap]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -184,11 +235,20 @@ const AdminPage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>All Player Profiles</CardTitle>
+                <div className="relative mt-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by IGN, MLBB ID, WhatsApp, rank, role, state, hero, squad..."
+                    value={playerSearch}
+                    onChange={(e) => setPlayerSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 {profilesLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading profiles...</div>
-                ) : profiles && profiles.length > 0 ? (
+                ) : filteredProfiles.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -197,25 +257,29 @@ const AdminPage = () => {
                           <TableHead>Rank</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>State</TableHead>
+                          <TableHead>Squad</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {profiles.map((profile) => (
+                        {filteredProfiles.map((profile) => (
                           <TableRow key={profile.id}>
                             <TableCell className="font-medium">{profile.ign}</TableCell>
                             <TableCell className="capitalize">{profile.rank}</TableCell>
                             <TableCell className="capitalize">{profile.main_role}</TableCell>
                             <TableCell className="capitalize">{profile.state || 'N/A'}</TableCell>
                             <TableCell>
+                              {profileSquadMap[profile.id] ? (
+                                <Badge variant="outline">{profileSquadMap[profile.id]}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">None</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
                               <Badge variant={profile.looking_for_squad ? "default" : "secondary"}>
                                 {profile.looking_for_squad ? 'Looking' : 'Recruited'}
                               </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(profile.created_at).toLocaleDateString()}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
@@ -256,7 +320,9 @@ const AdminPage = () => {
                     </Table>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">No profiles found</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    {playerSearch ? 'No players match your search' : 'No profiles found'}
+                  </div>
                 )}
               </CardContent>
             </Card>

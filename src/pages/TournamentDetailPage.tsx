@@ -532,7 +532,7 @@ export default function TournamentDetailPage() {
           )}
 
           {/* Register Tab */}
-          {canRegister && user && !isHost && (
+          {canRegister && user && (
             <TabsContent value="register">
               <TournamentRegistrationForm
                 tournament={tournament}

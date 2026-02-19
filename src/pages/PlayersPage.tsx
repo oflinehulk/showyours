@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';
@@ -16,11 +16,13 @@ import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { Search, Filter, Trophy, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSEO } from '@/hooks/useSEO';
 
 type ViewMode = 'grid' | 'rankings';
 type SortOption = 'recent' | 'winrate' | 'rank';
 
 export default function PlayersPage() {
+  useSEO({ title: 'Find Players', description: 'Browse MLBB players open for recruitment. Filter by rank, role, and state.', path: '/players' });
   const { data: profiles, isLoading } = useProfiles();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
@@ -30,6 +32,7 @@ export default function PlayersPage() {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(30);
 
   const filteredPlayers = useMemo(() => {
     let players = [...(profiles || [])];
@@ -275,11 +278,20 @@ export default function PlayersPage() {
 
         {/* Grid View */}
         {!isLoading && viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPlayers.map((player) => (
-              <PlayerCard key={player.id} player={player} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPlayers.slice(0, visibleCount).map((player) => (
+                <PlayerCard key={player.id} player={player} />
+              ))}
+            </div>
+            {visibleCount < filteredPlayers.length && (
+              <div className="flex justify-center mt-8">
+                <Button variant="outline" onClick={() => setVisibleCount((c) => c + 30)} className="btn-interactive">
+                  Load More ({filteredPlayers.length - visibleCount} remaining)
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Rankings View */}

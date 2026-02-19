@@ -10,8 +10,10 @@ import { useSquads } from '@/hooks/useSquads';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Shield, Zap, UserPlus, ChevronRight, Trophy, TrendingUp, Target } from 'lucide-react';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function HomePage() {
+  useSEO({ title: 'ShowYours', description: 'MLBB recruitment platform — find players, build squads, host tournaments effortlessly.', path: '/' });
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
   const { data: squads, isLoading: squadsLoading } = useSquads();
 

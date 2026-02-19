@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Plus, Trophy, Calendar, Users } from 'lucide-react';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function TournamentsPage() {
+  useSEO({ title: 'Tournaments', description: 'Compete in MLBB tournaments and win prizes.', path: '/tournaments' });
   const { user } = useAuth();
   const { data: tournaments, isLoading } = useTournaments();
   const [searchQuery, setSearchQuery] = useState('');

@@ -308,6 +308,14 @@ export function useLeaveSquad() {
     mutationFn: async (squadId: string) => {
       if (!user) throw new Error('Not authenticated');
 
+      // Get the member's profile_id before leaving
+      const { data: membership } = await supabase
+        .from('squad_members')
+        .select('profile_id')
+        .eq('squad_id', squadId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const { error } = await supabase
         .from('squad_members')
         .delete()
@@ -315,6 +323,14 @@ export function useLeaveSquad() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Re-enable recruitment visibility after leaving
+      if (membership?.profile_id) {
+        await supabase
+          .from('profiles')
+          .update({ looking_for_squad: true })
+          .eq('id', membership.profile_id);
+      }
     },
     onSuccess: (_, squadId) => {
       queryClient.invalidateQueries({ queryKey: ['squad-members', squadId] });

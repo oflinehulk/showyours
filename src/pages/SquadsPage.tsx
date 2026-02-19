@@ -16,8 +16,10 @@ import { RANKS, ROLES } from '@/lib/constants';
 import { Search, Filter, Shield, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function SquadsPage() {
+  useSEO({ title: 'Find Squads', description: 'Browse MLBB squads actively recruiting new members.', path: '/squads' });
   const { data: squads, isLoading } = useSquads();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');

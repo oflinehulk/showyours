@@ -243,7 +243,7 @@ export default function TournamentDetailPage() {
               </div>
 
               {/* CTA */}
-              {canRegister && user && !isHost && (
+              {canRegister && user && (
                 <Button
                   className="btn-gaming text-base px-8 py-6 shadow-lg shadow-primary/25"
                   onClick={() => setActiveTab('register')}
@@ -317,7 +317,7 @@ export default function TournamentDetailPage() {
                   Rosters
                 </TabsTrigger>
               )}
-              {canRegister && user && !isHost && (
+              {canRegister && user && (
                 <TabsTrigger value="register" className="data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary rounded-lg px-5">
                   <Trophy className="w-4 h-4 mr-2" />
                   Register

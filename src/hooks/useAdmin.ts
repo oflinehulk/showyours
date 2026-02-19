@@ -65,6 +65,24 @@ export function useAdminDeleteProfile() {
 
   return useMutation({
     mutationFn: async (profileId: string) => {
+      // Clean up squad memberships first
+      await supabase
+        .from('squad_members')
+        .delete()
+        .eq('profile_id', profileId);
+
+      // Clean up squad applications
+      await supabase
+        .from('squad_applications')
+        .delete()
+        .eq('applicant_id', profileId);
+
+      // Clean up squad invitations
+      await supabase
+        .from('squad_invitations')
+        .delete()
+        .eq('invited_profile_id', profileId);
+
       const { error } = await supabase
         .from('profiles')
         .delete()
@@ -75,6 +93,8 @@ export function useAdminDeleteProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allProfiles'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['squad-members'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
     },
   });
 }
@@ -84,6 +104,22 @@ export function useAdminDeleteSquad() {
 
   return useMutation({
     mutationFn: async (squadId: string) => {
+      // Clean up in correct order (FK constraints)
+      await supabase
+        .from('squad_applications')
+        .delete()
+        .eq('squad_id', squadId);
+
+      await supabase
+        .from('squad_invitations')
+        .delete()
+        .eq('squad_id', squadId);
+
+      await supabase
+        .from('squad_members')
+        .delete()
+        .eq('squad_id', squadId);
+
       const { error } = await supabase
         .from('squads')
         .delete()
@@ -94,6 +130,8 @@ export function useAdminDeleteSquad() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allSquads'] });
       queryClient.invalidateQueries({ queryKey: ['squads'] });
+      queryClient.invalidateQueries({ queryKey: ['squad-members'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
     },
   });
 }

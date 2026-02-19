@@ -147,6 +147,42 @@ export function useDeleteTournament() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Clean up in FK order
+      await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('tournament_id', id);
+
+      await supabase
+        .from('roster_changes')
+        .delete()
+        .eq('tournament_id', id);
+
+      // Get tournament squad IDs for this tournament
+      const { data: registrations } = await supabase
+        .from('tournament_registrations')
+        .select('tournament_squad_id')
+        .eq('tournament_id', id);
+
+      await supabase
+        .from('tournament_registrations')
+        .delete()
+        .eq('tournament_id', id);
+
+      // Clean up tournament squad members and squads
+      if (registrations && registrations.length > 0) {
+        const squadIds = registrations.map(r => r.tournament_squad_id);
+        await supabase
+          .from('tournament_squad_members')
+          .delete()
+          .in('tournament_squad_id', squadIds);
+
+        await supabase
+          .from('tournament_squads')
+          .delete()
+          .in('id', squadIds);
+      }
+
       const { error } = await supabase
         .from('tournaments')
         .delete()

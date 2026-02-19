@@ -64,7 +64,17 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
 
     try {
       await removeMember.mutateAsync({ memberId: member.id, squadId });
-      toast.success(`${member.profile?.ign || 'Member'} removed from squad`);
+      
+      // Re-enable recruitment visibility for registered players
+      if (member.profile_id) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase
+          .from('profiles')
+          .update({ looking_for_squad: true })
+          .eq('id', member.profile_id);
+      }
+      
+      toast.success(`${member.profile?.ign || member.ign || 'Member'} removed from squad`);
     } catch (error: any) {
       toast.error('Failed to remove member', { description: error.message });
     }

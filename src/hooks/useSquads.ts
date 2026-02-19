@@ -199,13 +199,43 @@ export function useDeleteSquad() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // First delete squad members
+      // Clean up applications
+      await supabase
+        .from('squad_applications')
+        .delete()
+        .eq('squad_id', id);
+
+      // Clean up invitations
+      await supabase
+        .from('squad_invitations')
+        .delete()
+        .eq('squad_id', id);
+
+      // Re-enable recruitment for all registered members
+      const { data: members } = await supabase
+        .from('squad_members')
+        .select('profile_id')
+        .eq('squad_id', id)
+        .not('profile_id', 'is', null);
+
+      // Delete squad members
       const { error: membersError } = await supabase
         .from('squad_members')
         .delete()
         .eq('squad_id', id);
       
       if (membersError) throw membersError;
+
+      // Re-enable looking_for_squad for all former members
+      if (members && members.length > 0) {
+        const profileIds = members.map(m => m.profile_id).filter(Boolean);
+        if (profileIds.length > 0) {
+          await supabase
+            .from('profiles')
+            .update({ looking_for_squad: true })
+            .in('id', profileIds);
+        }
+      }
 
       // Then delete the squad
       const { error } = await supabase
@@ -219,6 +249,7 @@ export function useDeleteSquad() {
       queryClient.invalidateQueries({ queryKey: ['squads'] });
       queryClient.invalidateQueries({ queryKey: ['my-squads'] });
       queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
   });
 }

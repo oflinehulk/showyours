@@ -148,6 +148,28 @@ export function useDeleteProfile() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Check if player is in a squad
+      const { data: membership } = await supabase
+        .from('squad_members')
+        .select('id, squad_id')
+        .eq('profile_id', id)
+        .limit(1);
+
+      if (membership && membership.length > 0) {
+        throw new Error('You must leave your squad before deleting your profile.');
+      }
+
+      // Clean up applications and invitations
+      await supabase
+        .from('squad_applications')
+        .delete()
+        .eq('applicant_id', id);
+
+      await supabase
+        .from('squad_invitations')
+        .delete()
+        .eq('invited_profile_id', id);
+
       const { error } = await supabase
         .from('profiles')
         .delete()

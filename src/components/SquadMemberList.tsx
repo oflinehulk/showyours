@@ -10,12 +10,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { 
   useSquadMembers, 
   useRemoveSquadMember, 
   useUpdateSquadMemberRole,
+  useTransferLeadership,
   type SquadMember,
   type SquadMemberRole 
 } from '@/hooks/useSquadMembers';
@@ -31,7 +47,8 @@ import {
   ArrowDown,
   ExternalLink,
   Phone,
-  MessageCircle
+  MessageCircle,
+  ArrowRightLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -53,6 +70,10 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
   const { data: members, isLoading } = useSquadMembers(squadId);
   const removeMember = useRemoveSquadMember();
   const updateRole = useUpdateSquadMemberRole();
+  const transferLeadership = useTransferLeadership();
+
+  const [transferTarget, setTransferTarget] = useState<SquadMember | null>(null);
+  const [oldLeaderNewRole, setOldLeaderNewRole] = useState<'co_leader' | 'member'>('co_leader');
 
   const canManage = isLeader || isCoLeader;
 
@@ -65,7 +86,6 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     try {
       await removeMember.mutateAsync({ memberId: member.id, squadId });
       
-      // Re-enable recruitment visibility for registered players
       if (member.profile_id) {
         const { supabase } = await import('@/integrations/supabase/client');
         await supabase
@@ -102,6 +122,35 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     }
   };
 
+  const memberHasWhatsApp = (member: SquadMember): boolean => {
+    if (member.whatsapp) return true;
+    if (member.profile?.contacts) {
+      const wa = getContactValue(member.profile.contacts, 'whatsapp');
+      return !!wa && wa.trim().length > 0;
+    }
+    return false;
+  };
+
+  const handleTransferLeadership = async () => {
+    if (!transferTarget) return;
+    
+    const currentLeader = members?.find(m => m.role === 'leader');
+    if (!currentLeader) return;
+
+    try {
+      await transferLeadership.mutateAsync({
+        squadId,
+        newLeaderMemberId: transferTarget.id,
+        oldLeaderMemberId: currentLeader.id,
+        oldLeaderNewRole,
+      });
+      toast.success(`Leadership transferred to ${transferTarget.profile?.ign || transferTarget.ign || 'member'}`);
+      setTransferTarget(null);
+    } catch (error: any) {
+      toast.error('Failed to transfer leadership', { description: error.message });
+    }
+  };
+
   const getWhatsAppNumber = (contacts: unknown) => {
     return getContactValue(contacts, 'whatsapp');
   };
@@ -129,171 +178,242 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     );
   }
 
-  // Sort: leader first, then co-leaders, then members
   const sortedMembers = [...members].sort((a, b) => {
     const roleOrder = { leader: 0, co_leader: 1, member: 2 };
     return roleOrder[a.role] - roleOrder[b.role];
   });
 
   return (
-    <div className="space-y-2">
-      {sortedMembers.map((member) => {
-        const profile = member.profile;
-        const isManual = !member.profile_id;
-        const displayName = profile?.ign || member.ign || 'Unknown';
-        const roleInfo = ROLE_LABELS[member.role];
-        const isMe = user?.id === member.user_id;
-        const whatsapp = isManual ? member.whatsapp : (profile && getWhatsAppNumber(profile.contacts));
-        const discord = isManual ? undefined : (profile && getDiscordId(profile.contacts));
+    <>
+      <div className="space-y-2">
+        {sortedMembers.map((member) => {
+          const profile = member.profile;
+          const isManual = !member.profile_id;
+          const displayName = profile?.ign || member.ign || 'Unknown';
+          const roleInfo = ROLE_LABELS[member.role];
+          const isMe = user?.id === member.user_id;
+          const whatsapp = isManual ? member.whatsapp : (profile && getWhatsAppNumber(profile.contacts));
+          const discord = isManual ? undefined : (profile && getDiscordId(profile.contacts));
+          const canTransferTo = isLeader && !isMe && member.role !== 'leader' && memberHasWhatsApp(member);
 
-        return (
-          <div
-            key={member.id}
-            className={cn(
-              'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-              member.role === 'leader' && 'bg-yellow-500/5 border-yellow-500/20',
-              member.role === 'co_leader' && 'bg-blue-500/5 border-blue-500/20',
-              member.role === 'member' && 'bg-muted/50 border-border'
-            )}
-          >
-            {isManual ? (
-              <div className="shrink-0">
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center border-2 border-background">
-                  <User className="w-5 h-5 text-muted-foreground" />
+          return (
+            <div
+              key={member.id}
+              className={cn(
+                'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+                member.role === 'leader' && 'bg-yellow-500/5 border-yellow-500/20',
+                member.role === 'co_leader' && 'bg-blue-500/5 border-blue-500/20',
+                member.role === 'member' && 'bg-muted/50 border-border'
+              )}
+            >
+              {isManual ? (
+                <div className="shrink-0">
+                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                    <User className="w-5 h-5 text-muted-foreground" />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Link to={`/player/${profile?.id}`} className="shrink-0">
-                <Avatar className="h-12 w-12 border-2 border-background">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            )}
+              ) : (
+                <Link to={`/player/${profile?.id}`} className="shrink-0">
+                  <Avatar className="h-12 w-12 border-2 border-background">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback>
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              )}
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                {isManual ? (
-                  <span className="font-semibold text-foreground truncate">
-                    {displayName}
-                  </span>
-                ) : (
-                  <Link 
-                    to={`/player/${profile?.id}`}
-                    className="font-semibold text-foreground hover:text-primary transition-colors truncate"
-                  >
-                    {displayName}
-                  </Link>
-                )}
-                {isMe && (
-                  <Badge variant="outline" className="text-xs">You</Badge>
-                )}
-                {isManual && (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">Manual</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge variant="outline" className={cn('text-xs', roleInfo.color)}>
-                  {roleInfo.icon}
-                  <span className="ml-1">{roleInfo.label}</span>
-                </Badge>
-                {profile && (
-                  <>
-                    <RankBadge rank={profile.rank} size="sm" showName={false} />
-                    <RoleIcon role={profile.main_role} size="sm" showName={false} />
-                  </>
-                )}
-                {isManual && member.mlbb_id && (
-                  <span className="text-xs text-muted-foreground">#{member.mlbb_id}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Contact icons for leaders/co-leaders */}
-            {(member.role === 'leader' || member.role === 'co_leader') && (
-              <div className="flex items-center gap-1 shrink-0">
-                {whatsapp && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    asChild
-                  >
-                    <a
-                      href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="WhatsApp"
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  {isManual ? (
+                    <span className="font-semibold text-foreground truncate">
+                      {displayName}
+                    </span>
+                  ) : (
+                    <Link 
+                      to={`/player/${profile?.id}`}
+                      className="font-semibold text-foreground hover:text-primary transition-colors truncate"
                     >
-                      <Phone className="w-4 h-4 text-green-500" />
-                    </a>
-                  </Button>
-                )}
-                {discord && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    title={`Discord: ${discord}`}
-                    onClick={() => {
-                      navigator.clipboard.writeText(discord);
-                      toast.success('Discord ID copied!');
-                    }}
-                  >
-                    <MessageCircle className="w-4 h-4 text-indigo-500" />
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Actions for leaders */}
-            {canManage && !isMe && member.role !== 'leader' && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {!isManual && (
+                      {displayName}
+                    </Link>
+                  )}
+                  {isMe && (
+                    <Badge variant="outline" className="text-xs">You</Badge>
+                  )}
+                  {isManual && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground">Manual</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge variant="outline" className={cn('text-xs', roleInfo.color)}>
+                    {roleInfo.icon}
+                    <span className="ml-1">{roleInfo.label}</span>
+                  </Badge>
+                  {profile && (
                     <>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/player/${profile?.id}`} className="flex items-center gap-2">
-                          <ExternalLink className="w-4 h-4" />
-                          View Profile
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <RankBadge rank={profile.rank} size="sm" showName={false} />
+                      <RoleIcon role={profile.main_role} size="sm" showName={false} />
                     </>
                   )}
-                  {isLeader && member.role !== 'co_leader' && (
-                    <DropdownMenuItem onClick={() => handlePromote(member)}>
-                      <ArrowUp className="w-4 h-4 mr-2" />
-                      Promote to Co-Leader
-                    </DropdownMenuItem>
+                  {isManual && member.mlbb_id && (
+                    <span className="text-xs text-muted-foreground">#{member.mlbb_id}</span>
                   )}
-                  {isLeader && member.role === 'co_leader' && (
-                    <DropdownMenuItem onClick={() => handleDemote(member)}>
-                      <ArrowDown className="w-4 h-4 mr-2" />
-                      Demote to Member
-                    </DropdownMenuItem>
+                </div>
+              </div>
+
+              {/* Contact icons for leaders/co-leaders */}
+              {(member.role === 'leader' || member.role === 'co_leader') && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {whatsapp && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      asChild
+                    >
+                      <a
+                        href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="WhatsApp"
+                      >
+                        <Phone className="w-4 h-4 text-green-500" />
+                      </a>
+                    </Button>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleRemoveMember(member)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <UserMinus className="w-4 h-4 mr-2" />
-                    Remove from Squad
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                  {discord && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title={`Discord: ${discord}`}
+                      onClick={() => {
+                        navigator.clipboard.writeText(discord);
+                        toast.success('Discord ID copied!');
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 text-indigo-500" />
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Actions for leaders */}
+              {canManage && !isMe && member.role !== 'leader' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {!isManual && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to={`/player/${profile?.id}`} className="flex items-center gap-2">
+                            <ExternalLink className="w-4 h-4" />
+                            View Profile
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    {isLeader && member.role !== 'co_leader' && (
+                      <DropdownMenuItem onClick={() => handlePromote(member)}>
+                        <ArrowUp className="w-4 h-4 mr-2" />
+                        Promote to Co-Leader
+                      </DropdownMenuItem>
+                    )}
+                    {isLeader && member.role === 'co_leader' && (
+                      <DropdownMenuItem onClick={() => handleDemote(member)}>
+                        <ArrowDown className="w-4 h-4 mr-2" />
+                        Demote to Member
+                      </DropdownMenuItem>
+                    )}
+                    {canTransferTo && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setTransferTarget(member)}>
+                          <ArrowRightLeft className="w-4 h-4 mr-2" />
+                          Transfer Leadership
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {!canTransferTo && isLeader && !memberHasWhatsApp(member) && (
+                      <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+                        <ArrowRightLeft className="w-4 h-4 mr-2 opacity-50" />
+                        No WhatsApp (can't transfer)
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleRemoveMember(member)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <UserMinus className="w-4 h-4 mr-2" />
+                      Remove from Squad
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Transfer Leadership Dialog */}
+      <Dialog open={!!transferTarget} onOpenChange={(open) => !open && setTransferTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-500" />
+              Transfer Leadership
+            </DialogTitle>
+            <DialogDescription>
+              You are about to make <strong>{transferTarget?.profile?.ign || transferTarget?.ign}</strong> the new squad leader. Choose your new role after the transfer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Your new role after transfer
+              </label>
+              <Select value={oldLeaderNewRole} onValueChange={(v) => setOldLeaderNewRole(v as 'co_leader' | 'member')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="co_leader">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-400" />
+                      Co-Leader
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="member">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      Member
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        );
-      })}
-    </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransferTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTransferLeadership}
+              disabled={transferLeadership.isPending}
+            >
+              {transferLeadership.isPending ? 'Transferring...' : 'Confirm Transfer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

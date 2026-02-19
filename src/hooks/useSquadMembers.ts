@@ -273,6 +273,61 @@ export function useUpdateSquadMemberRole() {
   });
 }
 
+// Transfer leadership to another member
+export function useTransferLeadership() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      squadId,
+      newLeaderMemberId,
+      oldLeaderMemberId,
+      oldLeaderNewRole,
+    }: {
+      squadId: string;
+      newLeaderMemberId: string;
+      oldLeaderMemberId: string;
+      oldLeaderNewRole: 'co_leader' | 'member';
+    }) => {
+      // Promote the new leader
+      const { error: promoteError } = await supabase
+        .from('squad_members')
+        .update({ role: 'leader' })
+        .eq('id', newLeaderMemberId);
+
+      if (promoteError) throw promoteError;
+
+      // Update squad owner_id to the new leader's user_id
+      const { data: newLeaderData } = await supabase
+        .from('squad_members')
+        .select('user_id')
+        .eq('id', newLeaderMemberId)
+        .single();
+
+      if (newLeaderData?.user_id) {
+        await supabase
+          .from('squads')
+          .update({ owner_id: newLeaderData.user_id })
+          .eq('id', squadId);
+      }
+
+      // Demote the old leader
+      const { error: demoteError } = await supabase
+        .from('squad_members')
+        .update({ role: oldLeaderNewRole })
+        .eq('id', oldLeaderMemberId);
+
+      if (demoteError) throw demoteError;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
+      queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['my-squads'] });
+      queryClient.invalidateQueries({ queryKey: ['squads'] });
+    },
+  });
+}
+
 // Remove member from squad
 export function useRemoveSquadMember() {
   const queryClient = useQueryClient();

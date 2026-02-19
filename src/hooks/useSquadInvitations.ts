@@ -107,6 +107,17 @@ export function useRespondToInvitation() {
 
       // If accepted, add player to squad
       if (response === 'accepted' && squadId && profileId && userId) {
+        // Check if player is already in a squad
+        const { data: existingMembership } = await supabase
+          .from('squad_members')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+
+        if (existingMembership && existingMembership.length > 0) {
+          throw new Error('You are already in a squad. Leave your current squad first.');
+        }
+
         // Get next position
         const { data: members } = await supabase
           .from('squad_members')

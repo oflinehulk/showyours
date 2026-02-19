@@ -215,6 +215,12 @@ export function useApproveApplication() {
 
       if (memberError) throw memberError;
 
+      // Auto-hide player from recruitment listings
+      await supabase
+        .from('profiles')
+        .update({ looking_for_squad: false })
+        .eq('id', applicantId);
+
       // Then update application status
       const { error: updateError } = await supabase
         .from('squad_applications')

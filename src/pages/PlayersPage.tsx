@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
+import { getContactValue } from '@/lib/contacts';
 import { Search, Filter, Trophy, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSEO } from '@/hooks/useSEO';
@@ -43,7 +44,8 @@ export default function PlayersPage() {
       players = players.filter(
         (p) =>
           p.ign.toLowerCase().includes(query) ||
-          (p.favorite_heroes || []).some((h) => h.toLowerCase().includes(query))
+          (p.favorite_heroes || []).some((h) => h.toLowerCase().includes(query)) ||
+          (getContactValue(p.contacts, 'whatsapp') || '').includes(searchQuery)
       );
     }
 
@@ -114,7 +116,7 @@ export default function PlayersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Search by name or hero..."
+              placeholder="Search by name, hero, or WhatsApp number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"

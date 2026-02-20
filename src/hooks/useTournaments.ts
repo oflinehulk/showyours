@@ -27,10 +27,11 @@ export function useTournaments() {
 
       if (error) throw error;
 
-      // Fetch registration counts for all tournaments
+      // Fetch registration counts for all tournaments (only approved ones)
       const { data: registrations } = await supabase
         .from('tournament_registrations')
-        .select('tournament_id');
+        .select('tournament_id')
+        .eq('status', 'approved');
 
       // Count registrations per tournament
       const counts: Record<string, number> = {};
@@ -155,6 +156,12 @@ export function useDeleteTournament() {
 
       await supabase
         .from('roster_changes')
+        .delete()
+        .eq('tournament_id', id);
+
+      // Clean up tournament invitations
+      await supabase
+        .from('tournament_invitations')
         .delete()
         .eq('tournament_id', id);
 
@@ -327,6 +334,29 @@ export function useRegisterForTournament() {
       tournamentId: string;
       squadId: string;
     }) => {
+      // Server-side max_squads enforcement
+      const { data: tournament, error: tError } = await supabase
+        .from('tournaments')
+        .select('max_squads, status')
+        .eq('id', tournamentId)
+        .single();
+
+      if (tError) throw tError;
+      if (tournament.status !== 'registration_open') {
+        throw new Error('Registration is not open for this tournament');
+      }
+
+      const { count, error: countError } = await supabase
+        .from('tournament_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'approved');
+
+      if (countError) throw countError;
+      if ((count || 0) >= tournament.max_squads) {
+        throw new Error('Tournament is full — no more spots available');
+      }
+
       const { data, error } = await supabase
         .from('tournament_registrations')
         .insert({
@@ -491,12 +521,113 @@ export function useUpdateMatchResult() {
         .single();
 
       if (error) throw error;
+
+      // Advance winner to next round
+      await advanceWinnerToNextRound(tournamentId, data);
+
       return { data, tournamentId };
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
     },
   });
+}
+
+// ========== Winner Advancement ==========
+
+// Advance the winner of a completed match to the next round
+async function advanceWinnerToNextRound(
+  tournamentId: string,
+  completedMatch: any
+) {
+  // Round robin doesn't have advancement
+  if (completedMatch.bracket_type === 'winners' || completedMatch.bracket_type === 'losers') {
+    // Find the next round match this winner feeds into
+    const nextRound = completedMatch.round + 1;
+    const isOddMatch = completedMatch.match_number % 2 === 1;
+    const nextMatchNumber = Math.ceil(completedMatch.match_number / 2);
+    const slot = isOddMatch ? 'squad_a_id' : 'squad_b_id';
+
+    // Determine the bracket type for the next round
+    // For single elimination: last winners round becomes 'finals'
+    const { data: nextMatches } = await supabase
+      .from('tournament_matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', nextRound)
+      .eq('match_number', nextMatchNumber)
+      .in('bracket_type', completedMatch.bracket_type === 'winners' ? ['winners', 'finals'] : ['losers', 'finals']);
+
+    if (nextMatches && nextMatches.length > 0) {
+      const nextMatch = nextMatches[0];
+      await supabase
+        .from('tournament_matches')
+        .update({ [slot]: completedMatch.winner_id })
+        .eq('id', nextMatch.id);
+    }
+  }
+}
+
+// Auto-complete bye matches (one squad vs null) after bracket generation
+async function autoCompleteByes(tournamentId: string) {
+  const { data: byeMatches } = await supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('round', 1)
+    .is('squad_b_id', null)
+    .not('squad_a_id', 'is', null);
+
+  if (!byeMatches) return;
+
+  for (const match of byeMatches) {
+    // Auto-complete the bye match
+    await supabase
+      .from('tournament_matches')
+      .update({
+        winner_id: match.squad_a_id,
+        status: 'completed' as MatchStatus,
+        squad_a_score: 1,
+        squad_b_score: 0,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', match.id);
+
+    // Advance the winner
+    await advanceWinnerToNextRound(tournamentId, {
+      ...match,
+      winner_id: match.squad_a_id,
+    });
+  }
+
+  // Also handle reverse byes (squad_a is null, squad_b is not)
+  const { data: reverseByes } = await supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('round', 1)
+    .is('squad_a_id', null)
+    .not('squad_b_id', 'is', null);
+
+  if (!reverseByes) return;
+
+  for (const match of reverseByes) {
+    await supabase
+      .from('tournament_matches')
+      .update({
+        winner_id: match.squad_b_id,
+        status: 'completed' as MatchStatus,
+        squad_a_score: 0,
+        squad_b_score: 1,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', match.id);
+
+    await advanceWinnerToNextRound(tournamentId, {
+      ...match,
+      winner_id: match.squad_b_id,
+    });
+  }
 }
 
 // ========== Bracket Generation ==========
@@ -554,6 +685,11 @@ export function useGenerateBracket() {
         .eq('id', tournamentId);
 
       if (updateError) throw updateError;
+
+      // Auto-complete bye matches for elimination formats
+      if (format !== 'round_robin') {
+        await autoCompleteByes(tournamentId);
+      }
 
       return tournamentId;
     },
@@ -639,21 +775,70 @@ function generateDoubleEliminationBracket(
   tournamentId: string,
   squadIds: string[]
 ): Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b'>[] {
-  // Start with single elimination for winners bracket
-  const winnersBracket = generateSingleEliminationBracket(tournamentId, squadIds);
-  
-  // Add losers bracket matches (simplified - proper double elim is complex)
   const totalRounds = Math.ceil(Math.log2(squadIds.length));
-  const loserMatches: Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b'>[] = [];
-  
+  const paddedLength = Math.pow(2, totalRounds);
+  const padded = [...squadIds];
+  while (padded.length < paddedLength) {
+    padded.push(null as any);
+  }
+
+  const matches: Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b'>[] = [];
+
+  // Winners bracket (without marking last round as finals)
   let matchNumber = 1;
-  for (let round = 1; round < totalRounds; round++) {
-    const matchesInRound = Math.pow(2, totalRounds - round - 1);
+  for (let i = 0; i < padded.length; i += 2) {
+    matches.push({
+      tournament_id: tournamentId,
+      round: 1,
+      match_number: matchNumber,
+      bracket_type: 'winners',
+      squad_a_id: padded[i] || null,
+      squad_b_id: padded[i + 1] || null,
+      winner_id: null,
+      status: 'pending',
+      best_of: 1,
+      squad_a_score: 0,
+      squad_b_score: 0,
+      result_screenshot: null,
+      scheduled_time: null,
+      completed_at: null,
+    });
+    matchNumber++;
+  }
+
+  let matchesInRound = paddedLength / 4;
+  for (let round = 2; round <= totalRounds; round++) {
     for (let i = 0; i < matchesInRound; i++) {
-      loserMatches.push({
+      matches.push({
         tournament_id: tournamentId,
         round,
-        match_number: matchNumber,
+        match_number: i + 1,
+        bracket_type: 'winners',
+        squad_a_id: null,
+        squad_b_id: null,
+        winner_id: null,
+        status: 'pending',
+        best_of: round === totalRounds ? 3 : 1,
+        squad_a_score: 0,
+        squad_b_score: 0,
+        result_screenshot: null,
+        scheduled_time: null,
+        completed_at: null,
+      });
+    }
+    matchesInRound = Math.max(matchesInRound / 2, 1);
+    if (matchesInRound < 1) break;
+  }
+
+  // Losers bracket
+  let loserMatchNumber = 1;
+  for (let round = 1; round < totalRounds; round++) {
+    const loserMatchesInRound = Math.max(Math.pow(2, totalRounds - round - 1), 1);
+    for (let i = 0; i < loserMatchesInRound; i++) {
+      matches.push({
+        tournament_id: tournamentId,
+        round,
+        match_number: loserMatchNumber,
         bracket_type: 'losers',
         squad_a_id: null,
         squad_b_id: null,
@@ -666,14 +851,14 @@ function generateDoubleEliminationBracket(
         scheduled_time: null,
         completed_at: null,
       });
-      matchNumber++;
+      loserMatchNumber++;
     }
   }
 
-  // Grand finals
-  loserMatches.push({
+  // Grand Finals (single match: winners bracket champion vs losers bracket champion)
+  matches.push({
     tournament_id: tournamentId,
-    round: totalRounds,
+    round: totalRounds + 1,
     match_number: 1,
     bracket_type: 'finals',
     squad_a_id: null,
@@ -688,7 +873,7 @@ function generateDoubleEliminationBracket(
     completed_at: null,
   });
 
-  return [...winnersBracket, ...loserMatches];
+  return matches;
 }
 
 // Helper: Generate round robin bracket

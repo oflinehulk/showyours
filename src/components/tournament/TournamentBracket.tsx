@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useUpdateMatchResult } from '@/hooks/useTournaments';
+import { DraftPickPanel, DraftSummaryBadge } from '@/components/tournament/DraftPickPanel';
 import { cn } from '@/lib/utils';
 import { 
   Trophy, 
@@ -22,9 +23,11 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Upload
+  Upload,
+  Swords,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import type { Tournament, TournamentMatch, TournamentSquad, MatchStatus } from '@/lib/tournament-types';
 import { MATCH_STATUS_LABELS } from '@/lib/tournament-types';
 
@@ -229,14 +232,23 @@ function MatchCard({
       )}
     >
       <div className="flex items-center justify-between mb-2">
-        <Badge variant="outline" className="text-xs">
-          Bo{match.best_of}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-xs">
+            Bo{match.best_of}
+          </Badge>
+          <DraftSummaryBadge matchId={match.id} />
+        </div>
         <span className={cn('flex items-center gap-1 text-xs', statusColors[match.status])}>
           {statusIcons[match.status]}
           {MATCH_STATUS_LABELS[match.status]}
         </span>
       </div>
+      {match.scheduled_time && (
+        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {format(new Date(match.scheduled_time), 'MMM d, h:mm a')}
+        </p>
+      )}
 
       <div className="space-y-2">
         <MatchTeamRow
@@ -305,6 +317,7 @@ function MatchResultDialog({
   onClose: () => void;
 }) {
   const updateResult = useUpdateMatchResult();
+  const [showDraftPanel, setShowDraftPanel] = useState(false);
   
   const [squadAScore, setSquadAScore] = useState(match.squad_a_score.toString());
   const [squadBScore, setSquadBScore] = useState(match.squad_b_score.toString());
@@ -432,7 +445,14 @@ function MatchResultDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {(isHost || match.squad_a) && (
+            <Button variant="outline" size="sm" onClick={() => setShowDraftPanel(true)}>
+              <Swords className="w-4 h-4 mr-2" />
+              Draft Pick/Ban
+            </Button>
+          )}
+          <div className="flex-1" />
           {canEdit && match.squad_a && match.squad_b && (
             <Button
               onClick={handleSubmit}
@@ -448,6 +468,15 @@ function MatchResultDialog({
             </Button>
           )}
         </DialogFooter>
+
+        {/* Draft Panel */}
+        <DraftPickPanel
+          match={match}
+          tournamentId={tournamentId}
+          isHost={isHost}
+          open={showDraftPanel}
+          onClose={() => setShowDraftPanel(false)}
+        />
       </DialogContent>
     </Dialog>
   );

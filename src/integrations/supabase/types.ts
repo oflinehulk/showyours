@@ -41,6 +41,60 @@ export type Database = {
         }
         Relationships: []
       }
+      match_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          notes: string | null
+          squad_a_bans: string[]
+          squad_a_ingame_bans: string[]
+          squad_b_bans: string[]
+          squad_b_ingame_bans: string[]
+          tournament_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          notes?: string | null
+          squad_a_bans?: string[]
+          squad_a_ingame_bans?: string[]
+          squad_b_bans?: string[]
+          squad_b_ingame_bans?: string[]
+          tournament_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          notes?: string | null
+          squad_a_bans?: string[]
+          squad_a_ingame_bans?: string[]
+          squad_b_bans?: string[]
+          squad_b_ingame_bans?: string[]
+          tournament_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_drafts_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_drafts_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

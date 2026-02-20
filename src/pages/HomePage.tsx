@@ -51,7 +51,7 @@ export default function HomePage() {
             {/* Headline */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 animate-slide-up">
               Find Your{' '}
-              <span className="text-gradient">Perfect Squad</span>
+              <span className="text-gradient">Perfect Teammate</span>
             </h1>
 
             {/* Subheadline */}

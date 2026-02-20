@@ -10,6 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { TiptapEditor } from '@/components/TiptapEditor';
+import { TiptapViewer } from '@/components/TiptapViewer';
 import { TournamentBracket } from '@/components/tournament/TournamentBracket';
 import { TournamentRegistrations } from '@/components/tournament/TournamentRegistrations';
 import { TournamentRegistrationForm } from '@/components/tournament/TournamentRegistrationForm';
@@ -42,6 +51,10 @@ import {
   Target,
   Hash,
   CalendarClock,
+  Globe,
+  MessageCircle,
+  Ticket,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
@@ -60,8 +73,16 @@ export default function TournamentDetailPage() {
   // Editing states
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [isEditingRules, setIsEditingRules] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [editDesc, setEditDesc] = useState('');
   const [editRules, setEditRules] = useState('');
+  const [editDetails, setEditDetails] = useState({
+    prize_pool: '',
+    team_size: '',
+    entry_fee: '',
+    region: '',
+    contact_info: '',
+  });
 
   const isHost = user?.id === tournament?.host_id;
   const registrationCount = registrations?.filter(r => r.status === 'approved').length || 0;
@@ -121,6 +142,35 @@ export default function TournamentDetailPage() {
     } catch (error: any) {
       toast.error('Failed to update', { description: error.message });
     }
+  };
+
+  const handleSaveDetails = async () => {
+    if (!tournament) return;
+    try {
+      await updateTournament.mutateAsync({
+        id: tournament.id,
+        prize_pool: editDetails.prize_pool.trim() || null,
+        team_size: editDetails.team_size || null,
+        entry_fee: editDetails.entry_fee.trim() || null,
+        region: editDetails.region || null,
+        contact_info: editDetails.contact_info.trim() || null,
+      });
+      toast.success('Tournament details updated');
+      setIsEditingDetails(false);
+    } catch (error: any) {
+      toast.error('Failed to update', { description: error.message });
+    }
+  };
+
+  const startEditingDetails = () => {
+    setEditDetails({
+      prize_pool: tournament?.prize_pool || '',
+      team_size: tournament?.team_size || '5v5',
+      entry_fee: tournament?.entry_fee || '',
+      region: tournament?.region || '',
+      contact_info: tournament?.contact_info || '',
+    });
+    setIsEditingDetails(true);
   };
 
   if (isLoading) {
@@ -239,12 +289,23 @@ export default function TournamentDetailPage() {
                     <Users className="w-4 h-4 text-secondary" />
                     {registrationCount}/{tournament.max_squads} squads
                   </span>
-                  {tournament.prize_wallet && (
+                  {tournament.team_size && (
+                    <span className="flex items-center gap-1.5">
+                      <Swords className="w-4 h-4 text-secondary" />
+                      {tournament.team_size}
+                    </span>
+                  )}
+                  {tournament.prize_pool ? (
+                    <span className="flex items-center gap-1.5 text-yellow-500 font-medium">
+                      <DollarSign className="w-4 h-4" />
+                      {tournament.prize_pool}
+                    </span>
+                  ) : tournament.prize_wallet ? (
                     <span className="flex items-center gap-1.5 text-secondary font-medium">
                       <Wallet className="w-4 h-4" />
                       USDT Prize
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -347,23 +408,141 @@ export default function TournamentDetailPage() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Stats Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: Calendar, value: format(new Date(tournament.date_time), 'MMM d'), sub: format(new Date(tournament.date_time), 'yyyy'), color: 'primary' },
-                { icon: Clock, value: format(new Date(tournament.date_time), 'h:mm'), sub: format(new Date(tournament.date_time), 'a'), color: 'primary' },
-                { icon: Users, value: String(registrationCount), sub: `of ${tournament.max_squads} squads`, color: 'secondary' },
-                { icon: Trophy, value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', sub: 'Format', color: 'secondary' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-4 text-center relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
-                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-${stat.color} to-transparent opacity-50`} />
-                  <div className={`absolute -top-8 -right-8 w-16 h-16 bg-${stat.color}/5 rounded-full blur-xl group-hover:bg-${stat.color}/10 transition-colors`} />
-                  <stat.icon className={`w-6 h-6 text-${stat.color} mx-auto mb-2`} />
-                  <p className="text-lg font-display font-black text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.sub}</p>
+            {/* Tournament Info Grid — with Edit button for hosts */}
+            {isEditingDetails ? (
+              <div className="glass-card relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF4500] via-[#FF4500]/50 to-transparent" />
+                <div className="p-6 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500] flex items-center gap-2">
+                      <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                      Edit Tournament Details
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-1.5 block">Prize Pool</label>
+                      <Input
+                        value={editDetails.prize_pool}
+                        onChange={(e) => setEditDetails(d => ({ ...d, prize_pool: e.target.value }))}
+                        placeholder="e.g. ₹5,000 or 100 USDT"
+                        className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-1.5 block">Team Size</label>
+                      <Select value={editDetails.team_size} onValueChange={(v) => setEditDetails(d => ({ ...d, team_size: v }))}>
+                        <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
+                          <SelectValue placeholder="Select team size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5v5">5v5</SelectItem>
+                          <SelectItem value="3v3">3v3</SelectItem>
+                          <SelectItem value="1v1">1v1</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-1.5 block">Entry Fee</label>
+                      <Input
+                        value={editDetails.entry_fee}
+                        onChange={(e) => setEditDetails(d => ({ ...d, entry_fee: e.target.value }))}
+                        placeholder="e.g. Free, ₹100 per team"
+                        className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-1.5 block">Region / Server</label>
+                      <Select value={editDetails.region} onValueChange={(v) => setEditDetails(d => ({ ...d, region: v }))}>
+                        <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
+                          <SelectValue placeholder="Select region" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="India">India</SelectItem>
+                          <SelectItem value="SEA">SEA</SelectItem>
+                          <SelectItem value="Global">Global</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-1.5 block">Contact Info</label>
+                      <Input
+                        value={editDetails.contact_info}
+                        onChange={(e) => setEditDetails(d => ({ ...d, contact_info: e.target.value }))}
+                        placeholder="Discord ID or WhatsApp number"
+                        className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditingDetails(false)}>
+                      <X className="w-4 h-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSaveDetails} disabled={updateTournament.isPending}>
+                      {updateTournament.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+                      Save Details
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <>
+                {/* Edit button for hosts */}
+                {isHost && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={startEditingDetails}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      <Edit3 className="w-4 h-4 mr-1" />
+                      Edit Details
+                    </Button>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { icon: Calendar, label: 'Date', value: format(new Date(tournament.date_time), 'MMM d, yyyy'), color: 'text-[#FF4500]' },
+                    { icon: Clock, label: 'Time', value: format(new Date(tournament.date_time), 'h:mm a'), color: 'text-[#FF4500]' },
+                    { icon: Users, label: 'Team Size', value: tournament.team_size || '5v5', color: 'text-[#FF4500]' },
+                    { icon: Ticket, label: 'Entry Fee', value: tournament.entry_fee || 'Free', color: 'text-emerald-400' },
+                    { icon: DollarSign, label: 'Prize Pool', value: tournament.prize_pool || '—', color: 'text-yellow-500' },
+                    { icon: Shield, label: 'Squads', value: `${registrationCount} / ${tournament.max_squads}`, color: 'text-[#FF4500]' },
+                    { icon: Swords, label: 'Format', value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', color: 'text-[#FF4500]' },
+                    { icon: Globe, label: 'Region', value: tournament.region || '—', color: 'text-sky-400' },
+                  ].map((item, i) => (
+                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-4 relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FF4500]/40 to-transparent" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
+                          <item.icon className={cn('w-4.5 h-4.5', item.color)} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-display">{item.label}</p>
+                          <p className="text-sm font-display font-bold text-foreground truncate">{item.value}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Contact Info (if provided) */}
+                {tournament.contact_info && (
+                  <div className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
+                      <MessageCircle className="w-4.5 h-4.5 text-[#FF4500]" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-display">Host Contact</p>
+                      <p className="text-sm font-display font-bold text-foreground">{tournament.contact_info}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Description Section */}
             <div className="glass-card relative overflow-hidden group">
@@ -465,11 +644,10 @@ export default function TournamentDetailPage() {
                 </div>
                 {isEditingRules ? (
                   <div className="space-y-3">
-                    <Textarea
-                      value={editRules}
-                      onChange={(e) => setEditRules(e.target.value)}
+                    <TiptapEditor
+                      content={editRules}
+                      onChange={setEditRules}
                       placeholder="Enter tournament rules..."
-                      className="min-h-[200px] bg-muted/50 font-mono text-sm"
                     />
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => setIsEditingRules(false)}>
@@ -485,9 +663,7 @@ export default function TournamentDetailPage() {
                 ) : (
                   <div className="pl-[3.25rem]">
                     {tournament.rules ? (
-                      <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                        {tournament.rules}
-                      </p>
+                      <TiptapViewer content={tournament.rules} />
                     ) : (
                       <p className="text-muted-foreground/50 italic">No rules specified yet.</p>
                     )}

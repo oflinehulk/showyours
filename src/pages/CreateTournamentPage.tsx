@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TiptapEditor } from '@/components/TiptapEditor';
 import {
   Select,
   SelectContent,
@@ -16,7 +17,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateTournament } from '@/hooks/useTournaments';
-import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { MAX_SQUAD_SIZES } from '@/lib/tournament-types';
 
@@ -33,6 +34,13 @@ export default function CreateTournamentPage() {
   const [maxSquads, setMaxSquads] = useState('16');
   const [prizeWallet, setPrizeWallet] = useState('');
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+
+  // New structured fields
+  const [prizePool, setPrizePool] = useState('');
+  const [teamSize, setTeamSize] = useState('5v5');
+  const [entryFee, setEntryFee] = useState('');
+  const [region, setRegion] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -62,9 +70,14 @@ export default function CreateTournamentPage() {
         date_time: selectedDate.toISOString(),
         max_squads: parseInt(maxSquads),
         status: 'registration_open',
-        format: null, // Set when bracket is generated
+        format: null,
         prize_wallet: prizeWallet.trim() || null,
         banner_url: bannerUrl,
+        prize_pool: prizePool.trim() || null,
+        team_size: teamSize || null,
+        entry_fee: entryFee.trim() || null,
+        region: region || null,
+        contact_info: contactInfo.trim() || null,
       });
 
       toast.success('Tournament created!', {
@@ -116,56 +129,146 @@ export default function CreateTournamentPage() {
         </GlowCard>
 
         {/* Form */}
-        <GlowCard>
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Banner Upload */}
-            <div>
-              <Label className="mb-3 block text-xs font-display uppercase tracking-wider text-muted-foreground">Tournament Banner (Optional)</Label>
-              <ImageUpload
-                bucket="tournament-assets"
-                currentUrl={bannerUrl}
-                onUpload={setBannerUrl}
-                onRemove={() => setBannerUrl(null)}
-                shape="wide"
-                size="lg"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Section 1: Basic Info */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500]">Basic Info</h2>
+              </div>
 
-            {/* Basic Info */}
-            <div>
-              <Label htmlFor="name" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Tournament Name *</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., MLBB India Championship 2026"
-                className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-              />
-            </div>
+              {/* Banner Upload */}
+              <div>
+                <Label className="mb-3 block text-xs font-display uppercase tracking-wider text-muted-foreground">Tournament Banner (Optional)</Label>
+                <ImageUpload
+                  bucket="tournament-assets"
+                  currentUrl={bannerUrl}
+                  onUpload={setBannerUrl}
+                  onRemove={() => setBannerUrl(null)}
+                  shape="wide"
+                  size="lg"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="description" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Tell participants about your tournament..."
-                className="mt-1.5 min-h-[100px] bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-              />
-            </div>
+              {/* Tournament Name */}
+              <div>
+                <Label htmlFor="name" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Tournament Name *</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., MLBB India Championship 2026"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="rules" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Rules</Label>
-              <Textarea
-                id="rules"
-                value={rules}
-                onChange={(e) => setRules(e.target.value)}
-                placeholder="Game mode: Draft Pick 5v5, Ban 5. Room type: Tournament (LIVE)..."
-                className="mt-1.5 min-h-[100px] bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-              />
+              {/* Description */}
+              <div>
+                <Label htmlFor="description" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Tell participants about your tournament..."
+                  className="mt-1.5 min-h-[100px] bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                />
+              </div>
             </div>
+          </GlowCard>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Section 2: Tournament Details */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500]">Tournament Details</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Prize Pool */}
+                <div>
+                  <Label htmlFor="prizePool" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <DollarSign className="w-4 h-4 inline mr-1" />
+                    Prize Pool
+                  </Label>
+                  <Input
+                    id="prizePool"
+                    value={prizePool}
+                    onChange={(e) => setPrizePool(e.target.value)}
+                    placeholder="e.g. ₹5,000 or 100 USDT"
+                    className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                  />
+                </div>
+
+                {/* Team Size */}
+                <div>
+                  <Label htmlFor="teamSize" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    Team Size
+                  </Label>
+                  <Select value={teamSize} onValueChange={setTeamSize}>
+                    <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
+                      <SelectValue placeholder="Select team size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5v5">5v5</SelectItem>
+                      <SelectItem value="3v3">3v3</SelectItem>
+                      <SelectItem value="1v1">1v1</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Entry Fee */}
+                <div>
+                  <Label htmlFor="entryFee" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <Ticket className="w-4 h-4 inline mr-1" />
+                    Entry Fee
+                  </Label>
+                  <Input
+                    id="entryFee"
+                    value={entryFee}
+                    onChange={(e) => setEntryFee(e.target.value)}
+                    placeholder="e.g. Free, ₹100 per team"
+                    className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                  />
+                </div>
+
+                {/* Max Squads */}
+                <div>
+                  <Label htmlFor="maxSquads" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <Swords className="w-4 h-4 inline mr-1" />
+                    Max Squads *
+                  </Label>
+                  <Select value={maxSquads} onValueChange={setMaxSquads}>
+                    <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
+                      <SelectValue placeholder="Select max squads" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MAX_SQUAD_SIZES.map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {size} squads
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground/60 italic">
+                Tournament format (Single Elimination, Double Elimination, Round Robin) is chosen after registration closes.
+              </p>
+            </div>
+          </GlowCard>
+
+          {/* Section 3: Schedule */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500]">Schedule</h2>
+              </div>
+
               <div>
                 <Label htmlFor="dateTime" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
                   <Calendar className="w-4 h-4 inline mr-2" />
@@ -180,63 +283,119 @@ export default function CreateTournamentPage() {
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
+            </div>
+          </GlowCard>
 
-              <div>
-                <Label htmlFor="maxSquads" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
-                  <Users className="w-4 h-4 inline mr-2" />
-                  Max Squads *
-                </Label>
-                <Select value={maxSquads} onValueChange={setMaxSquads}>
-                  <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
-                    <SelectValue placeholder="Select max squads" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MAX_SQUAD_SIZES.map((size) => (
-                      <SelectItem key={size} value={size.toString()}>
-                        {size} squads
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Section 4: Contact & Region */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500]">Contact & Region</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Region */}
+                <div>
+                  <Label htmlFor="region" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <Globe className="w-4 h-4 inline mr-1" />
+                    Region / Server
+                  </Label>
+                  <Select value={region} onValueChange={setRegion}>
+                    <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
+                      <SelectValue placeholder="Select region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="India">India</SelectItem>
+                      <SelectItem value="SEA">SEA</SelectItem>
+                      <SelectItem value="Global">Global</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Contact Info */}
+                <div>
+                  <Label htmlFor="contactInfo" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                    <MessageCircle className="w-4 h-4 inline mr-1" />
+                    Contact Info
+                  </Label>
+                  <Input
+                    id="contactInfo"
+                    value={contactInfo}
+                    onChange={(e) => setContactInfo(e.target.value)}
+                    placeholder="Discord ID or WhatsApp number"
+                    className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                  />
+                </div>
               </div>
             </div>
+          </GlowCard>
 
-            <div>
-              <Label htmlFor="prizeWallet" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
-                <Wallet className="w-4 h-4 inline mr-2" />
-                USDT Prize Wallet (Optional)
-              </Label>
-              <Input
-                id="prizeWallet"
-                value={prizeWallet}
-                onChange={(e) => setPrizeWallet(e.target.value)}
-                placeholder="Crypto wallet address for prize distribution"
-                className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                If you're offering a prize pool, enter the wallet address where winners will receive USDT.
-              </p>
-            </div>
+          {/* Section 5: Rules */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-[#FF4500] to-[#FF4500]/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-[#FF4500]">Rules</h2>
+              </div>
 
-            {/* Submit */}
-            <div className="pt-4 border-t border-[#FF4500]/10">
-              <Button
-                type="submit"
-                className="w-full btn-gaming"
-                disabled={!canSubmit() || createTournament.isPending}
-              >
-                {createTournament.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Trophy className="w-4 h-4 mr-2" />
-                    Create Tournament
-                  </>
-                )}
-              </Button>
+              <div>
+                <Label className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2 block">Tournament Rules</Label>
+                <TiptapEditor
+                  content={rules}
+                  onChange={setRules}
+                  placeholder="Game mode: Draft Pick 5v5, Ban 5. Room type: Tournament (LIVE)..."
+                />
+              </div>
             </div>
-          </form>
-        </GlowCard>
+          </GlowCard>
+
+          {/* Section 6: Prize Wallet */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-yellow-500 to-yellow-500/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-yellow-500">Prize Wallet</h2>
+              </div>
+
+              <div>
+                <Label htmlFor="prizeWallet" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                  <Wallet className="w-4 h-4 inline mr-2" />
+                  USDT Prize Wallet (Optional)
+                </Label>
+                <Input
+                  id="prizeWallet"
+                  value={prizeWallet}
+                  onChange={(e) => setPrizeWallet(e.target.value)}
+                  placeholder="Crypto wallet address for prize distribution"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If you're offering a prize pool, enter the wallet address where winners will receive USDT.
+                </p>
+              </div>
+            </div>
+          </GlowCard>
+
+          {/* Submit */}
+          <div className="pt-2">
+            <Button
+              type="submit"
+              className="w-full btn-gaming py-6 text-base"
+              disabled={!canSubmit() || createTournament.isPending}
+            >
+              {createTournament.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Trophy className="w-5 h-5 mr-2" />
+                  Create Tournament
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
     </Layout>
   );

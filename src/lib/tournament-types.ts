@@ -18,6 +18,11 @@ export interface Tournament {
   format: TournamentFormat | null;
   prize_wallet: string | null;
   banner_url: string | null;
+  prize_pool: string | null;
+  team_size: string | null;
+  entry_fee: string | null;
+  region: string | null;
+  contact_info: string | null;
   created_at: string;
   updated_at: string;
 }

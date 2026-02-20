@@ -9,7 +9,11 @@ import {
   Trophy,
   Wallet,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Ticket,
+  DollarSign,
+  Globe,
+  Swords,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Tournament } from '@/lib/tournament-types';
@@ -86,6 +90,16 @@ export function TournamentCard({ tournament, registrationCount = 0 }: Tournament
               {registrationCount}/{tournament.max_squads} squads
             </span>
           </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Swords className="w-4 h-4 text-secondary" />
+            <span>{tournament.team_size || '5v5'}</span>
+          </div>
+          {tournament.entry_fee && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Ticket className="w-4 h-4 text-emerald-400" />
+              <span>{tournament.entry_fee}</span>
+            </div>
+          )}
           {tournament.format && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Trophy className="w-4 h-4 text-secondary" />
@@ -95,10 +109,20 @@ export function TournamentCard({ tournament, registrationCount = 0 }: Tournament
         </div>
 
         {/* Prize Pool */}
-        {tournament.prize_wallet && (
+        {(tournament.prize_pool || tournament.prize_wallet) && (
           <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-            <Wallet className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm text-yellow-500 font-medium">USDT Prize Pool</span>
+            <DollarSign className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm text-yellow-500 font-medium">
+              {tournament.prize_pool || 'USDT Prize Pool'}
+            </span>
+          </div>
+        )}
+
+        {/* Region badge */}
+        {tournament.region && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Globe className="w-3.5 h-3.5 text-sky-400" />
+            <span>{tournament.region}</span>
           </div>
         )}
 

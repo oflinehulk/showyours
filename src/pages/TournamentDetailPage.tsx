@@ -14,6 +14,7 @@ import { TournamentRegistrationForm } from '@/components/tournament/TournamentRe
 import { TournamentHostControls } from '@/components/tournament/TournamentHostControls';
 import { TournamentRosterManagement } from '@/components/tournament/TournamentRosterManagement';
 import { TournamentInviteSquads } from '@/components/tournament/TournamentInviteSquads';
+import { MatchScheduler } from '@/components/tournament/MatchScheduler';
 import { 
   useTournament, 
   useTournamentRegistrations,
@@ -38,6 +39,7 @@ import {
   Zap,
   Target,
   Hash,
+  CalendarClock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
@@ -325,6 +327,12 @@ export default function TournamentDetailPage() {
                   Rosters
                 </TabsTrigger>
               )}
+              {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
+                <TabsTrigger value="schedule" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+                  <CalendarClock className="w-4 h-4 mr-2" />
+                  Schedule
+                </TabsTrigger>
+              )}
               {canRegister && user && (
                 <TabsTrigger value="register" className="data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary rounded-lg px-5">
                   <Trophy className="w-4 h-4 mr-2" />
@@ -555,6 +563,16 @@ export default function TournamentDetailPage() {
               <TournamentRosterManagement
                 tournament={tournament}
                 isHost={isHost}
+              />
+            </TabsContent>
+          )}
+
+          {/* Schedule Tab */}
+          {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
+            <TabsContent value="schedule">
+              <MatchScheduler
+                tournamentId={tournament.id}
+                matches={matches || []}
               />
             </TabsContent>
           )}

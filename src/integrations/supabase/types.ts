@@ -692,62 +692,47 @@ export type Database = {
       tournaments: {
         Row: {
           banner_url: string | null
-          contact_info: string | null
           created_at: string
           date_time: string
           description: string | null
-          entry_fee: string | null
           format: Database["public"]["Enums"]["tournament_format"] | null
           host_id: string
           id: string
           max_squads: number
           name: string
-          prize_pool: string | null
           prize_wallet: string | null
-          region: string | null
           rules: string | null
           status: Database["public"]["Enums"]["tournament_status"]
-          team_size: string | null
           updated_at: string
         }
         Insert: {
           banner_url?: string | null
-          contact_info?: string | null
           created_at?: string
           date_time: string
           description?: string | null
-          entry_fee?: string | null
           format?: Database["public"]["Enums"]["tournament_format"] | null
           host_id: string
           id?: string
           max_squads?: number
           name: string
-          prize_pool?: string | null
           prize_wallet?: string | null
-          region?: string | null
           rules?: string | null
           status?: Database["public"]["Enums"]["tournament_status"]
-          team_size?: string | null
           updated_at?: string
         }
         Update: {
           banner_url?: string | null
-          contact_info?: string | null
           created_at?: string
           date_time?: string
           description?: string | null
-          entry_fee?: string | null
           format?: Database["public"]["Enums"]["tournament_format"] | null
           host_id?: string
           id?: string
           max_squads?: number
           name?: string
-          prize_pool?: string | null
           prize_wallet?: string | null
-          region?: string | null
           rules?: string | null
           status?: Database["public"]["Enums"]["tournament_status"]
-          team_size?: string | null
           updated_at?: string
         }
         Relationships: []

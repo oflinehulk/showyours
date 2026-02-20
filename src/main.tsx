@@ -9,6 +9,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Force reload when Safari restores page from bfcache (back-forward cache)
+// This prevents showing stale CSS/JS after backgrounding and reopening the browser
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 // Always dark mode - Tron aesthetic
 document.documentElement.classList.add('dark');
 

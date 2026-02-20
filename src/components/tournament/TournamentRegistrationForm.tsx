@@ -118,11 +118,6 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
       errors.push(`Minimum 5 players required (currently ${squadMembers.length})`);
     }
     
-    // Check maximum 7 members
-    if (squadMembers.length > 7) {
-      errors.push(`Maximum 7 players allowed (currently ${squadMembers.length})`);
-    }
-    
     // Check user is leader/co-leader
     if (!isLeaderOrCoLeader) {
       errors.push('Only leaders or co-leaders can register for tournaments');

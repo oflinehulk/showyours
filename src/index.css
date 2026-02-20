@@ -2,49 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* MLBB Recruitment Platform - Dark Gaming Design System
-   All colors in HSL format for Tailwind compatibility
-   Navy Blue and Red theme
+/* ShowYours - Tron Legacy Dark Gaming Design System
+   Neon Orange-Red on near-black. Circuit aesthetics.
+   All colors in HSL format for Tailwind compatibility.
 */
 
 @layer base {
   :root {
-    /* Dark gaming theme - always dark mode */
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
+    /* Tron Legacy Dark Theme */
+    --background: 0 0% 4%;
+    --foreground: 30 5% 90%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 30 5% 90%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 30 5% 90%;
 
-    /* Primary - Navy Blue */
-    --primary: 217 91% 50%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Neon Orange-Red #FF4500 */
+    --primary: 16 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Red */
-    --secondary: 0 84% 55%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - Softer Orange #FF6B35 */
+    --secondary: 22 100% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted - Subtle dark tones */
-    --muted: 222 40% 12%;
-    --muted-foreground: 215 20% 55%;
+    /* Accent - Deep Red #FF2D00 */
+    --accent: 11 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Accent - Red for highlights */
-    --accent: 0 84% 55%;
-    --accent-foreground: 210 40% 98%;
+    /* Muted */
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 50%;
 
     --destructive: 0 85% 55%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 30% 18%;
-    --input: 222 40% 12%;
-    --ring: 217 91% 50%;
+    --border: 16 20% 15%;
+    --input: 0 0% 10%;
+    --ring: 16 100% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* MLBB Rank Colors */
+    /* MLBB Rank Colors - unchanged */
     --rank-warrior: 30 70% 45%;
     --rank-elite: 200 70% 50%;
     --rank-master: 170 70% 45%;
@@ -56,75 +56,43 @@
     --rank-mythical-glory: 25 100% 60%;
     --rank-immortal: 50 100% 55%;
 
-    /* Glow effects */
-    --glow-primary: 217 91% 50%;
-    --glow-secondary: 0 84% 55%;
-    --glow-accent: 0 84% 55%;
+    /* Glow effects - neon orange */
+    --glow-primary: 16 100% 50%;
+    --glow-secondary: 22 100% 60%;
+    --glow-accent: 11 100% 50%;
 
-    /* Sidebar - matching dark theme */
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 50%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 40% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 217 91% 50%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 30 5% 90%;
+    --sidebar-primary: 16 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 30 5% 90%;
+    --sidebar-border: 16 20% 15%;
+    --sidebar-ring: 16 100% 50%;
   }
 
-  /* Light mode */
-  .light {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 50%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 0 84% 55%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 220 14% 92%;
-    --muted-foreground: 220 8% 46%;
-    --accent: 0 84% 55%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 85% 55%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 13% 87%;
-    --input: 220 14% 92%;
-    --ring: 217 91% 50%;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 217 91% 50%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 220 14% 92%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 87%;
-    --sidebar-ring: 217 91% 50%;
-  }
-
-  /* Dark mode */
+  /* Keep .dark class for compatibility but it mirrors :root */
   .dark {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 50%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 0 84% 55%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 40% 12%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 0 84% 55%;
-    --accent-foreground: 210 40% 98%;
+    --background: 0 0% 4%;
+    --foreground: 30 5% 90%;
+    --card: 0 0% 7%;
+    --card-foreground: 30 5% 90%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 30 5% 90%;
+    --primary: 16 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 22 100% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 11 100% 50%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 85% 55%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 30% 18%;
-    --input: 222 40% 12%;
-    --ring: 217 91% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 16 20% 15%;
+    --input: 0 0% 10%;
+    --ring: 16 100% 50%;
   }
 }
 
@@ -135,32 +103,34 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Rajdhani', 'Inter', system-ui, sans-serif;
+    font-weight: 500;
   }
 
-  /* Custom scrollbar for gaming aesthetic */
+  /* Custom scrollbar - Tron orange */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-background;
+    background: #0a0a0a;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted rounded-full;
+    background: rgba(255, 69, 0, 0.3);
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    background: rgba(255, 69, 0, 0.5);
   }
 }
 
 @layer components {
-  /* Glassmorphism card effect */
+  /* Tron glass card */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-lg shadow-sm;
+    @apply bg-[#111111]/90 backdrop-blur-xl border border-[#FF4500]/20 rounded-lg shadow-sm;
   }
 
   /* Neon glow effects */
@@ -185,18 +155,37 @@
   }
 
   .hover-glow:hover {
-    box-shadow: 0 0 25px hsl(var(--glow-primary) / 0.4),
-                0 0 50px hsl(var(--glow-primary) / 0.15);
+    box-shadow: 0 0 15px rgba(255, 69, 0, 0.4),
+                0 0 30px rgba(255, 69, 0, 0.15);
     transform: translateY(-2px);
   }
 
-  /* Gaming button styles - Navy Blue and Red gradient */
+  /* Neon border utility */
+  .neon-border {
+    @apply border border-[#FF4500]/30;
+    box-shadow: 0 0 5px rgba(255, 69, 0, 0.15),
+                inset 0 0 5px rgba(255, 69, 0, 0.05);
+  }
+
+  .neon-border-strong {
+    @apply border border-[#FF4500]/60;
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.3),
+                inset 0 0 5px rgba(255, 69, 0, 0.1);
+  }
+
+  /* Gaming button styles - Neon Orange gradient */
   .btn-gaming {
     @apply relative overflow-hidden font-bold uppercase tracking-wider;
-    @apply bg-gradient-to-r from-primary to-secondary;
-    @apply hover:from-primary/90 hover:to-secondary/90;
+    @apply bg-gradient-to-r from-[#FF4500] to-[#FF6B35];
+    @apply text-white;
+    @apply hover:from-[#FF4500]/90 hover:to-[#FF6B35]/90;
     @apply transition-all duration-300;
     @apply active:scale-95;
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+  }
+
+  .btn-gaming:hover {
+    box-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
   }
 
   .btn-gaming::before {
@@ -228,9 +217,9 @@
     background: inherit;
   }
 
-  /* Text gradient - Navy Blue and Red */
+  /* Text gradient - Neon Orange */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-[#FF4500] via-[#FF6B35] to-[#FF4500] bg-clip-text text-transparent;
     background-size: 200% auto;
     animation: text-shimmer 3s linear infinite;
   }
@@ -241,6 +230,17 @@
     }
   }
 
+  /* Neon text glow */
+  .text-neon {
+    color: #FF4500;
+    text-shadow: 0 0 7px rgba(255, 69, 0, 0.6),
+                 0 0 15px rgba(255, 69, 0, 0.3);
+  }
+
+  .text-neon-subtle {
+    text-shadow: 0 0 5px rgba(255, 69, 0, 0.3);
+  }
+
   /* Section backgrounds */
   .section-glow {
     @apply relative;
@@ -249,7 +249,27 @@
   .section-glow::before {
     content: '';
     @apply absolute inset-0 -z-10;
-    background: radial-gradient(ellipse at center, hsl(var(--primary) / 0.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse at center, rgba(255, 69, 0, 0.06) 0%, transparent 70%);
+  }
+
+  /* Circuit background pattern */
+  .circuit-bg {
+    background-image:
+      linear-gradient(rgba(255, 69, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 69, 0, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Scan line overlay */
+  .scan-line-overlay {
+    @apply pointer-events-none fixed inset-0 z-50;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 69, 0, 0.01) 2px,
+      rgba(255, 69, 0, 0.01) 4px
+    );
   }
 }
 

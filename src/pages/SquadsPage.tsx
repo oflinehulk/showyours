@@ -3,7 +3,6 @@ import { Layout } from '@/components/Layout';
 import { SquadCard } from '@/components/SquadCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -11,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { useSquads } from '@/hooks/useSquads';
 import { RANKS, ROLES } from '@/lib/constants';
 import { Search, Filter, Shield, X, Plus } from 'lucide-react';
@@ -76,11 +77,16 @@ export default function SquadsPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Find Squads</h1>
-            <p className="text-muted-foreground">
-              Looking for a team? Browse squads actively recruiting new members.
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">
+              <Shield className="h-5 w-5 text-[#FF4500]" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground tracking-wide">Find Squads</h1>
+              <p className="text-muted-foreground text-sm">
+                Browse squads actively recruiting new members
+              </p>
+            </div>
           </div>
           <Button className="btn-gaming" asChild>
             <Link to="/create-squad">
@@ -99,19 +105,19 @@ export default function SquadsPage() {
               placeholder="Search squads..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
             />
           </div>
 
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className={cn('btn-interactive', hasActiveFilters && 'border-primary text-primary')}
+            className={cn('border-[#FF4500]/20 hover:border-[#FF4500]/40', hasActiveFilters && 'border-[#FF4500] text-[#FF4500]')}
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
             {hasActiveFilters && (
-              <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+              <span className="ml-2 w-5 h-5 rounded-full bg-[#FF4500] text-white text-xs flex items-center justify-center">
                 !
               </span>
             )}
@@ -120,11 +126,11 @@ export default function SquadsPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="glass-card p-4 mb-6 animate-fade-in">
+          <GlowCard className="p-4 mb-6 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Filters</h3>
+              <h3 className="font-display font-semibold text-foreground tracking-wide">Filters</h3>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="btn-interactive">
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-1" />
                   Clear All
                 </Button>
@@ -132,7 +138,7 @@ export default function SquadsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select value={rankFilter} onValueChange={setRankFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Your Rank" />
                 </SelectTrigger>
                 <SelectContent>
@@ -146,7 +152,7 @@ export default function SquadsPage() {
               </Select>
 
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Looking for Role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,41 +165,25 @@ export default function SquadsPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </GlowCard>
         )}
 
         {/* Results count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {totalFiltered} squad{totalFiltered !== 1 ? 's' : ''}
+          Showing <span className="font-display font-bold text-foreground">{totalFiltered}</span> squad{totalFiltered !== 1 ? 's' : ''}
         </div>
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="glass-card p-4 space-y-3">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="w-16 h-16 rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-6 w-20 rounded-full" />
-                  </div>
-                </div>
-                <Skeleton className="h-4 w-full" />
-                <div className="flex gap-2 pt-3 border-t border-border/50">
-                  <Skeleton className="h-6 w-16 rounded-md" />
-                  <Skeleton className="h-6 w-16 rounded-md" />
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <CircuitLoader size="lg" />
           </div>
         )}
 
         {/* Looking for Members */}
         {!isLoading && recruitingSquads.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-display font-bold text-foreground mb-4 flex items-center gap-2 tracking-wide">
               <span className="w-2 h-2 rounded-full bg-green-500" />
               Looking for Members
               <span className="text-sm font-normal text-muted-foreground">({recruitingSquads.length})</span>
@@ -209,7 +199,7 @@ export default function SquadsPage() {
         {/* Not Recruiting / Full Squads */}
         {!isLoading && otherSquads.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-display font-bold text-foreground mb-4 flex items-center gap-2 tracking-wide">
               <span className="w-2 h-2 rounded-full bg-muted-foreground" />
               Not Recruiting
               <span className="text-sm font-normal text-muted-foreground">({otherSquads.length})</span>
@@ -224,18 +214,18 @@ export default function SquadsPage() {
 
         {/* Empty state */}
         {!isLoading && totalFiltered === 0 && (
-          <div className="text-center py-16">
-            <Shield className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No squads found</h3>
-            <p className="text-muted-foreground mb-4">
-              {squads?.length === 0 
-                ? "Be the first to create a squad!" 
+          <GlowCard className="p-12 max-w-md mx-auto text-center">
+            <Shield className="w-16 h-16 text-[#FF4500] mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-foreground mb-2">No squads found</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              {squads?.length === 0
+                ? "Be the first to create a squad!"
                 : "Try adjusting your filters or search query"}
             </p>
-            <Button variant="outline" onClick={clearFilters} className="btn-interactive">
+            <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
               Clear Filters
             </Button>
-          </div>
+          </GlowCard>
         )}
       </div>
     </Layout>

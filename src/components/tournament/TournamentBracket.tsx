@@ -1,32 +1,17 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ImageUpload } from '@/components/ImageUpload';
-import { useUpdateMatchResult } from '@/hooks/useTournaments';
-import { DraftPickPanel, DraftSummaryBadge } from '@/components/tournament/DraftPickPanel';
+import { DraftSummaryBadge } from '@/components/tournament/DraftPickPanel';
+import { ScoreEditSheet } from '@/components/tournament/ScoreEditSheet';
+import { ShareCardGenerator } from '@/components/tournament/ShareCardGenerator';
+import { GlowCard } from '@/components/tron/GlowCard';
 import { cn } from '@/lib/utils';
-import { 
-  Trophy, 
-  Users, 
-  ChevronRight,
+import {
+  Trophy,
+  Users,
   Clock,
   CheckCircle,
   AlertCircle,
-  Loader2,
-  Upload,
-  Swords,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Tournament, TournamentMatch, TournamentSquad, MatchStatus } from '@/lib/tournament-types';
 import { MATCH_STATUS_LABELS } from '@/lib/tournament-types';
@@ -39,7 +24,7 @@ interface TournamentBracketProps {
 
 export function TournamentBracket({ tournament, matches, isHost }: TournamentBracketProps) {
   const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
-  
+
   // Group matches by round
   const matchesByRound = matches.reduce((acc, match) => {
     const key = `${match.bracket_type}-${match.round}`;
@@ -56,13 +41,13 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
 
   if (matches.length === 0) {
     return (
-      <div className="glass-card p-8 text-center">
+      <GlowCard className="p-8 text-center">
         <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-foreground mb-1">No bracket yet</h3>
+        <h3 className="text-lg font-display font-semibold text-foreground mb-1">No bracket yet</h3>
         <p className="text-muted-foreground text-sm">
           The bracket will be generated once registration closes.
         </p>
-      </div>
+      </GlowCard>
     );
   }
 
@@ -70,8 +55,8 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
     <div className="space-y-6">
       {/* Round Robin View */}
       {tournament.format === 'round_robin' && (
-        <div className="glass-card p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">All Matches</h3>
+        <GlowCard className="p-6">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-4 tracking-wide">All Matches</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {matches.map((match) => (
               <MatchCard
@@ -79,10 +64,11 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
                 match={match}
                 onClick={() => setSelectedMatch(match)}
                 isHost={isHost}
+                tournamentName={tournament.name}
               />
             ))}
           </div>
-        </div>
+        </GlowCard>
       )}
 
       {/* Elimination Bracket View */}
@@ -90,9 +76,9 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
         <>
           {/* Winners Bracket */}
           {winnersMatches.length > 0 && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-primary" />
+            <GlowCard className="p-6">
+              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+                <Trophy className="w-5 h-5 text-[#FF4500]" />
                 {tournament.format === 'double_elimination' ? 'Winners Bracket' : 'Bracket'}
               </h3>
               <BracketView
@@ -100,15 +86,16 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
                 maxRound={maxRound}
                 onMatchClick={(match) => setSelectedMatch(match)}
                 isHost={isHost}
+                tournamentName={tournament.name}
               />
-            </div>
+            </GlowCard>
           )}
 
           {/* Losers Bracket (Double Elim only) */}
           {losersMatches.length > 0 && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-secondary" />
+            <GlowCard glowColor="secondary" className="p-6">
+              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+                <Users className="w-5 h-5 text-[#FF6B35]" />
                 Losers Bracket
               </h3>
               <BracketView
@@ -116,14 +103,15 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
                 maxRound={maxRound}
                 onMatchClick={(match) => setSelectedMatch(match)}
                 isHost={isHost}
+                tournamentName={tournament.name}
               />
-            </div>
+            </GlowCard>
           )}
 
           {/* Finals */}
           {finalsMatches.length > 0 && (
-            <div className="glass-card p-6 border-secondary/30">
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <GlowCard glowColor="accent" className="p-6 neon-border">
+              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
                 <Trophy className="w-5 h-5 text-yellow-500" />
                 Grand Finals
               </h3>
@@ -135,24 +123,24 @@ export function TournamentBracket({ tournament, matches, isHost }: TournamentBra
                     onClick={() => setSelectedMatch(match)}
                     isHost={isHost}
                     large
+                    tournamentName={tournament.name}
                   />
                 ))}
               </div>
-            </div>
+            </GlowCard>
           )}
         </>
       )}
 
-      {/* Match Result Dialog */}
-      {selectedMatch && (
-        <MatchResultDialog
-          match={selectedMatch}
-          tournamentId={tournament.id}
-          isHost={isHost}
-          canEdit={isHost && (tournament.status === 'ongoing' || tournament.status === 'bracket_generated')}
-          onClose={() => setSelectedMatch(null)}
-        />
-      )}
+      {/* Score Edit Sheet (replaces old MatchResultDialog) */}
+      <ScoreEditSheet
+        match={selectedMatch}
+        tournamentId={tournament.id}
+        isHost={isHost}
+        canEdit={isHost && (tournament.status === 'ongoing' || tournament.status === 'bracket_generated')}
+        open={!!selectedMatch}
+        onOpenChange={(open) => { if (!open) setSelectedMatch(null); }}
+      />
     </div>
   );
 }
@@ -163,33 +151,47 @@ function BracketView({
   maxRound,
   onMatchClick,
   isHost,
+  tournamentName,
 }: {
   matches: TournamentMatch[];
   maxRound: number;
   onMatchClick: (match: TournamentMatch) => void;
   isHost: boolean;
+  tournamentName: string;
 }) {
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex gap-8 min-w-max py-4">
-        {rounds.map((round) => (
-          <div key={round} className="flex flex-col gap-4 min-w-[200px]">
-            <h4 className="text-sm font-medium text-muted-foreground text-center">
-              Round {round}
-            </h4>
-            {matches
-              .filter(m => m.round === round)
-              .sort((a, b) => a.match_number - b.match_number)
-              .map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  onClick={() => onMatchClick(match)}
-                  isHost={isHost}
+      <div className="flex gap-2 min-w-max py-4">
+        {rounds.map((round, roundIndex) => (
+          <div key={round} className="flex items-stretch">
+            <div className="flex flex-col gap-4 min-w-[220px]">
+              <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider">
+                Round {round}
+              </h4>
+              {matches
+                .filter(m => m.round === round)
+                .sort((a, b) => a.match_number - b.match_number)
+                .map((match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    onClick={() => onMatchClick(match)}
+                    isHost={isHost}
+                    tournamentName={tournamentName}
+                  />
+                ))}
+            </div>
+            {/* Neon connector between rounds */}
+            {roundIndex < rounds.length - 1 && (
+              <div className="flex items-center px-1">
+                <div
+                  className="w-6 h-px bg-[#FF4500]/40"
+                  style={{ boxShadow: '0 0 4px rgba(255,69,0,0.3)' }}
                 />
-              ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -203,11 +205,13 @@ function MatchCard({
   onClick,
   isHost,
   large = false,
+  tournamentName,
 }: {
   match: TournamentMatch;
   onClick: () => void;
   isHost: boolean;
   large?: boolean;
+  tournamentName: string;
 }) {
   const statusIcons: Record<MatchStatus, React.ReactNode> = {
     pending: <Clock className="w-3 h-3" />,
@@ -227,13 +231,16 @@ function MatchCard({
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-3 rounded-lg border border-border bg-card/50 hover:border-primary/50 hover:bg-card transition-all text-left',
-        large && 'p-4'
+        'w-full p-3 rounded-lg border bg-[#111111] transition-all text-left',
+        'border-[#FF4500]/20 hover:border-[#FF4500]/50 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)]',
+        match.status === 'ongoing' && 'border-yellow-400/40',
+        match.status === 'completed' && 'border-green-500/20',
+        large && 'p-4 neon-border'
       )}
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs border-[#FF4500]/20">
             Bo{match.best_of}
           </Badge>
           <DraftSummaryBadge matchId={match.id} />
@@ -257,10 +264,10 @@ function MatchCard({
           isWinner={match.winner_id === match.squad_a_id}
           large={large}
         />
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="flex-1 h-px bg-border" />
-          <span>VS</span>
-          <div className="flex-1 h-px bg-border" />
+        <div className="flex items-center gap-2 text-xs">
+          <div className="flex-1 h-px bg-[#FF4500]/20" />
+          <span className="text-[#FF4500] font-display font-bold tracking-wider">VS</span>
+          <div className="flex-1 h-px bg-[#FF4500]/20" />
         </div>
         <MatchTeamRow
           squad={match.squad_b}
@@ -269,6 +276,13 @@ function MatchCard({
           large={large}
         />
       </div>
+
+      {/* Share button for completed matches */}
+      {match.status === 'completed' && (
+        <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <ShareCardGenerator match={match} tournamentName={tournamentName} />
+        </div>
+      )}
     </button>
   );
 }
@@ -288,196 +302,16 @@ function MatchTeamRow({
     <div
       className={cn(
         'flex items-center justify-between p-2 rounded',
-        isWinner && 'bg-green-500/10 border border-green-500/30',
+        isWinner && 'bg-green-500/10 border border-green-500/30 shadow-[0_0_8px_rgba(34,197,94,0.15)]',
         !squad && 'opacity-50'
       )}
     >
       <span className={cn('font-medium truncate', large ? 'text-base' : 'text-sm')}>
         {squad?.name || 'TBD'}
       </span>
-      <span className={cn('font-bold', large ? 'text-lg' : 'text-sm')}>
+      <span className={cn('font-display font-bold', large ? 'text-lg' : 'text-sm')}>
         {score}
       </span>
     </div>
-  );
-}
-
-// Match result dialog
-function MatchResultDialog({
-  match,
-  tournamentId,
-  isHost,
-  canEdit,
-  onClose,
-}: {
-  match: TournamentMatch;
-  tournamentId: string;
-  isHost: boolean;
-  canEdit: boolean;
-  onClose: () => void;
-}) {
-  const updateResult = useUpdateMatchResult();
-  const [showDraftPanel, setShowDraftPanel] = useState(false);
-  
-  const [squadAScore, setSquadAScore] = useState(match.squad_a_score.toString());
-  const [squadBScore, setSquadBScore] = useState(match.squad_b_score.toString());
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(match.result_screenshot);
-
-  const handleSubmit = async () => {
-    const aScore = parseInt(squadAScore) || 0;
-    const bScore = parseInt(squadBScore) || 0;
-
-    if (aScore === bScore) {
-      toast.error('Match cannot end in a tie');
-      return;
-    }
-
-    const winnerId = aScore > bScore ? match.squad_a_id : match.squad_b_id;
-    if (!winnerId) {
-      toast.error('Cannot determine winner');
-      return;
-    }
-
-    try {
-      await updateResult.mutateAsync({
-        matchId: match.id,
-        winnerId,
-        squadAScore: aScore,
-        squadBScore: bScore,
-        screenshotUrl: screenshotUrl || undefined,
-        tournamentId,
-      });
-      toast.success('Match result updated');
-      onClose();
-    } catch (error: any) {
-      toast.error('Failed to update result', { description: error.message });
-    }
-  };
-
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Match Details</DialogTitle>
-          <DialogDescription>
-            {match.squad_a?.name || 'TBD'} vs {match.squad_b?.name || 'TBD'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Badge variant="outline">{MATCH_STATUS_LABELS[match.status]}</Badge>
-          </div>
-
-          {/* Format */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Format</span>
-            <span className="text-sm font-medium">Best of {match.best_of}</span>
-          </div>
-
-          {/* Scores (editable if host) */}
-          {canEdit && match.squad_a && match.squad_b ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4 items-center">
-                <div>
-                  <Label className="text-xs text-muted-foreground">{match.squad_a?.name}</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={squadAScore}
-                    onChange={(e) => setSquadAScore(e.target.value)}
-                    className="text-center text-lg font-bold"
-                  />
-                </div>
-                <div className="text-center text-muted-foreground">-</div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">{match.squad_b?.name}</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={squadBScore}
-                    onChange={(e) => setSquadBScore(e.target.value)}
-                    className="text-center text-lg font-bold"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Result Screenshot (Optional)</Label>
-                <div className="mt-2">
-                  <ImageUpload
-                    bucket="tournament-assets"
-                    currentUrl={screenshotUrl}
-                    onUpload={setScreenshotUrl}
-                    onRemove={() => setScreenshotUrl(null)}
-                    shape="wide"
-                    size="md"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-4 items-center text-center">
-              <div>
-                <p className="text-sm text-muted-foreground">{match.squad_a?.name || 'TBD'}</p>
-                <p className="text-2xl font-bold">{match.squad_a_score}</p>
-              </div>
-              <div className="text-muted-foreground">-</div>
-              <div>
-                <p className="text-sm text-muted-foreground">{match.squad_b?.name || 'TBD'}</p>
-                <p className="text-2xl font-bold">{match.squad_b_score}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Screenshot preview */}
-          {match.result_screenshot && !canEdit && (
-            <div>
-              <Label className="text-xs text-muted-foreground">Result Screenshot</Label>
-              <img
-                src={match.result_screenshot}
-                alt="Match result"
-                className="mt-2 rounded-lg border border-border"
-              />
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          {(isHost || match.squad_a) && (
-            <Button variant="outline" size="sm" onClick={() => setShowDraftPanel(true)}>
-              <Swords className="w-4 h-4 mr-2" />
-              Draft Pick/Ban
-            </Button>
-          )}
-          <div className="flex-1" />
-          {canEdit && match.squad_a && match.squad_b && (
-            <Button
-              onClick={handleSubmit}
-              disabled={updateResult.isPending}
-              className="btn-gaming"
-            >
-              {updateResult.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <CheckCircle className="w-4 h-4 mr-2" />
-              )}
-              Save Result
-            </Button>
-          )}
-        </DialogFooter>
-
-        {/* Draft Panel */}
-        <DraftPickPanel
-          match={match}
-          tournamentId={tournamentId}
-          isHost={isHost}
-          open={showDraftPanel}
-          onClose={() => setShowDraftPanel(false)}
-        />
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin, useAllProfiles, useAllSquads, useAdminDeleteProfile, useAdminDeleteSquad, useAdminStats } from '@/hooks/useAdmin';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -129,7 +130,7 @@ const AdminPage = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <CircuitLoader size="lg" />
         </div>
       </Layout>
     );
@@ -143,135 +144,125 @@ const AdminPage = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-8">
-          <Shield className="h-8 w-8 text-secondary" />
-          <h1 className="text-3xl font-bold text-primary">Admin Dashboard</h1>
+          <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-[#FF4500]" />
+          </div>
+          <h1 className="text-3xl font-display font-bold text-[#FF4500] tracking-wide">Admin Dashboard</h1>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Players</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{stats?.totalProfiles || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats?.lookingForSquad || 0} looking for squad
-              </p>
-            </CardContent>
-          </Card>
+          <GlowCard hoverable className="p-5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Total Players</p>
+            <div className="text-3xl font-display font-bold text-[#FF4500]">{stats?.totalProfiles || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats?.lookingForSquad || 0} looking for squad
+            </p>
+          </GlowCard>
 
-          <Card className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Squads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{stats?.totalSquads || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {stats?.recruitingSquads || 0} actively recruiting
-              </p>
-            </CardContent>
-          </Card>
+          <GlowCard hoverable className="p-5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Total Squads</p>
+            <div className="text-3xl font-display font-bold text-[#FF4500]">{stats?.totalSquads || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats?.recruitingSquads || 0} actively recruiting
+            </p>
+          </GlowCard>
 
-          <Card className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Top State</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats?.stateDistribution && Object.keys(stats.stateDistribution).length > 0 ? (
-                <>
-                  <div className="text-xl font-bold text-primary capitalize">
-                    {Object.entries(stats.stateDistribution).sort((a, b) => b[1] - a[1])[0]?.[0]}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {Object.entries(stats.stateDistribution).sort((a, b) => b[1] - a[1])[0]?.[1]} players
-                  </p>
-                </>
-              ) : (
-                <div className="text-xl font-bold text-muted-foreground">N/A</div>
-              )}
-            </CardContent>
-          </Card>
+          <GlowCard hoverable className="p-5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Top State</p>
+            {stats?.stateDistribution && Object.keys(stats.stateDistribution).length > 0 ? (
+              <>
+                <div className="text-xl font-display font-bold text-[#FF4500] capitalize">
+                  {Object.entries(stats.stateDistribution).sort((a, b) => b[1] - a[1])[0]?.[0]}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {Object.entries(stats.stateDistribution).sort((a, b) => b[1] - a[1])[0]?.[1]} players
+                </p>
+              </>
+            ) : (
+              <div className="text-xl font-display font-bold text-muted-foreground">N/A</div>
+            )}
+          </GlowCard>
 
-          <Card className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Top Rank</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats?.rankDistribution && Object.keys(stats.rankDistribution).length > 0 ? (
-                <>
-                  <div className="text-xl font-bold text-primary capitalize">
-                    {Object.entries(stats.rankDistribution).sort((a, b) => b[1] - a[1])[0]?.[0]}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {Object.entries(stats.rankDistribution).sort((a, b) => b[1] - a[1])[0]?.[1]} players
-                  </p>
-                </>
-              ) : (
-                <div className="text-xl font-bold text-muted-foreground">N/A</div>
-              )}
-            </CardContent>
-          </Card>
+          <GlowCard hoverable className="p-5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Top Rank</p>
+            {stats?.rankDistribution && Object.keys(stats.rankDistribution).length > 0 ? (
+              <>
+                <div className="text-xl font-display font-bold text-[#FF4500] capitalize">
+                  {Object.entries(stats.rankDistribution).sort((a, b) => b[1] - a[1])[0]?.[0]}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {Object.entries(stats.rankDistribution).sort((a, b) => b[1] - a[1])[0]?.[1]} players
+                </p>
+              </>
+            ) : (
+              <div className="text-xl font-display font-bold text-muted-foreground">N/A</div>
+            )}
+          </GlowCard>
         </div>
 
         {/* Management Tabs */}
         <Tabs defaultValue="players" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="players" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Players ({profiles?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="squads" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Squads ({squads?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="heroes" className="flex items-center gap-2">
-              <Swords className="h-4 w-4" />
-              Heroes
-            </TabsTrigger>
-          </TabsList>
+          <div className="bg-[#111111]/90 border border-[#FF4500]/20 p-1 mb-6 inline-flex rounded-xl">
+            <TabsList className="bg-transparent gap-1">
+              <TabsTrigger value="players" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Players ({profiles?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="squads" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Squads ({squads?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="heroes" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider flex items-center gap-2">
+                <Swords className="h-4 w-4" />
+                Heroes
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="players">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Player Profiles</CardTitle>
-                <div className="relative mt-3">
+            <GlowCard className="overflow-hidden">
+              <div className="p-5 border-b border-[#FF4500]/10">
+                <h2 className="font-display font-bold text-foreground tracking-wide mb-3">All Player Profiles</h2>
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by IGN, MLBB ID, WhatsApp, rank, role, state, hero, squad..."
                     value={playerSearch}
                     onChange={(e) => setPlayerSearch(e.target.value)}
-                    className="pl-9"
+                    className="pl-9 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                   />
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-5">
                 {profilesLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading profiles...</div>
+                  <div className="flex justify-center py-8">
+                    <CircuitLoader />
+                  </div>
                 ) : filteredProfiles.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>IGN</TableHead>
-                          <TableHead>Rank</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead>State</TableHead>
-                          <TableHead>Squad</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                        <TableRow className="border-b border-[#FF4500]/10 hover:bg-transparent">
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">IGN</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Rank</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Role</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">State</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Squad</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Status</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredProfiles.map((profile) => (
-                          <TableRow key={profile.id}>
+                          <TableRow key={profile.id} className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5">
                             <TableCell className="font-medium">{profile.ign}</TableCell>
                             <TableCell className="capitalize">{profile.rank}</TableCell>
                             <TableCell className="capitalize">{profile.main_role}</TableCell>
                             <TableCell className="capitalize">{profile.state || 'N/A'}</TableCell>
                             <TableCell>
                               {profileSquadMap[profile.id] ? (
-                                <Badge variant="outline">{profileSquadMap[profile.id]}</Badge>
+                                <Badge variant="outline" className="border-[#FF4500]/20">{profileSquadMap[profile.id]}</Badge>
                               ) : (
                                 <span className="text-muted-foreground text-xs">None</span>
                               )}
@@ -283,7 +274,7 @@ const AdminPage = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" asChild>
+                                <Button variant="outline" size="sm" asChild className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
                                   <Link to={`/player/${profile.id}`}>
                                     <Eye className="h-4 w-4" />
                                   </Link>
@@ -294,15 +285,15 @@ const AdminPage = () => {
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </AlertDialogTrigger>
-                                  <AlertDialogContent>
+                                  <AlertDialogContent className="bg-[#111111] border border-[#FF4500]/20">
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Profile</AlertDialogTitle>
+                                      <AlertDialogTitle className="font-display">Delete Profile</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Are you sure you want to delete "{profile.ign}"? This action cannot be undone.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel className="border-[#FF4500]/20">Cancel</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => handleDeleteProfile(profile.id, profile.ign)}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -324,35 +315,37 @@ const AdminPage = () => {
                     {playerSearch ? 'No players match your search' : 'No profiles found'}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </GlowCard>
           </TabsContent>
 
           <TabsContent value="squads">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Squads</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <GlowCard className="overflow-hidden">
+              <div className="p-5 border-b border-[#FF4500]/10">
+                <h2 className="font-display font-bold text-foreground tracking-wide">All Squads</h2>
+              </div>
+              <div className="p-5">
                 {squadsLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading squads...</div>
+                  <div className="flex justify-center py-8">
+                    <CircuitLoader />
+                  </div>
                 ) : squads && squads.length > 0 ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Members</TableHead>
-                          <TableHead>Min Rank</TableHead>
-                          <TableHead>Server</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                        <TableRow className="border-b border-[#FF4500]/10 hover:bg-transparent">
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Name</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Members</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Min Rank</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Server</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Status</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Created</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {squads.map((squad) => (
-                          <TableRow key={squad.id}>
+                          <TableRow key={squad.id} className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5">
                             <TableCell className="font-medium">{squad.name}</TableCell>
                             <TableCell>{squad.member_count}/{squad.max_members || 10}</TableCell>
                             <TableCell className="capitalize">{squad.min_rank}</TableCell>
@@ -367,7 +360,7 @@ const AdminPage = () => {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button variant="outline" size="sm" asChild>
+                                <Button variant="outline" size="sm" asChild className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
                                   <Link to={`/squad/${squad.id}`}>
                                     <Eye className="h-4 w-4" />
                                   </Link>
@@ -378,15 +371,15 @@ const AdminPage = () => {
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </AlertDialogTrigger>
-                                  <AlertDialogContent>
+                                  <AlertDialogContent className="bg-[#111111] border border-[#FF4500]/20">
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Squad</AlertDialogTitle>
+                                      <AlertDialogTitle className="font-display">Delete Squad</AlertDialogTitle>
                                       <AlertDialogDescription>
                                         Are you sure you want to delete "{squad.name}"? This action cannot be undone.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogCancel className="border-[#FF4500]/20">Cancel</AlertDialogCancel>
                                       <AlertDialogAction
                                         onClick={() => handleDeleteSquad(squad.id, squad.name)}
                                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -406,8 +399,8 @@ const AdminPage = () => {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">No squads found</div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </GlowCard>
           </TabsContent>
 
           <TabsContent value="heroes">

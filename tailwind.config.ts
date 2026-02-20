@@ -57,7 +57,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // MLBB Rank colors - no purple
+        // MLBB Rank colors
         rank: {
           warrior: "hsl(var(--rank-warrior))",
           elite: "hsl(var(--rank-elite))",
@@ -70,6 +70,18 @@ export default {
           "mythical-glory": "hsl(var(--rank-mythical-glory))",
           immortal: "hsl(var(--rank-immortal))",
         },
+        // Tron palette - direct use
+        neon: {
+          DEFAULT: '#FF4500',
+          light: '#FF6B35',
+          dark: '#FF2D00',
+          glow: 'rgba(255, 69, 0, 0.4)',
+        },
+        surface: {
+          DEFAULT: '#111111',
+          dark: '#0a0a0a',
+          card: '#111111',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -77,8 +89,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Rajdhani', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Orbitron', 'Inter', 'system-ui', 'sans-serif'],
+        body: ['Rajdhani', 'Inter', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {
@@ -109,6 +122,26 @@ export default {
           "0%, 100%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.3)" },
           "50%": { boxShadow: "0 0 40px hsl(var(--primary) / 0.5)" },
         },
+        "circuit-pulse": {
+          "0%, 100%": { opacity: "0.3" },
+          "50%": { opacity: "0.8" },
+        },
+        "scan-line": {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100vh)" },
+        },
+        "neon-flicker": {
+          "0%, 100%": { opacity: "1" },
+          "92%": { opacity: "1" },
+          "93%": { opacity: "0.3" },
+          "94%": { opacity: "1" },
+          "96%": { opacity: "0.5" },
+          "97%": { opacity: "1" },
+        },
+        "neon-pulse": {
+          "0%, 100%": { boxShadow: "0 0 5px #FF4500, 0 0 10px rgba(255,69,0,0.3)" },
+          "50%": { boxShadow: "0 0 10px #FF4500, 0 0 25px rgba(255,69,0,0.5)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -118,6 +151,10 @@ export default {
         "scale-in": "scale-in 0.3s ease-out",
         "slide-up": "slide-up 0.5s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "circuit-pulse": "circuit-pulse 3s ease-in-out infinite",
+        "scan-line": "scan-line 8s linear infinite",
+        "neon-flicker": "neon-flicker 4s ease-in-out infinite",
+        "neon-pulse": "neon-pulse 2s ease-in-out infinite",
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

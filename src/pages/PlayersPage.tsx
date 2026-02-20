@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -12,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { getContactValue } from '@/lib/contacts';
@@ -103,11 +104,16 @@ export default function PlayersPage() {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Find Players</h1>
-          <p className="text-muted-foreground">
-            Looking for players to join your squad? Browse registered players open for recruitment.
-          </p>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">
+            <Users className="h-5 w-5 text-[#FF4500]" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground tracking-wide">Find Players</h1>
+            <p className="text-muted-foreground text-sm">
+              Browse registered players open for recruitment
+            </p>
+          </div>
         </div>
 
         {/* Search and Controls */}
@@ -119,20 +125,20 @@ export default function PlayersPage() {
               placeholder="Search by name, hero, or WhatsApp number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
             />
           </div>
 
           {/* View Toggle & Filter Button */}
           <div className="flex gap-2">
-            <div className="flex rounded-lg border border-border overflow-hidden">
+            <div className="flex rounded-lg border border-[#FF4500]/20 overflow-hidden">
               <button
                 onClick={() => setViewMode('grid')}
                 className={cn(
-                  'px-4 py-2 flex items-center gap-2 text-sm transition-all duration-200 active:scale-95',
+                  'px-4 py-2 flex items-center gap-2 text-sm font-display uppercase tracking-wider transition-all duration-200 active:scale-95',
                   viewMode === 'grid'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:text-foreground'
+                    ? 'bg-[#FF4500] text-white'
+                    : 'bg-[#0a0a0a] text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Users className="w-4 h-4" />
@@ -141,10 +147,10 @@ export default function PlayersPage() {
               <button
                 onClick={() => setViewMode('rankings')}
                 className={cn(
-                  'px-4 py-2 flex items-center gap-2 text-sm transition-all duration-200 active:scale-95',
+                  'px-4 py-2 flex items-center gap-2 text-sm font-display uppercase tracking-wider transition-all duration-200 active:scale-95',
                   viewMode === 'rankings'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground hover:text-foreground'
+                    ? 'bg-[#FF4500] text-white'
+                    : 'bg-[#0a0a0a] text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Trophy className="w-4 h-4" />
@@ -155,12 +161,12 @@ export default function PlayersPage() {
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}
-              className={cn('btn-interactive', hasActiveFilters && 'border-primary text-primary')}
+              className={cn('border-[#FF4500]/20 hover:border-[#FF4500]/40', hasActiveFilters && 'border-[#FF4500] text-[#FF4500]')}
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
               {hasActiveFilters && (
-                <span className="ml-2 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                <span className="ml-2 w-5 h-5 rounded-full bg-[#FF4500] text-white text-xs flex items-center justify-center">
                   !
                 </span>
               )}
@@ -170,11 +176,11 @@ export default function PlayersPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="glass-card p-4 mb-6 animate-fade-in">
+          <GlowCard className="p-4 mb-6 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Filters</h3>
+              <h3 className="font-display font-semibold text-foreground tracking-wide">Filters</h3>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="btn-interactive">
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-1" />
                   Clear All
                 </Button>
@@ -182,7 +188,7 @@ export default function PlayersPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <Select value={rankFilter} onValueChange={setRankFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Rank" />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +202,7 @@ export default function PlayersPage() {
               </Select>
 
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -210,7 +216,7 @@ export default function PlayersPage() {
               </Select>
 
               <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Hero Class" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,7 +230,7 @@ export default function PlayersPage() {
               </Select>
 
               <Select value={stateFilter} onValueChange={setStateFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,7 +244,7 @@ export default function PlayersPage() {
               </Select>
 
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,33 +254,18 @@ export default function PlayersPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </GlowCard>
         )}
 
         {/* Results count */}
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredPlayers.length} player{filteredPlayers.length !== 1 ? 's' : ''}
+          Showing <span className="font-display font-bold text-foreground">{filteredPlayers.length}</span> player{filteredPlayers.length !== 1 ? 's' : ''}
         </div>
 
         {/* Loading state */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="glass-card p-4 space-y-3">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="w-16 h-16 rounded-lg shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-3 border-t border-border/50">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <CircuitLoader size="lg" />
           </div>
         )}
 
@@ -288,7 +279,7 @@ export default function PlayersPage() {
             </div>
             {visibleCount < filteredPlayers.length && (
               <div className="flex justify-center mt-8">
-                <Button variant="outline" onClick={() => setVisibleCount((c) => c + 30)} className="btn-interactive">
+                <Button variant="outline" onClick={() => setVisibleCount((c) => c + 30)} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
                   Load More ({filteredPlayers.length - visibleCount} remaining)
                 </Button>
               </div>
@@ -298,23 +289,23 @@ export default function PlayersPage() {
 
         {/* Rankings View */}
         {!isLoading && viewMode === 'rankings' && filteredPlayers.length > 0 && (
-          <div className="glass-card overflow-hidden">
+          <GlowCard className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">#</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Player</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Rank</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Win Rate</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Role</th>
-                    <th className="text-left p-4 text-sm font-semibold text-muted-foreground">State</th>
+                  <tr className="border-b border-[#FF4500]/10">
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">#</th>
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Player</th>
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Rank</th>
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Win Rate</th>
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Role</th>
+                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">State</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, index) => {
-                    const mainRoles = (player as any).main_roles?.length > 0 
-                      ? (player as any).main_roles 
+                    const mainRoles = (player as any).main_roles?.length > 0
+                      ? (player as any).main_roles
                       : [player.main_role];
                     const roleDisplay = mainRoles.map((roleId: string) => {
                       const role = ROLES.find((r) => r.id === roleId);
@@ -324,15 +315,15 @@ export default function PlayersPage() {
                     return (
                       <tr
                         key={player.id}
-                        className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                        className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5 transition-colors"
                       >
-                        <td className="p-4 text-muted-foreground font-mono">{index + 1}</td>
+                        <td className="p-4 text-muted-foreground font-display">{index + 1}</td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <img
                               src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                               alt={player.ign}
-                              className="w-10 h-10 rounded-lg bg-muted object-cover"
+                              className="w-10 h-10 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
                             />
                             <span className="font-semibold text-foreground">{player.ign}</span>
                           </div>
@@ -341,7 +332,7 @@ export default function PlayersPage() {
                           <RankBadge rank={player.rank} size="sm" />
                         </td>
                         <td className="p-4">
-                          <span className="text-primary font-semibold">{player.win_rate || '—'}%</span>
+                          <span className="text-[#FF4500] font-display font-semibold">{player.win_rate || '—'}%</span>
                         </td>
                         <td className="p-4 text-muted-foreground">
                           {roleDisplay}
@@ -355,23 +346,23 @@ export default function PlayersPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </GlowCard>
         )}
 
         {/* Empty state */}
         {!isLoading && filteredPlayers.length === 0 && (
-          <div className="text-center py-16">
-            <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No players found</h3>
-            <p className="text-muted-foreground mb-4">
-              {profiles?.length === 0 
-                ? "Be the first to create a profile!" 
+          <GlowCard className="p-12 max-w-md mx-auto text-center">
+            <Users className="w-16 h-16 text-[#FF4500] mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-foreground mb-2">No players found</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              {profiles?.length === 0
+                ? "Be the first to create a profile!"
                 : "Try adjusting your filters or search query"}
             </p>
-            <Button variant="outline" onClick={clearFilters} className="btn-interactive">
+            <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
               Clear Filters
             </Button>
-          </div>
+          </GlowCard>
         )}
       </div>
     </Layout>

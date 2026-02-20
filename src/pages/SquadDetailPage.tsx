@@ -13,7 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitBackground } from '@/components/tron/CircuitBackground';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -185,10 +187,8 @@ export default function SquadDetailPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-64 w-full rounded-lg mb-6" />
-          <Skeleton className="h-32 w-full rounded-lg mb-6" />
-          <Skeleton className="h-48 w-full rounded-lg" />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <CircuitLoader size="lg" />
         </div>
       </Layout>
     );
@@ -197,11 +197,13 @@ export default function SquadDetailPage() {
   if (!squad) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Squad not found</h1>
-          <Button asChild className="btn-interactive">
-            <Link to="/squads">Back to Squads</Link>
-          </Button>
+        <div className="container mx-auto px-4 py-20 text-center">
+          <GlowCard className="p-12 max-w-md mx-auto text-center">
+            <h1 className="text-2xl font-display font-bold text-foreground mb-4">Squad not found</h1>
+            <Button asChild className="border-[#FF4500]/20 hover:border-[#FF4500]/40" variant="outline">
+              <Link to="/squads">Back to Squads</Link>
+            </Button>
+          </GlowCard>
         </div>
       </Layout>
     );
@@ -241,8 +243,8 @@ export default function SquadDetailPage() {
   return (
     <Layout>
       {/* Hero Banner */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-br from-secondary/20 via-primary/10 to-background overflow-hidden">
-        <div className="absolute inset-0 bg-hero-pattern" />
+      <div className="relative h-48 md:h-64 bg-gradient-to-br from-[#FF4500]/20 via-[#FF4500]/5 to-background overflow-hidden">
+        <CircuitBackground intensity="light" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
       </div>
 
@@ -261,18 +263,18 @@ export default function SquadDetailPage() {
           {/* Main Info */}
           <div className="lg:col-span-2">
             {/* Squad Header */}
-            <div className="glass-card p-6 mb-6">
+            <GlowCard className="p-6 mb-6">
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 {/* Logo */}
                 <img
                   src={squad.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${squad.name}`}
                   alt={squad.name}
-                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover glow-secondary"
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover border-2 border-[#FF4500]/20"
                 />
 
                 {/* Info */}
                 <div className="flex-1">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-wide mb-2">
                     {squad.name}
                   </h1>
                   
@@ -297,7 +299,7 @@ export default function SquadDetailPage() {
 
               {/* Owner Controls */}
               {isOwner && (
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <Switch
@@ -309,8 +311,8 @@ export default function SquadDetailPage() {
                       <Label htmlFor="isRecruiting" className="cursor-pointer">
                         <span className="font-medium">Actively Recruiting</span>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {squad.is_recruiting 
-                            ? 'Your squad is visible in listings' 
+                          {squad.is_recruiting
+                            ? 'Your squad is visible in listings'
                             : 'Your squad is hidden from listings'}
                         </p>
                       </Label>
@@ -319,7 +321,7 @@ export default function SquadDetailPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="btn-interactive"
+                        className="border-[#FF4500]/20 hover:border-[#FF4500]/40"
                         onClick={() => {
                           const url = `${window.location.origin}/squad/${squad.id}`;
                           navigator.clipboard.writeText(url);
@@ -329,7 +331,7 @@ export default function SquadDetailPage() {
                         <Share2 className="w-4 h-4 mr-2" />
                         Copy Invite Link
                       </Button>
-                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                      <Button variant="outline" size="sm" className="border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
                         <Link to={`/squad/${squad.id}/edit`}>
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Squad
@@ -337,14 +339,14 @@ export default function SquadDetailPage() {
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm" className="btn-interactive">
+                          <Button variant="destructive" size="sm">
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-[#111111] border border-[#FF4500]/20">
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete your squad?</AlertDialogTitle>
+                            <AlertDialogTitle className="font-display">Delete your squad?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This action cannot be undone. Your squad and all member associations 
                               will be permanently deleted. Any tournament registrations will also be affected.
@@ -372,7 +374,7 @@ export default function SquadDetailPage() {
 
               {/* Leave Squad Button for non-owner members */}
               {canLeave && (
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" className="text-destructive border-destructive/50 hover:bg-destructive/10">
@@ -380,9 +382,9 @@ export default function SquadDetailPage() {
                         Leave Squad
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-[#111111] border border-[#FF4500]/20">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Leave this squad?</AlertDialogTitle>
+                        <AlertDialogTitle className="font-display">Leave this squad?</AlertDialogTitle>
                         <AlertDialogDescription>
                           You will be removed from the squad. You can request to join again later.
                         </AlertDialogDescription>
@@ -407,18 +409,18 @@ export default function SquadDetailPage() {
 
               {/* Apply Button for non-members */}
               {!isMember && !isOwner && squad.is_recruiting && (
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                   <ApplyToSquadButton squadId={squad.id} squadName={squad.name} />
                 </div>
               )}
-            </div>
+            </GlowCard>
 
             {/* Description */}
             {squad.description && (
-              <div className="glass-card p-6 mb-6">
-                <h2 className="text-lg font-semibold text-foreground mb-3">About Us</h2>
+              <GlowCard className="p-6 mb-6">
+                <h2 className="text-lg font-display font-semibold text-foreground mb-3 tracking-wide">About Us</h2>
                 <p className="text-muted-foreground leading-relaxed">{squad.description}</p>
-              </div>
+              </GlowCard>
             )}
 
             {/* Squad Applications - only for leaders */}
@@ -431,17 +433,17 @@ export default function SquadDetailPage() {
             )}
 
             {/* Squad Members */}
-            <Card className="mb-6">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Crown className="w-5 h-5 text-secondary" />
+            <GlowCard className="mb-6">
+              <div className="p-5 border-b border-[#FF4500]/10 flex flex-row items-center justify-between">
+                <h2 className="font-display font-bold text-foreground tracking-wide flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-[#FF6B35]" />
                   Squad Members
-                </CardTitle>
-                <span className="text-sm text-muted-foreground">
+                </h2>
+                <span className="text-sm text-muted-foreground font-display">
                   {memberCount}/{maxMembers}
                 </span>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-5">
                 {/* Add Member - only for leaders/co-leaders */}
                 {canManageMembers && memberCount < maxMembers && (
                   <div className="mb-4">
@@ -565,38 +567,38 @@ export default function SquadDetailPage() {
                   isLeader={isLeader}
                   isCoLeader={isCoLeader}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </GlowCard>
 
             {/* Needed Roles */}
             {neededRoles.length > 0 && (
-              <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Open Positions</h2>
+              <GlowCard className="p-6">
+                <h2 className="text-lg font-display font-semibold text-foreground mb-4 tracking-wide">Open Positions</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {neededRoles.map((role) => (
                     <div
                       key={role}
-                      className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg"
+                      className="flex items-center gap-3 p-4 bg-[#FF4500]/5 border border-[#FF4500]/20 rounded-lg"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center">
                         <RoleIcon role={role} size="md" showName={false} />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground capitalize">{role}</p>
+                        <p className="font-display font-semibold text-foreground capitalize">{role}</p>
                         <p className="text-xs text-muted-foreground">Position Available</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </GlowCard>
             )}
           </div>
 
           {/* Sidebar - Contact Info */}
           <div className="lg:col-span-1">
-            <div className="glass-card p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-secondary" />
+            <GlowCard className="p-6 sticky top-24">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+                <MessageCircle className="w-5 h-5 text-[#FF6B35]" />
                 Contact Squad
               </h2>
 
@@ -610,7 +612,7 @@ export default function SquadDetailPage() {
                     return (
                       <div
                         key={contactKey}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg group"
+                        className="flex items-center justify-between p-3 bg-[#0a0a0a] rounded-lg group border border-[#FF4500]/10"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xl">{getContactIcon(contact.type)}</span>
@@ -658,10 +660,10 @@ export default function SquadDetailPage() {
               )}
 
               {/* Share / Invite */}
-              <div className="mt-6 pt-6 border-t border-border">
+              <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                 <Button
                   variant="outline"
-                  className="w-full btn-interactive"
+                  className="w-full border-[#FF4500]/20 hover:border-[#FF4500]/40"
                   onClick={() => {
                     const url = `${window.location.origin}/squad/${squad.id}`;
                     const text = `🎮 Join "${squad.name}" on ShowYours! ${url}`;
@@ -674,7 +676,7 @@ export default function SquadDetailPage() {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full mt-2 btn-interactive"
+                  className="w-full mt-2"
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/squad/${squad.id}`);
                     toast.success('Link copied!');
@@ -686,21 +688,21 @@ export default function SquadDetailPage() {
               </div>
 
               {/* Quick Stats */}
-              <div className="mt-6 pt-6 border-t border-border space-y-3">
+              <div className="mt-6 pt-6 border-t border-[#FF4500]/10 space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Members</span>
-                  <span className="text-foreground font-medium">{memberCount}/{maxMembers}</span>
+                  <span className="text-foreground font-display font-medium">{memberCount}/{maxMembers}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Open Spots</span>
-                  <span className="text-primary font-medium">{neededRoles.length}</span>
+                  <span className="text-[#FF4500] font-display font-medium">{neededRoles.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Server</span>
                   <span className="text-foreground">Asia (India)</span>
                 </div>
               </div>
-            </div>
+            </GlowCard>
           </div>
         </div>
       </div>

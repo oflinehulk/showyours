@@ -9,8 +9,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Initialize theme
-const savedTheme = localStorage.getItem('theme') || 'dark';
-document.documentElement.classList.add(savedTheme);
+// Always dark mode - Tron aesthetic
+document.documentElement.classList.add('dark');
 
 createRoot(document.getElementById("root")!).render(<App />);

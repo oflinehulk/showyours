@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/Logo';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitBackground } from '@/components/tron/CircuitBackground';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, KeyRound } from 'lucide-react';
 import { z } from 'zod';
@@ -43,7 +45,7 @@ const signInSchema = z.object({
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, resetPassword } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,6 +55,7 @@ export default function AuthPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -81,9 +84,9 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setLoading(true);
 
     try {
@@ -141,13 +144,26 @@ export default function AuthPage() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Background animation */}
+      {/* Circuit background */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
+        <CircuitBackground intensity="light" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF4500]/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FF2D00]/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF4500]/5 rounded-full blur-[150px]" />
       </div>
 
       {/* Content */}
@@ -162,10 +178,57 @@ export default function AuthPage() {
           </div>
 
           {/* Form Card */}
-          <div className="glass-card p-6 md:p-8">
+          <GlowCard className="p-6 md:p-8">
+            {/* Google OAuth Button */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-[#0a0a0a] border-[#FF4500]/20 hover:border-[#FF4500]/40 hover:bg-[#0a0a0a]/80 transition-all duration-200"
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </>
+              )}
+            </Button>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-[#FF4500]/20" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[#111111] px-2 text-muted-foreground font-display tracking-wider">
+                  or
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Email</Label>
                 <div className="relative mt-1.5">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -174,7 +237,7 @@ export default function AuthPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="pl-10"
+                    className="pl-10 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                     disabled={loading}
                   />
                 </div>
@@ -185,12 +248,12 @@ export default function AuthPage() {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Password</Label>
                   {isLogin && (
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
-                      className="text-xs text-primary hover:underline"
+                      className="text-xs text-[#FF4500] hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -204,7 +267,7 @@ export default function AuthPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                     disabled={loading}
                   />
                   <button
@@ -252,14 +315,14 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
-                  className="ml-1 text-primary hover:underline font-medium"
+                  className="ml-1 text-[#FF4500] hover:underline font-medium"
                   disabled={loading}
                 >
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </button>
               </p>
             </div>
-          </div>
+          </GlowCard>
 
           {/* Footer */}
           <p className="text-center text-xs text-muted-foreground mt-6">
@@ -270,10 +333,10 @@ export default function AuthPage() {
 
       {/* Forgot Password Dialog */}
       <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-        <DialogContent>
+        <DialogContent className="bg-[#111111] border border-[#FF4500]/20">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5" />
+            <DialogTitle className="font-display flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-[#FF4500]" />
               Reset Password
             </DialogTitle>
             <DialogDescription>
@@ -282,7 +345,7 @@ export default function AuthPage() {
           </DialogHeader>
 
           <div className="py-4">
-            <Label htmlFor="reset-email">Email</Label>
+            <Label htmlFor="reset-email" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Email</Label>
             <div className="relative mt-1.5">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -291,14 +354,14 @@ export default function AuthPage() {
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="pl-10"
+                className="pl-10 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 disabled={resetLoading}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowForgotPassword(false)}>
+            <Button variant="outline" onClick={() => setShowForgotPassword(false)} className="border-[#FF4500]/20">
               Cancel
             </Button>
             <Button

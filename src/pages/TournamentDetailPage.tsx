@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Layout } from '@/components/Layout';
+import { CircuitBackground } from '@/components/tron/CircuitBackground';
+import { GlowCard } from '@/components/tron/GlowCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -125,9 +127,9 @@ export default function TournamentDetailPage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-72 w-full rounded-2xl mb-8" />
-          <Skeleton className="h-10 w-80 mb-4" />
-          <Skeleton className="h-5 w-[500px]" />
+          <Skeleton className="h-72 w-full rounded-2xl mb-8 bg-[#111111]" />
+          <Skeleton className="h-10 w-80 mb-4 bg-[#111111]" />
+          <Skeleton className="h-5 w-[500px] bg-[#111111]" />
         </div>
       </Layout>
     );
@@ -137,17 +139,17 @@ export default function TournamentDetailPage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-20 text-center">
-          <div className="glass-card p-12 max-w-md mx-auto">
+          <GlowCard className="p-12 max-w-md mx-auto text-center">
             <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Tournament not found</h2>
+            <h2 className="text-xl font-display font-bold mb-2">Tournament not found</h2>
             <p className="text-muted-foreground text-sm mb-6">This tournament may have been deleted or doesn't exist.</p>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
               <Link to="/tournaments">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Tournaments
               </Link>
             </Button>
-          </div>
+          </GlowCard>
         </div>
       </Layout>
     );
@@ -188,6 +190,7 @@ export default function TournamentDetailPage() {
               backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
               backgroundSize: '40px 40px'
             }} />
+            <CircuitBackground intensity="light" />
           </div>
 
           {/* Floating content over banner */}
@@ -218,7 +221,7 @@ export default function TournamentDetailPage() {
                 </div>
 
                 {/* Tournament name */}
-                <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tight leading-none mb-2">
+                <h1 className="text-3xl md:text-5xl font-display font-black text-foreground tracking-tight leading-none mb-2">
                   {tournament.name}
                 </h1>
 
@@ -261,7 +264,7 @@ export default function TournamentDetailPage() {
 
         {/* Registration Progress Bar (when registration is open) */}
         {tournament.status === 'registration_open' && (
-          <div className="glass-card p-4 mb-6 flex items-center gap-4">
+          <GlowCard className="p-4 mb-6 flex items-center gap-4">
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1.5">
                 <span className="text-muted-foreground font-medium">Registration Progress</span>
@@ -276,14 +279,14 @@ export default function TournamentDetailPage() {
             </div>
             <div className="text-right">
               <span className={cn(
-                "text-2xl font-black",
+                "text-2xl font-display font-black",
                 spotsLeft <= 2 ? "text-secondary" : "text-primary"
               )}>
                 {spotsLeft}
               </span>
               <p className="text-xs text-muted-foreground">spots left</p>
             </div>
-          </div>
+          </GlowCard>
         )}
 
         {/* Host Controls */}
@@ -303,38 +306,38 @@ export default function TournamentDetailPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="glass-card p-1 mb-6 inline-flex rounded-xl">
+          <div className="bg-[#111111]/90 border border-[#FF4500]/20 p-1 mb-6 inline-flex rounded-xl">
             <TabsList className="bg-transparent gap-1">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                 <FileText className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="teams" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+              <TabsTrigger value="teams" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                 <Users className="w-4 h-4 mr-2" />
                 Teams ({registrations?.filter(r => r.status === 'approved').length || 0})
               </TabsTrigger>
-              {(tournament.status === 'bracket_generated' || 
-                tournament.status === 'ongoing' || 
+              {(tournament.status === 'bracket_generated' ||
+                tournament.status === 'ongoing' ||
                 tournament.status === 'completed') && (
-                <TabsTrigger value="bracket" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+                <TabsTrigger value="bracket" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                   <Swords className="w-4 h-4 mr-2" />
                   Bracket
                 </TabsTrigger>
               )}
               {isHost && tournament.status !== 'registration_open' && (
-                <TabsTrigger value="rosters" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+                <TabsTrigger value="rosters" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                   <Shield className="w-4 h-4 mr-2" />
                   Rosters
                 </TabsTrigger>
               )}
               {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
-                <TabsTrigger value="schedule" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary rounded-lg px-5">
+                <TabsTrigger value="schedule" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                   <CalendarClock className="w-4 h-4 mr-2" />
                   Schedule
                 </TabsTrigger>
               )}
               {canRegister && user && (
-                <TabsTrigger value="register" className="data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary rounded-lg px-5">
+                <TabsTrigger value="register" className="data-[state=active]:bg-[#FF6B35]/10 data-[state=active]:text-[#FF6B35] data-[state=active]:border-b-2 data-[state=active]:border-[#FF6B35] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
                   <Trophy className="w-4 h-4 mr-2" />
                   Register
                 </TabsTrigger>
@@ -352,11 +355,11 @@ export default function TournamentDetailPage() {
                 { icon: Users, value: String(registrationCount), sub: `of ${tournament.max_squads} squads`, color: 'secondary' },
                 { icon: Trophy, value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', sub: 'Format', color: 'secondary' },
               ].map((stat, i) => (
-                <div key={i} className="glass-card p-4 text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
+                <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-4 text-center relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
                   <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-${stat.color} to-transparent opacity-50`} />
                   <div className={`absolute -top-8 -right-8 w-16 h-16 bg-${stat.color}/5 rounded-full blur-xl group-hover:bg-${stat.color}/10 transition-colors`} />
                   <stat.icon className={`w-6 h-6 text-${stat.color} mx-auto mb-2`} />
-                  <p className="text-lg font-black text-foreground">{stat.value}</p>
+                  <p className="text-lg font-display font-black text-foreground">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.sub}</p>
                 </div>
               ))}
@@ -372,7 +375,7 @@ export default function TournamentDetailPage() {
               
               <div className="p-6 relative">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
+                  <h3 className="text-lg font-display font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
                     <div className="h-8 w-1.5 bg-gradient-to-b from-primary to-primary/30 rounded-full" />
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                       <FileText className="w-4 h-4 text-primary" />
@@ -438,7 +441,7 @@ export default function TournamentDetailPage() {
               
               <div className="p-6 relative">
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-lg font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
+                  <h3 className="text-lg font-display font-black text-foreground flex items-center gap-3 uppercase tracking-wide">
                     <div className="h-8 w-1.5 bg-gradient-to-b from-secondary to-secondary/30 rounded-full" />
                     <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
                       <Swords className="w-4 h-4 text-secondary" />
@@ -502,7 +505,7 @@ export default function TournamentDetailPage() {
                 <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-yellow-500/5 rounded-full blur-xl" />
                 
                 <div className="p-6 relative">
-                  <h3 className="text-lg font-black text-foreground mb-4 flex items-center gap-3 uppercase tracking-wide">
+                  <h3 className="text-lg font-display font-black text-foreground mb-4 flex items-center gap-3 uppercase tracking-wide">
                     <div className="h-8 w-1.5 bg-gradient-to-b from-yellow-500 to-yellow-500/30 rounded-full" />
                     <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
                       <Wallet className="w-4 h-4 text-yellow-500" />

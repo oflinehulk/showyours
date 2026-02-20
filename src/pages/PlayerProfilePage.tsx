@@ -6,7 +6,6 @@ import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { HeroClassBadge } from '@/components/HeroClassBadge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
@@ -20,6 +19,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitBackground } from '@/components/tron/CircuitBackground';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { useProfile, useMyProfile, useUpdateProfile, useDeleteProfile } from '@/hooks/useProfiles';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDIAN_STATES, CONTACT_TYPES } from '@/lib/constants';
@@ -27,10 +29,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { parseContacts } from '@/lib/contacts';
 import { InvitationSection } from '@/components/InvitationInbox';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  TrendingUp, 
+import {
+  ArrowLeft,
+  MapPin,
+  TrendingUp,
   MessageCircle,
   Copy,
   Check,
@@ -106,10 +108,8 @@ export default function PlayerProfilePage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <Skeleton className="h-64 w-full rounded-lg mb-6" />
-          <Skeleton className="h-32 w-full rounded-lg mb-6" />
-          <Skeleton className="h-48 w-full rounded-lg" />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <CircuitLoader size="lg" />
         </div>
       </Layout>
     );
@@ -119,10 +119,12 @@ export default function PlayerProfilePage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Player not found</h1>
-          <Button asChild className="btn-interactive">
-            <Link to="/players">Back to Players</Link>
-          </Button>
+          <GlowCard className="p-12 max-w-md mx-auto text-center">
+            <h1 className="text-2xl font-display font-bold text-foreground mb-4">Player not found</h1>
+            <Button asChild className="border-[#FF4500]/20 hover:border-[#FF4500]/40" variant="outline">
+              <Link to="/players">Back to Players</Link>
+            </Button>
+          </GlowCard>
         </div>
       </Layout>
     );
@@ -161,15 +163,15 @@ export default function PlayerProfilePage() {
   return (
     <Layout>
       {/* Hero Banner */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-br from-primary/20 via-secondary/10 to-background overflow-hidden">
-        <div className="absolute inset-0 bg-hero-pattern" />
+      <div className="relative h-48 md:h-64 bg-gradient-to-br from-[#FF4500]/20 via-[#FF4500]/5 to-background overflow-hidden">
+        <CircuitBackground intensity="light" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
       </div>
 
       <div className="container mx-auto px-4">
         {/* Back button */}
         <div className="mb-4 -mt-8 relative z-10">
-          <Button variant="ghost" size="sm" asChild className="btn-interactive">
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
             <Link to="/players">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Players
@@ -181,14 +183,14 @@ export default function PlayerProfilePage() {
           {/* Main Info */}
           <div className="lg:col-span-2">
             {/* Profile Header */}
-            <div className="glass-card p-6 mb-6">
+            <GlowCard className="p-6 mb-6">
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 {/* Avatar */}
                 <div className="relative">
                   <img
                     src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                     alt={player.ign}
-                    className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover glow-primary"
+                    className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover border-2 border-[#FF4500]/20"
                   />
                   {player.looking_for_squad && (
                     <span className="absolute -bottom-2 -right-2 px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground rounded-full">
@@ -199,7 +201,7 @@ export default function PlayerProfilePage() {
 
                 {/* Info */}
                 <div className="flex-1">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-wide mb-2">
                     {player.ign}
                   </h1>
                   
@@ -227,8 +229,8 @@ export default function PlayerProfilePage() {
                 {/* Win Rate */}
                 <div className="text-center sm:text-right">
                   <div className="flex items-center gap-2 justify-center sm:justify-end mb-1">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    <span className="text-3xl font-bold text-primary">{player.win_rate || '—'}%</span>
+                    <TrendingUp className="w-5 h-5 text-[#FF4500]" />
+                    <span className="text-3xl font-display font-bold text-[#FF4500]">{player.win_rate || '—'}%</span>
                   </div>
                   <p className="text-sm text-muted-foreground">Win Rate</p>
                 </div>
@@ -236,7 +238,7 @@ export default function PlayerProfilePage() {
 
               {/* Owner Controls */}
               {isOwner && (
-                <div className="mt-6 pt-6 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <Switch
@@ -257,7 +259,7 @@ export default function PlayerProfilePage() {
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                      <Button variant="outline" size="sm" className="border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
                         <Link to="/create-profile">
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Profile
@@ -265,21 +267,21 @@ export default function PlayerProfilePage() {
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm" className="btn-interactive">
+                          <Button variant="destructive" size="sm">
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="bg-[#111111] border border-[#FF4500]/20">
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Delete your profile?</AlertDialogTitle>
+                            <AlertDialogTitle className="font-display">Delete your profile?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This action cannot be undone. Your profile will be permanently deleted 
                               and you will no longer appear in the recruitment listings.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogCancel className="border-[#FF4500]/20">Cancel</AlertDialogCancel>
                             <AlertDialogAction 
                               onClick={handleDeleteProfile}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -297,38 +299,38 @@ export default function PlayerProfilePage() {
                   </div>
                 </div>
               )}
-            </div>
+            </GlowCard>
 
             {/* Bio */}
             {player.bio && (
-              <div className="glass-card p-6 mb-6">
-                <h2 className="text-lg font-semibold text-foreground mb-3">About</h2>
+              <GlowCard className="p-6 mb-6">
+                <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-3">About</h2>
                 <p className="text-muted-foreground leading-relaxed">{player.bio}</p>
-              </div>
+              </GlowCard>
             )}
 
             {/* Favorite Heroes */}
             {player.favorite_heroes && player.favorite_heroes.length > 0 && (
-              <div className="glass-card p-6 mb-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">Favorite Heroes</h2>
+              <GlowCard className="p-6 mb-6">
+                <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-4">Favorite Heroes</h2>
                 <div className="flex flex-wrap gap-3">
                   {player.favorite_heroes.map((hero) => (
                     <div
                       key={hero}
-                      className="px-4 py-2 bg-muted rounded-lg text-foreground font-medium hover:bg-muted/80 transition-colors"
+                      className="px-4 py-2 bg-[#FF4500]/5 border border-[#FF4500]/20 rounded-lg text-foreground font-medium hover:bg-[#FF4500]/10 transition-colors"
                     >
                       {hero}
                     </div>
                   ))}
                 </div>
-              </div>
+              </GlowCard>
             )}
 
             {/* Screenshots */}
             {screenshots.length > 0 && (
-              <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Image className="w-5 h-5 text-primary" />
+              <GlowCard className="p-6">
+                <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-4 flex items-center gap-2">
+                  <Image className="w-5 h-5 text-[#FF4500]" />
                   In-Game Screenshots
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -338,13 +340,13 @@ export default function PlayerProfilePage() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="aspect-video rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors"
+                      className="aspect-video rounded-lg overflow-hidden border border-[#FF4500]/10 hover:border-[#FF4500]/40 transition-colors"
                     >
                       <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
                     </a>
                   ))}
                 </div>
-              </div>
+              </GlowCard>
             )}
           </div>
 
@@ -356,9 +358,9 @@ export default function PlayerProfilePage() {
             {/* Profile Completeness - only for owner */}
             {isOwner && <ProfileCompleteness profile={player} />}
 
-            <div className="glass-card p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-primary" />
+            <GlowCard className="p-6 sticky top-24">
+              <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-[#FF4500]" />
                 Contact Info
               </h2>
 
@@ -368,11 +370,11 @@ export default function PlayerProfilePage() {
                     const contactType = CONTACT_TYPES.find((c) => c.id === contact.type);
                     const contactKey = `${contact.type}-${index}`;
                     const isWhatsApp = contact.type === 'whatsapp';
-                    
+
                     return (
                       <div
                         key={contactKey}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg group"
+                        className="flex items-center justify-between p-3 bg-[#0a0a0a] border border-[#FF4500]/10 rounded-lg group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-xl">{getContactIcon(contact.type)}</span>
@@ -386,10 +388,10 @@ export default function PlayerProfilePage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                              className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                               asChild
                             >
-                              <a 
+                              <a
                                 href={`https://wa.me/${contact.value.replace(/[^0-9]/g, '')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -401,11 +403,11 @@ export default function PlayerProfilePage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity btn-interactive"
+                            className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => copyToClipboard(contact.value, contactKey)}
                           >
                             {copiedContact === contactKey ? (
-                              <Check className="w-4 h-4 text-primary" />
+                              <Check className="w-4 h-4 text-[#FF4500]" />
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
@@ -420,12 +422,12 @@ export default function PlayerProfilePage() {
               )}
 
               {/* Status */}
-              <div className="mt-6 pt-6 border-t border-border">
+              <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
                   {player.looking_for_squad ? (
-                    <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-[#FF4500]">
+                      <span className="w-2 h-2 rounded-full bg-[#FF4500] animate-pulse" />
                       Looking for Squad
                     </span>
                   ) : (
@@ -433,7 +435,7 @@ export default function PlayerProfilePage() {
                   )}
                 </div>
               </div>
-            </div>
+            </GlowCard>
           </div>
         </div>
       </div>

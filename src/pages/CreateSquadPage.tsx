@@ -19,6 +19,8 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES } from '@/lib/constants';
 import { hasContactType } from '@/lib/contacts';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { ArrowLeft, Check, Shield, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -150,7 +152,7 @@ export default function CreateSquadPage() {
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <CircuitLoader size="lg" />
           </div>
         </div>
       </Layout>
@@ -162,18 +164,18 @@ export default function CreateSquadPage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
+          <Button variant="ghost" size="sm" asChild className="mb-6 text-muted-foreground hover:text-foreground">
             <Link to="/squads">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Squads
             </Link>
           </Button>
 
-          <div className="glass-card p-8 text-center">
+          <GlowCard className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">Profile Required</h2>
+            <h2 className="text-xl font-display font-bold text-foreground mb-2">Profile Required</h2>
             <p className="text-muted-foreground mb-6">
               You must create a profile with WhatsApp contact before creating a squad. 
               This allows tournament hosts to contact you.
@@ -184,7 +186,7 @@ export default function CreateSquadPage() {
                 Create Profile First
               </Link>
             </Button>
-          </div>
+          </GlowCard>
         </div>
       </Layout>
     );
@@ -195,18 +197,18 @@ export default function CreateSquadPage() {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
+          <Button variant="ghost" size="sm" asChild className="mb-6 text-muted-foreground hover:text-foreground">
             <Link to="/squads">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Squads
             </Link>
           </Button>
 
-          <div className="glass-card p-8 text-center">
+          <GlowCard className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">WhatsApp Required</h2>
+            <h2 className="text-xl font-display font-bold text-foreground mb-2">WhatsApp Required</h2>
             <p className="text-muted-foreground mb-6">
               As a squad leader, you must have WhatsApp contact in your profile 
               so tournament hosts can reach you.
@@ -216,7 +218,7 @@ export default function CreateSquadPage() {
                 Update Profile
               </Link>
             </Button>
-          </div>
+          </GlowCard>
         </div>
       </Layout>
     );
@@ -226,7 +228,7 @@ export default function CreateSquadPage() {
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
-        <Button variant="ghost" size="sm" asChild className="mb-6 btn-interactive">
+        <Button variant="ghost" size="sm" asChild className="mb-6 text-muted-foreground hover:text-foreground">
           <Link to="/squads">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Squads
@@ -234,24 +236,22 @@ export default function CreateSquadPage() {
         </Button>
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center glow-secondary">
-              <Shield className="w-6 h-6 text-secondary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Create Squad</h1>
-              <p className="text-muted-foreground">Build your team for tournaments</p>
-            </div>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-xl bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">
+            <Shield className="w-6 h-6 text-[#FF4500]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-display font-bold text-foreground tracking-wide">Create Squad</h1>
+            <p className="text-muted-foreground text-sm">Build your team for tournaments</p>
           </div>
         </div>
 
         {/* Info Notice */}
-        <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/20 mb-6">
+        <GlowCard className="p-4 mb-6">
           <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-secondary mt-0.5" />
+            <Shield className="w-5 h-5 text-[#FF4500] mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-secondary">How it works</p>
+              <p className="font-display font-medium text-[#FF4500] uppercase tracking-wider text-xs">How it works</p>
               <ul className="text-muted-foreground mt-1 space-y-1">
                 {!isAdmin && <li>• You can only create one squad</li>}
                 {isAdmin && <li>• As admin, you can create multiple squads</li>}
@@ -261,10 +261,11 @@ export default function CreateSquadPage() {
               </ul>
             </div>
           </div>
-        </div>
+        </GlowCard>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6">
+        <GlowCard>
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Squad Logo */}
           <div className="flex flex-col items-center gap-4">
             <Label>Squad Logo (Optional)</Label>
@@ -311,7 +312,7 @@ export default function CreateSquadPage() {
             <div>
               <Label htmlFor="minRank">Minimum Rank Required <span className="text-xs text-muted-foreground">(Optional)</span></Label>
               <Select value={minRank} onValueChange={setMinRank}>
-                <SelectTrigger className="mt-1.5">
+                <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Select minimum rank" />
                 </SelectTrigger>
                 <SelectContent>
@@ -327,7 +328,7 @@ export default function CreateSquadPage() {
             <div>
               <Label htmlFor="maxMembers">Maximum Members</Label>
               <Select value={maxMembers} onValueChange={setMaxMembers}>
-                <SelectTrigger className="mt-1.5">
+                <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Max size?" />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,8 +354,8 @@ export default function CreateSquadPage() {
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 active:scale-95',
                     neededRoles.includes(role.id)
-                      ? 'bg-primary/10 border-primary text-primary'
-                      : 'bg-muted border-transparent text-muted-foreground hover:text-foreground'
+                      ? 'bg-[#FF4500]/10 border-[#FF4500] text-[#FF4500]'
+                      : 'bg-[#0a0a0a] border-[#FF4500]/10 text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {role.icon}
@@ -403,7 +404,7 @@ export default function CreateSquadPage() {
           </div>
 
           {/* Submit */}
-          <div className="pt-4 border-t border-border">
+          <div className="pt-4 border-t border-[#FF4500]/10">
             <Button
               type="submit"
               className="w-full btn-gaming"
@@ -423,6 +424,7 @@ export default function CreateSquadPage() {
             </p>
           </div>
         </form>
+        </GlowCard>
       </div>
     </Layout>
   );

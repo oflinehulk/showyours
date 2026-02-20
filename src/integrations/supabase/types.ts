@@ -102,6 +102,7 @@ export type Database = {
           contacts: Json | null
           created_at: string
           favorite_heroes: string[] | null
+          has_completed_onboarding: boolean | null
           hero_class: string
           id: string
           ign: string
@@ -123,6 +124,7 @@ export type Database = {
           contacts?: Json | null
           created_at?: string
           favorite_heroes?: string[] | null
+          has_completed_onboarding?: boolean | null
           hero_class?: string
           id?: string
           ign: string
@@ -144,6 +146,7 @@ export type Database = {
           contacts?: Json | null
           created_at?: string
           favorite_heroes?: string[] | null
+          has_completed_onboarding?: boolean | null
           hero_class?: string
           id?: string
           ign?: string

@@ -6,16 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
-import { Users, UserPlus, Shield, Menu, X, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { InvitationBadge } from '@/components/InvitationInbox';
 
 const navLinks = [
-  { to: '/players', label: 'Find Players', icon: Users, description: 'Squads looking for players' },
-  { to: '/squads', label: 'Find Squads', icon: Search, description: 'Players looking for squads' },
-  { to: '/tournaments', label: 'Tournaments', icon: Trophy, description: 'Compete with your squad' },
+  { to: '/players', label: 'Find Players', icon: Users },
+  { to: '/squads', label: 'Find Squads', icon: Search },
+  { to: '/tournaments', label: 'Tournaments', icon: Trophy },
 ];
 
 export function Navbar() {
@@ -24,7 +22,6 @@ export function Navbar() {
   const { data: myProfile } = useMyProfile();
   const { data: mySquads } = useMySquads();
   const { data: isAdmin } = useIsAdmin();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hasProfile = !!myProfile;
   const hasSquad = mySquads && mySquads.length > 0;
@@ -32,7 +29,6 @@ export function Navbar() {
   const handleSignOut = async () => {
     await signOut();
     toast.success('Signed out successfully');
-    setMobileMenuOpen(false);
   };
 
   const handleHardRefresh = () => {
@@ -43,9 +39,9 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[#FF4500]/10 bg-[#0a0a0a]/95 backdrop-blur-xl">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 items-center justify-between">
           {/* Logo */}
           <Logo />
 
@@ -56,11 +52,11 @@ export function Navbar() {
                 key={link.to}
                 to={link.to}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
+                  'px-4 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 flex items-center gap-2',
                   'hover:scale-[1.02] active:scale-[0.98]',
                   location.pathname === link.to
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    ? 'bg-[#FF4500]/10 text-[#FF4500] border border-[#FF4500]/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-[#111111]'
                 )}
               >
                 <link.icon className="w-4 h-4" />
@@ -69,12 +65,12 @@ export function Navbar() {
             ))}
           </nav>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons - Desktop only */}
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
                 {isAdmin && (
-                  <Button variant="outline" size="sm" className="btn-interactive border-secondary text-secondary hover:bg-secondary/10" asChild>
+                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/30 text-[#FF4500] hover:bg-[#FF4500]/10" asChild>
                     <Link to="/admin">
                       <ShieldCheck className="w-4 h-4 mr-2" />
                       Admin
@@ -82,14 +78,14 @@ export function Navbar() {
                   </Button>
                 )}
                 {hasProfile ? (
-                  <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
                     <Link to={`/player/${myProfile.id}`}>
                       <Settings className="w-4 h-4 mr-2" />
-                      Manage Profile
+                      Profile
                     </Link>
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" className="btn-interactive" asChild>
+                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
                     <Link to="/create-profile">
                       <UserPlus className="w-4 h-4 mr-2" />
                       Create Profile
@@ -108,20 +104,18 @@ export function Navbar() {
                   )
                 )}
                 {hasProfile && <InvitationBadge />}
-                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9" title="Hard refresh (clear cache)">
+                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9 text-muted-foreground hover:text-[#FF4500]" title="Hard refresh">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-                <ThemeToggle />
-                <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive">
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive text-muted-foreground hover:text-[#FF4500]">
                   <LogOut className="w-4 h-4" />
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9" title="Hard refresh (clear cache)">
+                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9 text-muted-foreground hover:text-[#FF4500]" title="Hard refresh">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-                <ThemeToggle />
                 <Button size="sm" className="btn-gaming" asChild>
                   <Link to="/auth">
                     <LogIn className="w-4 h-4 mr-2" />
@@ -132,100 +126,27 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden p-2 text-foreground btn-interactive rounded-lg"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
-            <nav className="flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    'px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2',
-                    'active:scale-[0.98]',
-                    location.pathname === link.to
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  )}
-                >
-                  <link.icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border/50">
-                {user ? (
-                  <>
-                    {isAdmin && (
-                      <Button variant="outline" size="sm" className="btn-interactive border-secondary text-secondary hover:bg-secondary/10" asChild>
-                        <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                          <ShieldCheck className="w-4 h-4 mr-2" />
-                          Admin Panel
-                        </Link>
-                      </Button>
-                    )}
-                    {hasProfile ? (
-                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                        <Link to={`/player/${myProfile.id}`} onClick={() => setMobileMenuOpen(false)}>
-                          <Settings className="w-4 h-4 mr-2" />
-                          Manage Profile
-                        </Link>
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" className="btn-interactive" asChild>
-                        <Link to="/create-profile" onClick={() => setMobileMenuOpen(false)}>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Create Profile
-                        </Link>
-                      </Button>
-                    )}
-                    {hasSquad ? (
-                      <Button size="sm" className="btn-gaming" asChild>
-                        <Link to={`/squad/${mySquads[0].id}`} onClick={() => setMobileMenuOpen(false)}>
-                          Manage Squad
-                        </Link>
-                      </Button>
-                    ) : (
-                      hasProfile && (
-                        <Button size="sm" className="btn-gaming" asChild>
-                          <Link to="/create-squad" onClick={() => setMobileMenuOpen(false)}>
-                            Post Squad
-                          </Link>
-                        </Button>
-                      )
-                    )}
-                    <div className="flex items-center gap-2">
-                      <ThemeToggle />
-                      <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive flex-1">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <ThemeToggle />
-                    <Button size="sm" className="btn-gaming flex-1" asChild>
-                      <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                        <LogIn className="w-4 h-4 mr-2" />
-                        Sign In
-                      </Link>
-                    </Button>
-                  </div>
+          {/* Mobile: just show key actions inline */}
+          <div className="flex md:hidden items-center gap-1">
+            {user ? (
+              <>
+                {hasProfile && <InvitationBadge />}
+                {isAdmin && (
+                  <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>
+                    <Link to="/admin"><ShieldCheck className="w-4 h-4" /></Link>
+                  </Button>
                 )}
-              </div>
-            </nav>
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]">
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" className="btn-gaming text-xs" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );

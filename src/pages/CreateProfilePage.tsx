@@ -17,12 +17,14 @@ import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
 import { RANKS, INDIAN_STATES, ALL_HEROES } from '@/lib/constants';
-import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MultiRoleSelect } from '@/components/MultiRoleSelect';
 import { useHeroes } from '@/hooks/useHeroes';
 import { parseContacts } from '@/lib/contacts';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { CircuitLoader } from '@/components/tron/CircuitLoader';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -223,7 +225,7 @@ export default function CreateProfilePage() {
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <CircuitLoader size="lg" />
           </div>
         </div>
       </Layout>
@@ -234,16 +236,21 @@ export default function CreateProfilePage() {
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {isEditMode ? 'Edit Your Profile' : 'Create Your Profile'}
-          </h1>
-          <p className="text-muted-foreground">
-            {isEditMode 
-              ? 'Update your details and showcase your latest achievements'
-              : 'Showcase your skills and get discovered by squads'
-            }
-          </p>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-xl bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">
+            <User className="w-6 h-6 text-[#FF4500]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-display font-bold text-foreground tracking-wide">
+              {isEditMode ? 'Edit Your Profile' : 'Create Your Profile'}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {isEditMode
+                ? 'Update your details and showcase your latest achievements'
+                : 'Showcase your skills and get discovered by squads'
+              }
+            </p>
+          </div>
         </div>
 
         {/* Progress Steps */}
@@ -252,10 +259,10 @@ export default function CreateProfilePage() {
             <div key={step.number} className="flex items-center">
               <div
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-200 flex-shrink-0',
+                  'w-10 h-10 rounded-full flex items-center justify-center font-display font-bold transition-all duration-200 flex-shrink-0',
                   currentStep >= step.number
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-[#FF4500] text-white'
+                    : 'bg-[#111111] border border-[#FF4500]/20 text-muted-foreground'
                 )}
               >
                 {currentStep > step.number ? (
@@ -276,7 +283,7 @@ export default function CreateProfilePage() {
                 <div
                   className={cn(
                     'w-8 sm:w-16 h-0.5 mx-2 transition-colors flex-shrink-0',
-                    currentStep > step.number ? 'bg-primary' : 'bg-muted'
+                    currentStep > step.number ? 'bg-[#FF4500]' : 'bg-[#FF4500]/20'
                   )}
                 />
               )}
@@ -285,7 +292,7 @@ export default function CreateProfilePage() {
         </div>
 
         {/* Form Card */}
-        <div className="glass-card p-6">
+        <GlowCard className="p-6">
           {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fade-in">
@@ -301,24 +308,24 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="ign">In-Game Name (IGN) *</Label>
+                <Label htmlFor="ign" className="text-xs font-display uppercase tracking-wider text-muted-foreground">In-Game Name (IGN) *</Label>
                 <Input
                   id="ign"
                   value={ign}
                   onChange={(e) => setIgn(e.target.value)}
                   placeholder="Your MLBB username"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
 
               <div>
-                <Label htmlFor="gameId">Game ID *</Label>
+                <Label htmlFor="gameId" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Game ID *</Label>
                 <Input
                   id="gameId"
                   value={gameId}
                   onChange={(e) => setGameId(e.target.value)}
                   placeholder="e.g., 123456789 (1234)"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Your MLBB numeric ID with server number in brackets
@@ -326,9 +333,9 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="state">Your State *</Label>
+                <Label htmlFor="state" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Your State *</Label>
                 <Select value={state} onValueChange={setState}>
-                  <SelectTrigger className="mt-1.5">
+                  <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
                     <SelectValue placeholder="Select your state" />
                   </SelectTrigger>
                   <SelectContent>
@@ -347,9 +354,9 @@ export default function CreateProfilePage() {
           {currentStep === 2 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <Label htmlFor="rank">Current Rank *</Label>
+                <Label htmlFor="rank" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Current Rank *</Label>
                 <Select value={rank} onValueChange={setRank}>
-                  <SelectTrigger className="mt-1.5">
+                  <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
                     <SelectValue placeholder="Select your rank" />
                   </SelectTrigger>
                   <SelectContent>
@@ -363,7 +370,7 @@ export default function CreateProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="winRate">Win Rate % (Optional)</Label>
+                <Label htmlFor="winRate" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Win Rate % (Optional)</Label>
                 <Input
                   id="winRate"
                   type="number"
@@ -372,12 +379,12 @@ export default function CreateProfilePage() {
                   value={winRate}
                   onChange={(e) => setWinRate(e.target.value)}
                   placeholder="e.g., 55.5"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
 
               <div>
-                <Label>Main Roles * (Select all that apply)</Label>
+                <Label className="text-xs font-display uppercase tracking-wider text-muted-foreground">Main Roles * (Select all that apply)</Label>
                 <div className="mt-2">
                   <MultiRoleSelect 
                     selectedRoles={mainRoles}
@@ -392,7 +399,7 @@ export default function CreateProfilePage() {
           {currentStep === 3 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <Label htmlFor="whatsapp">
+                <Label htmlFor="whatsapp" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
                   WhatsApp Number * <span className="text-xs text-muted-foreground">(Required)</span>
                 </Label>
                 <Input
@@ -400,12 +407,12 @@ export default function CreateProfilePage() {
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder="e.g., +91 98765 43210"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
 
               <div>
-                <Label htmlFor="discord">
+                <Label htmlFor="discord" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
                   Discord <span className="text-xs text-muted-foreground">(Optional)</span>
                 </Label>
                 <Input
@@ -413,12 +420,12 @@ export default function CreateProfilePage() {
                   value={discord}
                   onChange={(e) => setDiscord(e.target.value)}
                   placeholder="e.g., username#1234"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
 
               <div>
-                <Label htmlFor="instagram">
+                <Label htmlFor="instagram" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
                   Instagram <span className="text-xs text-muted-foreground">(Optional)</span>
                 </Label>
                 <Input
@@ -426,7 +433,7 @@ export default function CreateProfilePage() {
                   value={instagram}
                   onChange={(e) => setInstagram(e.target.value)}
                   placeholder="e.g., @username"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
             </div>
@@ -436,24 +443,25 @@ export default function CreateProfilePage() {
           {currentStep === 4 && (
             <div className="space-y-6 animate-fade-in">
               <div>
-                <Label htmlFor="bio">Bio (Optional)</Label>
+                <Label htmlFor="bio" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Bio (Optional)</Label>
                 <Textarea
                   id="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell squads about yourself..."
-                  className="mt-1.5 min-h-[80px]"
+                  className="mt-1.5 min-h-[80px] bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                 />
               </div>
 
               <div>
-                <Label htmlFor="heroes">Favorite Heroes (up to 5, optional)</Label>
+                <Label htmlFor="heroes" className="text-xs font-display uppercase tracking-wider text-muted-foreground">Favorite Heroes (up to 5, optional)</Label>
                 <div className="relative mt-1.5">
                   <Input
                     id="heroes"
                     value={heroInput}
                     onChange={(e) => setHeroInput(e.target.value)}
                     placeholder="Type a hero name..."
+                    className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && heroInput) {
                         e.preventDefault();
@@ -462,13 +470,13 @@ export default function CreateProfilePage() {
                     }}
                   />
                   {heroInput && suggestedHeroes.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-10 overflow-hidden max-h-48 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#111111] border border-[#FF4500]/20 rounded-lg shadow-lg z-10 overflow-hidden max-h-48 overflow-y-auto">
                       {suggestedHeroes.map((hero) => (
                         <button
                           key={hero}
                           type="button"
                           onClick={() => addHero(hero)}
-                          className="w-full px-4 py-2 text-left hover:bg-muted transition-colors text-foreground"
+                          className="w-full px-4 py-2 text-left hover:bg-[#FF4500]/10 transition-colors text-foreground"
                         >
                           {hero}
                         </button>
@@ -483,7 +491,7 @@ export default function CreateProfilePage() {
                   {favoriteHeroes.map((hero) => (
                     <span
                       key={hero}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded-lg"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#FF4500]/10 text-[#FF4500] rounded-lg border border-[#FF4500]/20"
                     >
                       {hero}
                       <button
@@ -512,7 +520,7 @@ export default function CreateProfilePage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-4 border-t border-border">
+              <div className="flex items-center gap-2 pt-4 border-t border-[#FF4500]/10">
                 <Checkbox
                   id="lookingForSquad"
                   checked={lookingForSquad}
@@ -526,12 +534,12 @@ export default function CreateProfilePage() {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-border">
+          <div className="flex justify-between mt-8 pt-6 border-t border-[#FF4500]/10">
             <Button
               variant="outline"
               onClick={() => setCurrentStep((currentStep - 1) as Step)}
               disabled={currentStep === 1}
-              className="btn-interactive"
+              className="border-[#FF4500]/20 hover:border-[#FF4500]/40"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -541,7 +549,7 @@ export default function CreateProfilePage() {
               <Button
                 onClick={() => setCurrentStep((currentStep + 1) as Step)}
                 disabled={!canProceed()}
-                className="btn-interactive"
+                className="btn-gaming"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -563,7 +571,7 @@ export default function CreateProfilePage() {
               </Button>
             )}
           </div>
-        </div>
+        </GlowCard>
       </div>
     </Layout>
   );

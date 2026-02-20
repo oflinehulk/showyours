@@ -24,6 +24,7 @@ export interface Profile {
   contacts: Json;
   screenshots: string[];
   mlbb_id: string | null;
+  has_completed_onboarding: boolean | null;
   created_at: string;
   updated_at: string;
 }

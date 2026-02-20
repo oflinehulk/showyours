@@ -13,6 +13,7 @@ import { TournamentRegistrations } from '@/components/tournament/TournamentRegis
 import { TournamentRegistrationForm } from '@/components/tournament/TournamentRegistrationForm';
 import { TournamentHostControls } from '@/components/tournament/TournamentHostControls';
 import { TournamentRosterManagement } from '@/components/tournament/TournamentRosterManagement';
+import { TournamentInviteSquads } from '@/components/tournament/TournamentInviteSquads';
 import { 
   useTournament, 
   useTournamentRegistrations,
@@ -285,10 +286,17 @@ export default function TournamentDetailPage() {
 
         {/* Host Controls */}
         {isHost && (
-          <TournamentHostControls 
-            tournament={tournament} 
-            registrations={registrations || []}
-          />
+          <>
+            <TournamentHostControls 
+              tournament={tournament} 
+              registrations={registrations || []}
+            />
+            {tournament.status === 'registration_open' && (
+              <div className="mb-6">
+                <TournamentInviteSquads tournament={tournament} />
+              </div>
+            )}
+          </>
         )}
 
         {/* Tabs */}

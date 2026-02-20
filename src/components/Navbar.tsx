@@ -130,6 +130,11 @@ export function Navbar() {
           <div className="flex md:hidden items-center gap-1">
             {user ? (
               <>
+                {hasSquad && (
+                  <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>
+                    <Link to={`/squad/${mySquads[0].id}`}><Shield className="w-4 h-4" /></Link>
+                  </Button>
+                )}
                 {hasProfile && <InvitationBadge />}
                 {isAdmin && (
                   <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>

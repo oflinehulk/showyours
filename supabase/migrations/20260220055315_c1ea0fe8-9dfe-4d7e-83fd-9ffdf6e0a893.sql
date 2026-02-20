@@ -1,0 +1,2 @@
+ALTER TABLE public.tournament_squad_members DROP CONSTRAINT tournament_squad_members_position_check;
+ALTER TABLE public.tournament_squad_members ADD CONSTRAINT tournament_squad_members_position_check CHECK (position >= 1 AND position <= 10);

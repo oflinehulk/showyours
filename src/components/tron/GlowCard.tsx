@@ -15,9 +15,9 @@ const glowColorMap = {
 };
 
 const glowShadowMap = {
-  primary: 'hover:shadow-[0_0_15px_rgba(255,69,0,0.3)]',
-  secondary: 'hover:shadow-[0_0_15px_rgba(255,107,53,0.3)]',
-  accent: 'hover:shadow-[0_0_15px_rgba(255,45,0,0.3)]',
+  primary: 'hover:shadow-[0_0_10px_rgba(255,69,0,0.15)]',
+  secondary: 'hover:shadow-[0_0_10px_rgba(255,107,53,0.15)]',
+  accent: 'hover:shadow-[0_0_10px_rgba(255,45,0,0.15)]',
 };
 
 export function GlowCard({

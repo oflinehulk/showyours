@@ -3,18 +3,24 @@ import { cn } from '@/lib/utils';
 import { Home, Users, Trophy, Shield, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
-
-const tabs = [
-  { to: '/', icon: Home, label: 'Home' },
-  { to: '/players', icon: Users, label: 'Players' },
-  { to: '/tournaments', icon: Trophy, label: 'Tourneys' },
-  { to: '/squads', icon: Shield, label: 'Squads' },
-];
+import { useMySquads } from '@/hooks/useSquads';
 
 export function BottomTabBar() {
   const location = useLocation();
   const { user } = useAuth();
   const { data: myProfile } = useMyProfile();
+  const { data: mySquads } = useMySquads();
+
+  const hasSquad = mySquads && mySquads.length > 0;
+
+  const tabs = [
+    { to: '/', icon: Home, label: 'Home' },
+    { to: '/players', icon: Users, label: 'Players' },
+    { to: '/tournaments', icon: Trophy, label: 'Tourneys' },
+    hasSquad
+      ? { to: `/squad/${mySquads[0].id}`, icon: Shield, label: 'My Squad' }
+      : { to: '/squads', icon: Shield, label: 'Squads' },
+  ];
 
   const profileTab = {
     to: user ? (myProfile ? `/player/${myProfile.id}` : '/create-profile') : '/auth',

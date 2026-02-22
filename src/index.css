@@ -135,18 +135,18 @@
 
   /* Neon glow effects */
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.3),
-                0 0 40px hsl(var(--glow-primary) / 0.1);
+    box-shadow: 0 0 15px hsl(var(--glow-primary) / 0.15),
+                0 0 30px hsl(var(--glow-primary) / 0.05);
   }
 
   .glow-secondary {
-    box-shadow: 0 0 20px hsl(var(--glow-secondary) / 0.3),
-                0 0 40px hsl(var(--glow-secondary) / 0.1);
+    box-shadow: 0 0 15px hsl(var(--glow-secondary) / 0.15),
+                0 0 30px hsl(var(--glow-secondary) / 0.05);
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--glow-accent) / 0.3),
-                0 0 40px hsl(var(--glow-accent) / 0.1);
+    box-shadow: 0 0 15px hsl(var(--glow-accent) / 0.15),
+                0 0 30px hsl(var(--glow-accent) / 0.05);
   }
 
   /* Hover glow transition */
@@ -155,22 +155,22 @@
   }
 
   .hover-glow:hover {
-    box-shadow: 0 0 15px rgba(255, 69, 0, 0.4),
-                0 0 30px rgba(255, 69, 0, 0.15);
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.2),
+                0 0 20px rgba(255, 69, 0, 0.08);
     transform: translateY(-2px);
   }
 
   /* Neon border utility */
   .neon-border {
-    @apply border border-[#FF4500]/30;
-    box-shadow: 0 0 5px rgba(255, 69, 0, 0.15),
-                inset 0 0 5px rgba(255, 69, 0, 0.05);
+    @apply border border-[#FF4500]/20;
+    box-shadow: 0 0 4px rgba(255, 69, 0, 0.08),
+                inset 0 0 4px rgba(255, 69, 0, 0.03);
   }
 
   .neon-border-strong {
-    @apply border border-[#FF4500]/60;
-    box-shadow: 0 0 10px rgba(255, 69, 0, 0.3),
-                inset 0 0 5px rgba(255, 69, 0, 0.1);
+    @apply border border-[#FF4500]/40;
+    box-shadow: 0 0 6px rgba(255, 69, 0, 0.15),
+                inset 0 0 4px rgba(255, 69, 0, 0.05);
   }
 
   /* Gaming button styles - Neon Orange gradient */
@@ -181,11 +181,11 @@
     @apply hover:from-[#FF4500]/90 hover:to-[#FF6B35]/90;
     @apply transition-all duration-300;
     @apply active:scale-95;
-    box-shadow: 0 0 10px rgba(255, 69, 0, 0.3);
+    box-shadow: 0 0 8px rgba(255, 69, 0, 0.2);
   }
 
   .btn-gaming:hover {
-    box-shadow: 0 0 20px rgba(255, 69, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 69, 0, 0.3);
   }
 
   .btn-gaming::before {

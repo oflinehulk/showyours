@@ -131,7 +131,7 @@ export function Navbar() {
             {user ? (
               <>
                 {hasSquad && (
-                  <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>
+                  <Button variant="ghost" size="icon" className="w-9 h-9 text-[#FF4500] hover:text-[#FF6B35]" asChild title="Manage Squad">
                     <Link to={`/squad/${mySquads[0].id}`}><Shield className="w-4 h-4" /></Link>
                   </Button>
                 )}

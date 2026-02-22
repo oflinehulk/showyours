@@ -68,6 +68,7 @@ export function TournamentRegistrations({
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
   const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string | null>(null);
   const teamsRef = useRef<HTMLDivElement>(null);
+  const screenshotRef = useRef<HTMLDivElement>(null);
 
   const handleApprove = async (registrationId: string) => {
     try {
@@ -292,7 +293,7 @@ export function TournamentRegistrations({
             size="icon"
             className="h-8 w-8"
             title="Download screenshot"
-            onClick={() => teamsRef.current && captureAndDownload(teamsRef.current, `tournament-teams-${registrations.length}`)}
+            onClick={() => screenshotRef.current && captureAndDownload(screenshotRef.current, `tournament-teams-${registrations.length}`)}
           >
             <Download className="w-4 h-4" />
           </Button>
@@ -301,7 +302,7 @@ export function TournamentRegistrations({
             size="icon"
             className="h-8 w-8"
             title="Share screenshot"
-            onClick={() => teamsRef.current && captureAndShare(teamsRef.current, `tournament-teams-${registrations.length}`)}
+            onClick={() => screenshotRef.current && captureAndShare(screenshotRef.current, `tournament-teams-${registrations.length}`)}
           >
             <Share2 className="w-4 h-4" />
           </Button>
@@ -346,6 +347,130 @@ export function TournamentRegistrations({
           </div>
         </div>
       )}
+
+      {/* Hidden off-screen render target for screenshots */}
+      <div
+        ref={screenshotRef}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '-9999px',
+          width: '480px',
+          backgroundColor: '#0a0a0a',
+          fontFamily: 'Rajdhani, sans-serif',
+        }}
+      >
+        <div style={{ padding: '24px', border: '1px solid rgba(255,69,0,0.3)', borderRadius: '12px' }}>
+          {/* Header */}
+          <div style={{ color: '#FF4500', fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '12px' }}>
+            Registered Teams
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '12px' }}>
+            <span style={{ color: '#10b981' }}>Approved: {approved.length}</span>
+            <span style={{ color: '#f59e0b' }}>Pending: {pending.length}</span>
+            {rejected.length > 0 && <span style={{ color: '#ef4444' }}>Rejected: {rejected.length}</span>}
+            <span style={{ color: '#888', marginLeft: 'auto' }}>Total: {registrations.length}</span>
+          </div>
+
+          {/* Separator */}
+          <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(255,69,0,0.4), transparent)', marginBottom: '16px' }} />
+
+          {/* Approved list */}
+          {approved.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ color: '#10b981', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '8px' }}>
+                Approved
+              </div>
+              {approved.map((reg, i) => (
+                <div
+                  key={reg.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    marginBottom: '4px',
+                    backgroundColor: 'rgba(16,185,129,0.08)',
+                    borderLeft: '3px solid rgba(16,185,129,0.5)',
+                  }}
+                >
+                  <span style={{ color: '#FF4500', fontWeight: 700, fontSize: '13px', minWidth: '28px' }}>#{i + 1}</span>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px', wordBreak: 'break-word' }}>
+                    {reg.tournament_squads.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pending list */}
+          {pending.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ color: '#f59e0b', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '8px' }}>
+                Pending
+              </div>
+              {pending.map((reg) => (
+                <div
+                  key={reg.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    marginBottom: '4px',
+                    backgroundColor: 'rgba(245,158,11,0.08)',
+                  }}
+                >
+                  <span style={{ color: '#aaa', fontWeight: 600, fontSize: '14px', wordBreak: 'break-word' }}>
+                    {reg.tournament_squads.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Rejected list */}
+          {rejected.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ color: '#ef4444', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '8px' }}>
+                Rejected
+              </div>
+              {rejected.map((reg) => (
+                <div
+                  key={reg.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    marginBottom: '4px',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                  }}
+                >
+                  <span style={{ color: '#888', fontWeight: 600, fontSize: '14px', textDecoration: 'line-through', wordBreak: 'break-word' }}>
+                    {reg.tournament_squads.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Branding footer */}
+          <div style={{ borderTop: '1px solid rgba(255,69,0,0.2)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#FF4500', fontSize: '10px', letterSpacing: '0.25em', fontWeight: 700, textTransform: 'uppercase' }}>
+              ShowYours
+            </span>
+            <span style={{ color: '#444', fontSize: '9px' }}>
+              showyours.lovable.app
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { RankBadge } from '@/components/RankBadge';
 import { RoleIcon } from '@/components/RoleIcon';
 import { HeroClassBadge } from '@/components/HeroClassBadge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
@@ -41,6 +42,7 @@ import {
   Image,
   Trash2,
   Loader2,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -53,6 +55,24 @@ export default function PlayerProfilePage() {
   const updateProfile = useUpdateProfile();
   const deleteProfile = useDeleteProfile();
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
+
+  // Fallback: if not found in profiles table, try squad_members (manually added players)
+  const { data: manualMember, isLoading: manualLoading } = useQuery({
+    queryKey: ['squad-member-profile', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('squad_members')
+        .select(`
+          id, ign, mlbb_id, whatsapp, role, joined_at,
+          squad:squads(id, name, logo_url)
+        `)
+        .eq('id', id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && !isLoading && !player,
+  });
 
   // Check if player is in a squad
   const { data: isInSquad } = useQuery({
@@ -105,12 +125,151 @@ export default function PlayerProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || manualLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <CircuitLoader size="lg" />
         </div>
+      </Layout>
+    );
+  }
+
+  // Show manual member profile if found in squad_members
+  if (!player && manualMember) {
+    const squad = manualMember.squad as { id: string; name: string; logo_url: string | null } | null;
+    return (
+      <Layout>
+        {/* Hero Banner */}
+        <div className="relative h-48 md:h-64 bg-gradient-to-br from-[#FF4500]/20 via-[#FF4500]/5 to-background overflow-hidden">
+          <CircuitBackground intensity="light" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        </div>
+
+        <div className="container mx-auto px-4">
+          {/* Back button */}
+          <div className="mb-4 -mt-8 relative z-10">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+              <Link to={squad ? `/squad/${squad.id}` : '/players'}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {squad ? `Back to ${squad.name}` : 'Back to Players'}
+              </Link>
+            </Button>
+          </div>
+
+          <div className="max-w-2xl mx-auto -mt-20 md:-mt-24 relative z-10">
+            {/* Profile Header */}
+            <GlowCard className="p-6 mb-6">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
+                {/* Avatar */}
+                <div className="relative">
+                  <img
+                    src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${manualMember.ign || 'player'}`}
+                    alt={manualMember.ign || 'Player'}
+                    className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover border-2 border-[#FF4500]/20"
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="flex-1">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-wide mb-2">
+                    {manualMember.ign || 'Unknown Player'}
+                  </h1>
+
+                  {manualMember.mlbb_id && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-sm text-muted-foreground">MLBB ID:</span>
+                      <span className="text-sm font-mono text-foreground">{manualMember.mlbb_id}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => {
+                          navigator.clipboard.writeText(manualMember.mlbb_id!);
+                          toast.success('MLBB ID copied!');
+                        }}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      {manualMember.role === 'leader' ? 'Leader' : manualMember.role === 'co_leader' ? 'Co-Leader' : 'Member'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </GlowCard>
+
+            {/* Squad Info */}
+            {squad && (
+              <GlowCard className="p-6 mb-6">
+                <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-4">Squad</h2>
+                <Link
+                  to={`/squad/${squad.id}`}
+                  className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border border-border hover:border-primary/30 transition-colors"
+                >
+                  {squad.logo_url ? (
+                    <img src={squad.logo_url} alt={squad.name} className="w-12 h-12 rounded-xl object-cover border border-border/50" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center border border-border/50">
+                      <Shield className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-bold text-foreground">{squad.name}</h3>
+                    <p className="text-xs text-muted-foreground">View Squad</p>
+                  </div>
+                </Link>
+              </GlowCard>
+            )}
+
+            {/* Contact Info */}
+            {manualMember.whatsapp && (
+              <GlowCard className="p-6">
+                <h2 className="text-lg font-display font-semibold text-foreground tracking-wide mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-[#FF4500]" />
+                  Contact Info
+                </h2>
+                <div className="flex items-center justify-between p-3 bg-[#0a0a0a] border border-[#FF4500]/10 rounded-lg group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-xl">📱</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">WhatsApp</p>
+                      <p className="text-foreground font-medium truncate">{manualMember.whatsapp}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" asChild>
+                      <a
+                        href={`https://wa.me/${manualMember.whatsapp.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(manualMember.whatsapp!);
+                        toast.success('Copied to clipboard!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </GlowCard>
+            )}
+          </div>
+        </div>
+
+        {/* Spacer */}
+        <div className="h-16" />
       </Layout>
     );
   }

@@ -533,9 +533,11 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
                         </Avatar>
                       </Link>
                     ) : (
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
-                      </Avatar>
+                      <Link to={`/player/${member.id}`}>
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback><User className="w-5 h-5" /></AvatarFallback>
+                        </Avatar>
+                      </Link>
                     )}
                     <div className="flex-1 min-w-0">
                       {member.profile_id ? (
@@ -543,7 +545,9 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
                           {getMemberIGN(member)}
                         </Link>
                       ) : (
-                        <span className="font-medium text-foreground">{getMemberIGN(member)}</span>
+                        <Link to={`/player/${member.id}`} className="font-medium text-foreground hover:text-primary">
+                          {getMemberIGN(member)}
+                        </Link>
                       )}
                       <p className="text-xs text-muted-foreground">
                         {member.role === 'leader' ? 'Leader' : 'Co-Leader'}
@@ -581,21 +585,15 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
             <div className="grid grid-cols-2 gap-2">
               {members.map((member) => {
                 const ign = getMemberIGN(member);
-                return member.profile_id ? (
-                  <Link key={member.id} to={`/player/${member.profile?.id}`} className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
+                const linkTo = member.profile_id ? `/player/${member.profile?.id}` : `/player/${member.id}`;
+                return (
+                  <Link key={member.id} to={linkTo} className="flex items-center gap-2 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={member.profile?.avatar_url || undefined} />
+                      {member.profile_id && <AvatarImage src={member.profile?.avatar_url || undefined} />}
                       <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium truncate">{ign}</span>
                   </Link>
-                ) : (
-                  <div key={member.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium truncate">{ign}</span>
-                  </div>
                 );
               })}
             </div>

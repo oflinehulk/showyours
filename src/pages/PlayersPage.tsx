@@ -323,6 +323,7 @@ export default function PlayersPage() {
                             <img
                               src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                               alt={player.ign}
+                              loading="lazy"
                               className="w-10 h-10 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
                             />
                             <span className="font-semibold text-foreground">{player.ign}</span>

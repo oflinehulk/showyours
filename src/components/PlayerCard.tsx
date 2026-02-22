@@ -29,6 +29,7 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
             <img
               src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
               alt={player.ign}
+              loading="lazy"
               className="w-16 h-16 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
             />
             {player.looking_for_squad && (

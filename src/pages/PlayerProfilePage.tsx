@@ -190,6 +190,7 @@ export default function PlayerProfilePage() {
                   <img
                     src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                     alt={player.ign}
+                    loading="lazy"
                     className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover border-2 border-[#FF4500]/20"
                   />
                   {player.looking_for_squad && (
@@ -245,7 +246,7 @@ export default function PlayerProfilePage() {
                         id="lookingForSquad"
                         checked={player.looking_for_squad}
                         onCheckedChange={handleToggleLookingForSquad}
-                        disabled={updateProfile.isPending || (!player.looking_for_squad && isInSquad)}
+                        disabled={updateProfile.isPending || (!player.looking_for_squad && !!isInSquad)}
                       />
                       <Label htmlFor="lookingForSquad" className="cursor-pointer">
                         <span className="font-medium">Looking for Squad</span>
@@ -342,7 +343,7 @@ export default function PlayerProfilePage() {
                       rel="noopener noreferrer"
                       className="aspect-video rounded-lg overflow-hidden border border-[#FF4500]/10 hover:border-[#FF4500]/40 transition-colors"
                     >
-                      <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={url} alt={`Screenshot ${index + 1}`} loading="lazy" className="w-full h-full object-cover" />
                     </a>
                   ))}
                 </div>

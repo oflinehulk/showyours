@@ -227,6 +227,7 @@ export default function TournamentDetailPage() {
               <img
                 src={tournament.banner_url}
                 alt={tournament.name}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             ) : (

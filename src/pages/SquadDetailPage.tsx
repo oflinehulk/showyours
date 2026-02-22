@@ -91,7 +91,7 @@ export default function SquadDetailPage() {
   const canLeave = isMember && !isOwner; // Members can leave but owners can't (they delete)
 
   // Get list of user IDs already in the squad
-  const existingUserIds = members?.map(m => m.user_id) || [];
+  const existingUserIds = members?.map(m => m.user_id).filter((id): id is string => id !== null) || [];
 
   const handleToggleRecruiting = async () => {
     if (!squad || !isOwner) return;
@@ -158,7 +158,7 @@ export default function SquadDetailPage() {
       await addManualMember.mutateAsync({
         squadId: squad.id,
         ign: manualIgn.trim(),
-        mlbbId: manualMlbbId.trim() || undefined,
+        mlbbId: manualMlbbId.trim(),
         whatsapp: manualWhatsapp.trim() || undefined,
         role: manualRole,
       });
@@ -269,6 +269,7 @@ export default function SquadDetailPage() {
                 <img
                   src={squad.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${squad.name}`}
                   alt={squad.name}
+                  loading="lazy"
                   className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-muted object-cover border-2 border-[#FF4500]/20"
                 />
 

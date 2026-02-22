@@ -108,6 +108,7 @@ export function SquadApplications({ squadId, maxMembers, currentMemberCount }: S
               <img
                 src={app.applicant?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${app.applicant?.ign}`}
                 alt={app.applicant?.ign}
+                loading="lazy"
                 className="w-12 h-12 rounded-lg bg-muted object-cover"
               />
               <div className="min-w-0">

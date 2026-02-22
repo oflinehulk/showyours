@@ -184,6 +184,7 @@ export function InvitationBadge() {
                     <img
                       src={inv.squad?.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${inv.squad?.name}`}
                       alt={inv.squad?.name}
+                      loading="lazy"
                       className="w-10 h-10 rounded-lg bg-muted object-cover shrink-0"
                     />
                     <div className="flex-1 min-w-0">
@@ -267,6 +268,7 @@ export function InvitationSection() {
             <img
               src={inv.squad?.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${inv.squad?.name}`}
               alt={inv.squad?.name}
+              loading="lazy"
               className="w-10 h-10 rounded-lg bg-background object-cover shrink-0"
             />
             <div className="flex-1 min-w-0">

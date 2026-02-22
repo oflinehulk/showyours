@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -41,13 +41,6 @@ export default function CreateTournamentPage() {
   const [entryFee, setEntryFee] = useState('');
   const [region, setRegion] = useState('');
   const [contactInfo, setContactInfo] = useState('');
-
-  useEffect(() => {
-    if (!user) {
-      toast.error('Please sign in to host a tournament');
-      navigate('/auth');
-    }
-  }, [user, navigate]);
 
   const canSubmit = () => {
     return name.trim() && dateTime && maxSquads;

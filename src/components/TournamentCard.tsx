@@ -44,6 +44,7 @@ export function TournamentCard({ tournament, registrationCount = 0 }: Tournament
           <img
             src={tournament.banner_url}
             alt={tournament.name}
+            loading="lazy"
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#111111] to-transparent" />

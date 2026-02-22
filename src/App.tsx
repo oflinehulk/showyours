@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,22 +7,34 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
-import HomePage from "./pages/HomePage";
-import PlayersPage from "./pages/PlayersPage";
-import SquadsPage from "./pages/SquadsPage";
-import PlayerProfilePage from "./pages/PlayerProfilePage";
-import SquadDetailPage from "./pages/SquadDetailPage";
-import CreateProfilePage from "./pages/CreateProfilePage";
-import CreateSquadPage from "./pages/CreateSquadPage";
-import EditSquadPage from "./pages/EditSquadPage";
-import TournamentsPage from "./pages/TournamentsPage";
-import CreateTournamentPage from "./pages/CreateTournamentPage";
-import TournamentDetailPage from "./pages/TournamentDetailPage";
-import AuthPage from "./pages/AuthPage";
-import AdminPage from "./pages/AdminPage";
-import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Loader2 } from "lucide-react";
+
+// Lazy-loaded pages for code splitting
+const HomePage = lazy(() => import("./pages/HomePage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const PlayersPage = lazy(() => import("./pages/PlayersPage"));
+const SquadsPage = lazy(() => import("./pages/SquadsPage"));
+const PlayerProfilePage = lazy(() => import("./pages/PlayerProfilePage"));
+const SquadDetailPage = lazy(() => import("./pages/SquadDetailPage"));
+const EditSquadPage = lazy(() => import("./pages/EditSquadPage"));
+const CreateProfilePage = lazy(() => import("./pages/CreateProfilePage"));
+const CreateSquadPage = lazy(() => import("./pages/CreateSquadPage"));
+const TournamentsPage = lazy(() => import("./pages/TournamentsPage"));
+const CreateTournamentPage = lazy(() => import("./pages/CreateTournamentPage"));
+const TournamentDetailPage = lazy(() => import("./pages/TournamentDetailPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 const App = () => (
   <ErrorBoundary>
@@ -32,23 +45,29 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/players" element={<PlayersPage />} />
-                <Route path="/squads" element={<SquadsPage />} />
-                <Route path="/player/:id" element={<PlayerProfilePage />} />
-                <Route path="/squad/:id" element={<SquadDetailPage />} />
-                <Route path="/squad/:id/edit" element={<EditSquadPage />} />
-                <Route path="/create-profile" element={<CreateProfilePage />} />
-                <Route path="/create-squad" element={<CreateSquadPage />} />
-                <Route path="/tournaments" element={<TournamentsPage />} />
-                <Route path="/create-tournament" element={<CreateTournamentPage />} />
-                <Route path="/tournament/:id" element={<TournamentDetailPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/players" element={<PlayersPage />} />
+                  <Route path="/squads" element={<SquadsPage />} />
+                  <Route path="/player/:id" element={<PlayerProfilePage />} />
+                  <Route path="/squad/:id" element={<SquadDetailPage />} />
+                  <Route path="/tournaments" element={<TournamentsPage />} />
+                  <Route path="/tournament/:id" element={<TournamentDetailPage />} />
+
+                  {/* Protected routes — require authentication */}
+                  <Route path="/create-profile" element={<ProtectedRoute><CreateProfilePage /></ProtectedRoute>} />
+                  <Route path="/create-squad" element={<ProtectedRoute><CreateSquadPage /></ProtectedRoute>} />
+                  <Route path="/squad/:id/edit" element={<ProtectedRoute><EditSquadPage /></ProtectedRoute>} />
+                  <Route path="/create-tournament" element={<ProtectedRoute><CreateTournamentPage /></ProtectedRoute>} />
+                  <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </OnboardingProvider>

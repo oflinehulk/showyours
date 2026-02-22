@@ -26,6 +26,7 @@ export function SquadCard({ squad, className }: SquadCardProps) {
           <img
             src={squad.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${squad.name}`}
             alt={squad.name}
+            loading="lazy"
             className="w-16 h-16 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
           />
 

@@ -143,6 +143,7 @@ export function TournamentRegistrations({
           <img
             src={reg.tournament_squads.logo_url}
             alt={reg.tournament_squads.name}
+            loading="lazy"
             className="w-12 h-12 rounded-xl object-cover border border-border/50 shrink-0"
           />
         ) : (
@@ -184,7 +185,7 @@ export function TournamentRegistrations({
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {reg.tournament_squads.logo_url && (
-                    <img src={reg.tournament_squads.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                    <img src={reg.tournament_squads.logo_url} alt="" loading="lazy" className="w-8 h-8 rounded-lg object-cover" />
                   )}
                   {reg.tournament_squads.name}
                 </DialogTitle>

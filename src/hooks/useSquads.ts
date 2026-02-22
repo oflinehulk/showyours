@@ -228,7 +228,7 @@ export function useDeleteSquad() {
 
       // Re-enable looking_for_squad for all former members
       if (members && members.length > 0) {
-        const profileIds = members.map(m => m.profile_id).filter(Boolean);
+        const profileIds = members.map(m => m.profile_id).filter((id): id is string => id !== null);
         if (profileIds.length > 0) {
           await supabase
             .from('profiles')

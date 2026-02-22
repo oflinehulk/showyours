@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { initSentry } from "./lib/sentry";
+
+// Initialize error tracking
+initSentry();
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
@@ -21,3 +25,6 @@ window.addEventListener('pageshow', (event) => {
 document.documentElement.classList.add('dark');
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Report Web Vitals for performance monitoring
+import('./lib/reportWebVitals').then(({ reportWebVitals }) => reportWebVitals());

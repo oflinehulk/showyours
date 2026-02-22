@@ -109,7 +109,7 @@ export function useSearchProfiles(
       const { data, error } = await supabase
         .rpc('search_profiles', {
           search_term: searchTerm,
-          exclude_squad_id: excludeSquadId || null,
+          exclude_squad_id: excludeSquadId,
           for_tournament: forTournament,
           add_to_squad: addToSquad,
         });

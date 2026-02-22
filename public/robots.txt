@@ -12,3 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /create-profile
+Disallow: /create-squad
+Disallow: /create-tournament
+
+Sitemap: https://showyours.lovable.app/sitemap.xml

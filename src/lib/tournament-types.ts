@@ -117,7 +117,7 @@ export interface TournamentWithDetails extends Tournament {
 }
 
 // Match with squad details for bracket display
-export interface MatchWithSquads extends TournamentMatch {
+export interface MatchWithSquads extends Omit<TournamentMatch, 'squad_a' | 'squad_b'> {
   squad_a: TournamentSquad | null;
   squad_b: TournamentSquad | null;
 }

@@ -174,6 +174,7 @@ export function ScoreEditSheet({
               <img
                 src={match.result_screenshot}
                 alt="Match result"
+                loading="lazy"
                 className="mt-2 rounded-lg border border-[#FF4500]/20"
               />
             </div>

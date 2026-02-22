@@ -17,7 +17,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateTournament } from '@/hooks/useTournaments';
-import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, DollarSign } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
 import { MAX_SQUAD_SIZES } from '@/lib/tournament-types';
 
@@ -189,7 +189,7 @@ export default function CreateTournamentPage() {
                 {/* Prize Pool */}
                 <div>
                   <Label htmlFor="prizePool" className="text-xs font-display uppercase tracking-wider text-muted-foreground">
-                    <DollarSign className="w-4 h-4 inline mr-1" />
+                    <IndianRupee className="w-4 h-4 inline mr-1" />
                     Prize Pool
                   </Label>
                   <Input

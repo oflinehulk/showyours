@@ -54,7 +54,7 @@ import {
   Globe,
   MessageCircle,
   Ticket,
-  DollarSign,
+  IndianRupee,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
@@ -297,7 +297,7 @@ export default function TournamentDetailPage() {
                   )}
                   {tournament.prize_pool ? (
                     <span className="flex items-center gap-1.5 text-yellow-500 font-medium">
-                      <DollarSign className="w-4 h-4" />
+                      <IndianRupee className="w-4 h-4" />
                       {tournament.prize_pool}
                     </span>
                   ) : tournament.prize_wallet ? (
@@ -509,7 +509,7 @@ export default function TournamentDetailPage() {
                     { icon: Clock, label: 'Time', value: format(new Date(tournament.date_time), 'h:mm a'), color: 'text-[#FF4500]' },
                     { icon: Users, label: 'Team Size', value: tournament.team_size || '5v5', color: 'text-[#FF4500]' },
                     { icon: Ticket, label: 'Entry Fee', value: tournament.entry_fee || 'Free', color: 'text-emerald-400' },
-                    { icon: DollarSign, label: 'Prize Pool', value: tournament.prize_pool || '—', color: 'text-yellow-500' },
+                    { icon: IndianRupee, label: 'Prize Pool', value: tournament.prize_pool || '—', color: 'text-yellow-500' },
                     { icon: Shield, label: 'Squads', value: `${registrationCount} / ${tournament.max_squads}`, color: 'text-[#FF4500]' },
                     { icon: Swords, label: 'Format', value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', color: 'text-[#FF4500]' },
                     { icon: Globe, label: 'Region', value: tournament.region || '—', color: 'text-sky-400' },

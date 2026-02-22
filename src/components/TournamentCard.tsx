@@ -11,7 +11,7 @@ import {
   Clock,
   ChevronRight,
   Ticket,
-  DollarSign,
+  IndianRupee,
   Globe,
   Swords,
 } from 'lucide-react';
@@ -111,7 +111,7 @@ export function TournamentCard({ tournament, registrationCount = 0 }: Tournament
         {/* Prize Pool */}
         {(tournament.prize_pool || tournament.prize_wallet) && (
           <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-            <DollarSign className="w-4 h-4 text-yellow-500" />
+            <IndianRupee className="w-4 h-4 text-yellow-500" />
             <span className="text-sm text-yellow-500 font-medium">
               {tournament.prize_pool || 'USDT Prize Pool'}
             </span>

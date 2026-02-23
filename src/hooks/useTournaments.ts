@@ -16,7 +16,11 @@ import type {
   TournamentStatus,
   TournamentFormat,
   MatchStatus,
-  RosterChange
+  RosterChange,
+  TournamentStage,
+  TournamentGroup,
+  TournamentGroupTeam,
+  StageStatus,
 } from '@/lib/tournament-types';
 
 // Fetch all tournaments with registration counts
@@ -546,15 +550,20 @@ async function advanceWinnerToNextRound(
     const nextMatchNumber = Math.ceil(completedMatch.match_number / 2);
     const slot = isOddMatch ? 'squad_a_id' : 'squad_b_id';
 
-    // Determine the bracket type for the next round
-    // For single elimination: last winners round becomes 'finals'
-    const { data: nextMatches } = await supabase
+    // Build query — scope to stage when present
+    let query = supabase
       .from('tournament_matches')
       .select('*')
       .eq('tournament_id', tournamentId)
       .eq('round', nextRound)
       .eq('match_number', nextMatchNumber)
       .in('bracket_type', completedMatch.bracket_type === 'winners' ? ['winners', 'finals'] : ['losers', 'finals']);
+
+    if (completedMatch.stage_id) {
+      query = query.eq('stage_id', completedMatch.stage_id);
+    }
+
+    const { data: nextMatches } = await query;
 
     if (nextMatches && nextMatches.length > 0) {
       const nextMatch = nextMatches[0];
@@ -567,8 +576,8 @@ async function advanceWinnerToNextRound(
 }
 
 // Auto-complete bye matches (one squad vs null) after bracket generation
-async function autoCompleteByes(tournamentId: string) {
-  const { data: byeMatches } = await supabase
+async function autoCompleteByes(tournamentId: string, stageId?: string) {
+  let queryA = supabase
     .from('tournament_matches')
     .select('*')
     .eq('tournament_id', tournamentId)
@@ -576,10 +585,15 @@ async function autoCompleteByes(tournamentId: string) {
     .is('squad_b_id', null)
     .not('squad_a_id', 'is', null);
 
+  if (stageId) {
+    queryA = queryA.eq('stage_id', stageId);
+  }
+
+  const { data: byeMatches } = await queryA;
+
   if (!byeMatches) return;
 
   for (const match of byeMatches) {
-    // Auto-complete the bye match
     await supabase
       .from('tournament_matches')
       .update({
@@ -591,21 +605,26 @@ async function autoCompleteByes(tournamentId: string) {
       })
       .eq('id', match.id);
 
-    // Advance the winner
     await advanceWinnerToNextRound(tournamentId, {
       ...match,
       winner_id: match.squad_a_id,
     });
   }
 
-  // Also handle reverse byes (squad_a is null, squad_b is not)
-  const { data: reverseByes } = await supabase
+  // Also handle reverse byes
+  let queryB = supabase
     .from('tournament_matches')
     .select('*')
     .eq('tournament_id', tournamentId)
     .eq('round', 1)
     .is('squad_a_id', null)
     .not('squad_b_id', 'is', null);
+
+  if (stageId) {
+    queryB = queryB.eq('stage_id', stageId);
+  }
+
+  const { data: reverseByes } = await queryB;
 
   if (!reverseByes) return;
 
@@ -1189,6 +1208,376 @@ export function useWithdrawSquad() {
       queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    },
+  });
+}
+
+// ========== Multi-Stage Hooks ==========
+
+// Fetch stages for a tournament
+export function useTournamentStages(tournamentId: string | undefined) {
+  return useQuery({
+    queryKey: ['tournament-stages', tournamentId],
+    queryFn: async () => {
+      if (!tournamentId) return [];
+      const { data, error } = await supabase
+        .from('tournament_stages')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .order('stage_number', { ascending: true });
+      if (error) throw error;
+      return data as TournamentStage[];
+    },
+    enabled: !!tournamentId,
+  });
+}
+
+// Fetch groups for a stage
+export function useTournamentGroups(stageId: string | undefined) {
+  return useQuery({
+    queryKey: ['tournament-groups', stageId],
+    queryFn: async () => {
+      if (!stageId) return [];
+      const { data, error } = await supabase
+        .from('tournament_groups')
+        .select('*')
+        .eq('stage_id', stageId)
+        .order('label', { ascending: true });
+      if (error) throw error;
+      return data as TournamentGroup[];
+    },
+    enabled: !!stageId,
+  });
+}
+
+// Fetch group team assignments for a stage (all groups)
+export function useTournamentGroupTeams(stageId: string | undefined) {
+  return useQuery({
+    queryKey: ['tournament-group-teams', stageId],
+    queryFn: async () => {
+      if (!stageId) return [];
+      const { data, error } = await supabase
+        .from('tournament_group_teams')
+        .select(`
+          *,
+          tournament_squads:tournament_squad_id(*)
+        `)
+        .in('group_id', (
+          await supabase
+            .from('tournament_groups')
+            .select('id')
+            .eq('stage_id', stageId)
+        ).data?.map(g => g.id) || []);
+      if (error) throw error;
+      return data as (TournamentGroupTeam & { tournament_squads: TournamentSquad })[];
+    },
+    enabled: !!stageId,
+  });
+}
+
+// Fetch matches for a specific stage
+export function useStageMatches(stageId: string | undefined) {
+  return useQuery({
+    queryKey: ['stage-matches', stageId],
+    queryFn: async () => {
+      if (!stageId) return [];
+      const { data, error } = await supabase
+        .from('tournament_matches')
+        .select(`
+          *,
+          squad_a:tournament_squads!tournament_matches_squad_a_id_fkey(*),
+          squad_b:tournament_squads!tournament_matches_squad_b_id_fkey(*)
+        `)
+        .eq('stage_id', stageId)
+        .order('round', { ascending: true })
+        .order('match_number', { ascending: true });
+      if (error) throw error;
+      return data as TournamentMatch[];
+    },
+    enabled: !!stageId,
+  });
+}
+
+// Create stages for a tournament
+export function useCreateStages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stages,
+    }: {
+      tournamentId: string;
+      stages: Omit<TournamentStage, 'id' | 'tournament_id' | 'status' | 'created_at' | 'updated_at'>[];
+    }) => {
+      const inserts = stages.map(s => ({
+        tournament_id: tournamentId,
+        stage_number: s.stage_number,
+        name: s.name,
+        format: s.format,
+        best_of: s.best_of,
+        finals_best_of: s.finals_best_of,
+        group_count: s.group_count,
+        advance_per_group: s.advance_per_group,
+        advance_best_remaining: s.advance_best_remaining,
+        status: 'pending' as StageStatus,
+      }));
+
+      const { data, error } = await supabase
+        .from('tournament_stages')
+        .insert(inserts)
+        .select();
+
+      if (error) throw error;
+      return { data: data as TournamentStage[], tournamentId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
+    },
+  });
+}
+
+// Update a stage
+export function useUpdateStage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      stageId,
+      tournamentId,
+      ...updates
+    }: Partial<TournamentStage> & { stageId: string; tournamentId: string }) => {
+      const { error } = await supabase
+        .from('tournament_stages')
+        .update(updates)
+        .eq('id', stageId);
+      if (error) throw error;
+      return { tournamentId, stageId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
+    },
+  });
+}
+
+// Assign teams to groups for a group stage
+export function useAssignTeamsToGroups() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stageId,
+      groupCount,
+      squadIds,
+      mode,
+    }: {
+      tournamentId: string;
+      stageId: string;
+      groupCount: number;
+      squadIds: string[];
+      mode: 'balanced' | 'random';
+    }) => {
+      // Delete existing groups for this stage
+      const { data: existingGroups } = await supabase
+        .from('tournament_groups')
+        .select('id')
+        .eq('stage_id', stageId);
+
+      if (existingGroups && existingGroups.length > 0) {
+        await supabase
+          .from('tournament_group_teams')
+          .delete()
+          .in('group_id', existingGroups.map(g => g.id));
+        await supabase
+          .from('tournament_groups')
+          .delete()
+          .eq('stage_id', stageId);
+      }
+
+      // Create groups (A, B, C, ...)
+      const labels = Array.from({ length: groupCount }, (_, i) => String.fromCharCode(65 + i));
+      const { data: groups, error: groupError } = await supabase
+        .from('tournament_groups')
+        .insert(labels.map(label => ({
+          stage_id: stageId,
+          tournament_id: tournamentId,
+          label,
+        })))
+        .select();
+
+      if (groupError) throw groupError;
+
+      // Order squads
+      let ordered: string[];
+      if (mode === 'random') {
+        ordered = [...squadIds].sort(() => Math.random() - 0.5);
+      } else {
+        // Balanced: snake-draft (1→A, 2→B, ..., N→N, N+1→N, ..., back to A)
+        ordered = [...squadIds]; // assumed already seeded
+      }
+
+      // Snake draft into groups
+      const groupTeamInserts: { group_id: string; tournament_squad_id: string }[] = [];
+      let forward = true;
+      let groupIdx = 0;
+
+      for (const squadId of ordered) {
+        groupTeamInserts.push({
+          group_id: groups[groupIdx].id,
+          tournament_squad_id: squadId,
+        });
+
+        if (forward) {
+          if (groupIdx === groupCount - 1) {
+            forward = false; // reverse
+          } else {
+            groupIdx++;
+          }
+        } else {
+          if (groupIdx === 0) {
+            forward = true; // forward again
+          } else {
+            groupIdx--;
+          }
+        }
+      }
+
+      const { error: teamError } = await supabase
+        .from('tournament_group_teams')
+        .insert(groupTeamInserts);
+
+      if (teamError) throw teamError;
+
+      return { tournamentId, stageId };
+    },
+    onSuccess: ({ tournamentId, stageId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-groups', stageId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-group-teams', stageId] });
+    },
+  });
+}
+
+// Generate bracket for a specific stage
+export function useGenerateStageBracket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stageId,
+      stage,
+      squadIds,
+    }: {
+      tournamentId: string;
+      stageId: string;
+      stage: TournamentStage;
+      squadIds?: string[]; // for knockout stage, pass advancing team IDs
+    }) => {
+      const opts = {
+        stageId,
+        defaultBestOf: stage.best_of as 1 | 3 | 5,
+        finalsBestOf: (stage.finals_best_of || stage.best_of) as 1 | 3 | 5,
+      };
+
+      if (stage.format === 'round_robin' && stage.group_count > 0) {
+        // Group stage — generate round robin per group
+        const { data: groups, error: gErr } = await supabase
+          .from('tournament_groups')
+          .select('id, label')
+          .eq('stage_id', stageId)
+          .order('label', { ascending: true });
+
+        if (gErr) throw gErr;
+        if (!groups || groups.length === 0) throw new Error('No groups configured');
+
+        const allMatches: any[] = [];
+
+        for (const group of groups) {
+          // Get team IDs in this group
+          const { data: groupTeams, error: gtErr } = await supabase
+            .from('tournament_group_teams')
+            .select('tournament_squad_id')
+            .eq('group_id', group.id);
+
+          if (gtErr) throw gtErr;
+
+          const teamIds = (groupTeams || []).map(gt => gt.tournament_squad_id);
+          if (teamIds.length < 2) continue;
+
+          const groupOpts = { ...opts, groupId: group.id };
+          const matches = generateRoundRobinBracket(tournamentId, teamIds, groupOpts);
+          allMatches.push(...matches);
+        }
+
+        if (allMatches.length > 0) {
+          const { error: insertErr } = await supabase
+            .from('tournament_matches')
+            .insert(allMatches);
+          if (insertErr) throw insertErr;
+        }
+      } else {
+        // Elimination bracket
+        const ids = squadIds || [];
+        if (ids.length < 2) throw new Error('Need at least 2 teams');
+
+        let matches: any[];
+        if (stage.format === 'single_elimination') {
+          matches = generateSingleEliminationBracket(tournamentId, ids, opts);
+        } else if (stage.format === 'double_elimination') {
+          matches = generateDoubleEliminationBracket(tournamentId, ids, opts);
+        } else {
+          matches = generateRoundRobinBracket(tournamentId, ids, opts);
+        }
+
+        const { error: insertErr } = await supabase
+          .from('tournament_matches')
+          .insert(matches);
+        if (insertErr) throw insertErr;
+
+        // Auto-complete byes for elimination formats
+        if (stage.format !== 'round_robin') {
+          await autoCompleteByes(tournamentId, stageId);
+        }
+      }
+
+      // Update stage status to ongoing
+      await supabase
+        .from('tournament_stages')
+        .update({ status: 'ongoing' as StageStatus })
+        .eq('id', stageId);
+
+      return { tournamentId, stageId };
+    },
+    onSuccess: ({ tournamentId, stageId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches', stageId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
+    },
+  });
+}
+
+// Complete a stage
+export function useCompleteStage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      stageId,
+      tournamentId,
+    }: {
+      stageId: string;
+      tournamentId: string;
+    }) => {
+      const { error } = await supabase
+        .from('tournament_stages')
+        .update({ status: 'completed' as StageStatus })
+        .eq('id', stageId);
+      if (error) throw error;
+      return { tournamentId, stageId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
     },
   });
 }

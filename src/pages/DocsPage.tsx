@@ -17,6 +17,7 @@ import {
   CheckCircle,
   ChevronRight,
   Search,
+  Layers,
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -25,6 +26,7 @@ const SECTIONS = [
   { id: 'for-hosts', label: 'For Hosts', icon: Trophy },
   { id: 'tournament-lifecycle', label: 'Tournament Lifecycle', icon: ClipboardList },
   { id: 'brackets-scoring', label: 'Brackets & Scoring', icon: Shuffle },
+  { id: 'multi-stage', label: 'Multi-Stage', icon: Layers },
   { id: 'disputes-forfeits', label: 'Disputes & Forfeits', icon: AlertTriangle },
   { id: 'faq', label: 'FAQ', icon: Search },
 ] as const;
@@ -245,6 +247,74 @@ export default function DocsPage() {
             </DocSection>
 
             {/* Disputes & Forfeits */}
+            <DocSection id="multi-stage" title="Multi-Stage Tournaments" icon={Layers}>
+              <p>
+                Multi-stage tournaments let you run a group stage followed by a knockout bracket.
+                This is ideal for larger tournaments where you want round-robin group play before elimination rounds.
+              </p>
+
+              <h4>Creating a Multi-Stage Tournament</h4>
+              <p>
+                When creating a tournament, enable the <strong>Multi-Stage Tournament</strong> toggle.
+                This allows any squad count (minimum 4) and unlocks stage configuration after registration closes.
+              </p>
+
+              <h4>Configuring Stages</h4>
+              <p>
+                After closing registration, the host configures stages from Host Controls. Each stage has:
+              </p>
+              <ul>
+                <li><strong>Name</strong> — e.g., "Group Stage", "Knockout"</li>
+                <li><strong>Format</strong> — Round Robin, Single Elimination, or Double Elimination</li>
+                <li><strong>Best-of</strong> — Bo1, Bo3, or Bo5 for regular matches</li>
+                <li><strong>Finals Best-of</strong> — Override for the final match (e.g., Bo5 for knockout finals)</li>
+              </ul>
+              <p>
+                For group stages (Round Robin format), you also configure:
+              </p>
+              <ul>
+                <li><strong>Number of groups</strong> — How many groups to divide teams into</li>
+                <li><strong>Advance per group</strong> — Top N teams from each group advance</li>
+                <li><strong>Best remaining</strong> — Additional teams from across all groups (e.g., "best 4 third-place teams")</li>
+              </ul>
+
+              <h4>Group Assignment</h4>
+              <p>
+                After configuring stages, assign teams to groups. Two methods are available:
+              </p>
+              <ul>
+                <li><strong>Balanced (snake draft)</strong> — Teams are distributed by seed in a snake pattern for balanced groups.</li>
+                <li><strong>Random</strong> — Teams are shuffled randomly into groups.</li>
+              </ul>
+              <p>You can also drag teams between groups manually before generating the bracket.</p>
+
+              <h4>Group Stage Matches</h4>
+              <p>
+                Each group plays a round-robin where every team faces every other team in their group.
+                Standings are calculated automatically: <strong>3 points</strong> per win, ranked by points, then head-to-head, then score difference.
+                Teams advancing to the next stage are highlighted in green.
+              </p>
+
+              <h4>Advancing to Knockout</h4>
+              <p>
+                Once all group stage matches are complete, the host clicks <strong>Complete & Start [Next Stage]</strong>.
+                The system automatically computes which teams advance based on your advancement rules and generates the elimination bracket.
+              </p>
+
+              <h4>Example Setup (42 Teams)</h4>
+              <ul>
+                <li><strong>Stage 1:</strong> Group Stage — 6 groups of 7, Round Robin Bo1. Top 2 per group + best 4 third-place advance.</li>
+                <li><strong>Stage 2:</strong> Knockout — 16 teams, Double Elimination Bo3, Grand Final Bo5.</li>
+              </ul>
+
+              <h4>Roster Changes</h4>
+              <p>
+                In multi-stage tournaments, each squad is allowed <strong>2 roster changes per stage</strong> (not per tournament).
+                This gives teams flexibility to adjust their lineup between stages.
+              </p>
+            </DocSection>
+
+            {/* Disputes & Forfeits */}
             <DocSection id="disputes-forfeits" title="Disputes & Forfeits" icon={AlertTriangle}>
               <h4>Raising a Dispute</h4>
               <p>
@@ -294,6 +364,10 @@ export default function DocsPage() {
               </FaqItem>
               <FaqItem q="Can a cancelled tournament be resumed?">
                 No. Cancellation is permanent. If needed, create a new tournament.
+              </FaqItem>
+              <FaqItem q="What is a multi-stage tournament?">
+                A multi-stage tournament has multiple phases — typically a group stage followed by a knockout bracket.
+                Enable it when creating a tournament, then configure stages after closing registration.
               </FaqItem>
             </DocSection>
           </div>

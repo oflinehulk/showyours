@@ -58,6 +58,7 @@ import {
   Medal,
   CheckCircle,
   ScrollText,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
@@ -271,6 +272,12 @@ export default function TournamentDetailPage() {
                     <Badge variant="secondary" className="text-xs uppercase tracking-wider">
                       <Swords className="w-3 h-3 mr-1" />
                       {TOURNAMENT_FORMAT_LABELS[tournament.format]}
+                    </Badge>
+                  )}
+                  {tournament.is_multi_stage && (
+                    <Badge variant="outline" className="text-xs uppercase tracking-wider border-[#FF4500]/40 text-[#FF4500]">
+                      <Layers className="w-3 h-3 mr-1" />
+                      Multi-Stage
                     </Badge>
                   )}
                   {isHost && (

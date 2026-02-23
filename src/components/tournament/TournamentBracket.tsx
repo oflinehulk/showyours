@@ -13,6 +13,7 @@ import {
 import { DraftSummaryBadge } from '@/components/tournament/DraftPickPanel';
 import { ScoreEditSheet } from '@/components/tournament/ScoreEditSheet';
 import { ShareCardGenerator } from '@/components/tournament/ShareCardGenerator';
+import { GroupStandings } from '@/components/tournament/GroupStandings';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { cn } from '@/lib/utils';
 import {
@@ -20,7 +21,12 @@ import {
   useForfeitMatch,
   useRaiseDispute,
   useResolveDispute,
+  useTournamentStages,
+  useTournamentGroups,
+  useTournamentGroupTeams,
+  useStageMatches,
 } from '@/hooks/useTournaments';
+import { computeGroupStandings } from '@/lib/bracket-utils';
 import {
   Trophy,
   Users,
@@ -33,6 +39,7 @@ import {
   AlertTriangle,
   Loader2,
   MoreHorizontal,
+  Layers,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -43,8 +50,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import type { Tournament, TournamentMatch, TournamentSquad, MatchStatus } from '@/lib/tournament-types';
-import { MATCH_STATUS_LABELS } from '@/lib/tournament-types';
+import type { Tournament, TournamentMatch, TournamentSquad, TournamentStage, MatchStatus } from '@/lib/tournament-types';
+import { MATCH_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
 
 interface TournamentBracketProps {
   tournament: Tournament;
@@ -58,6 +65,20 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
   const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
   const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
 
+  const isMultiStage = tournament.is_multi_stage;
+
+  if (isMultiStage) {
+    return (
+      <MultiStageBracket
+        tournament={tournament}
+        allMatches={matches}
+        isHost={isHost}
+        userSquadIds={userSquadIds}
+      />
+    );
+  }
+
+  // Single-stage fallback — original behavior
   const winnersMatches = matches.filter(m => m.bracket_type === 'winners');
   const losersMatches = matches.filter(m => m.bracket_type === 'losers');
   const finalsMatches = matches.filter(m => m.bracket_type === 'finals');
@@ -191,6 +212,372 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
         onOpenChange={(open) => { if (!open) setResolveMatch(null); }}
       />
     </div>
+  );
+}
+
+// ========== Multi-Stage Bracket View ==========
+
+function MultiStageBracket({
+  tournament,
+  allMatches,
+  isHost,
+  userSquadIds,
+}: {
+  tournament: Tournament;
+  allMatches: TournamentMatch[];
+  isHost: boolean;
+  userSquadIds: string[];
+}) {
+  const { data: stages } = useTournamentStages(tournament.id);
+  const [activeStageIndex, setActiveStageIndex] = useState<number>(0);
+  const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
+  const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
+  const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
+
+  if (!stages || stages.length === 0) {
+    return (
+      <GlowCard className="p-8 text-center">
+        <Layers className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+        <h3 className="text-lg font-display font-semibold text-foreground mb-1">No stages configured</h3>
+        <p className="text-muted-foreground text-sm">
+          Stages will be configured after registration closes.
+        </p>
+      </GlowCard>
+    );
+  }
+
+  // Auto-select the latest active stage
+  const defaultStageIndex = stages.findIndex(s => s.status === 'ongoing')
+    ?? stages.findIndex(s => s.status !== 'completed')
+    ?? 0;
+
+  const currentStage = stages[activeStageIndex] || stages[0];
+  const stageMatches = allMatches.filter(m => m.stage_id === currentStage.id);
+
+  const sharedProps = {
+    isHost,
+    tournamentId: tournament.id,
+    tournamentName: tournament.name,
+    tournamentStatus: tournament.status,
+    userSquadIds,
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Stage Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {stages.map((stage, i) => (
+          <button
+            key={stage.id}
+            onClick={() => setActiveStageIndex(i)}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all',
+              i === activeStageIndex
+                ? 'bg-[#FF4500]/10 border-[#FF4500]/50 text-[#FF4500] shadow-[0_0_8px_rgba(255,69,0,0.15)]'
+                : 'border-border/50 text-muted-foreground hover:border-[#FF4500]/30 hover:text-foreground',
+              stage.status === 'completed' && i !== activeStageIndex && 'border-green-500/30 text-green-500/70',
+            )}
+          >
+            <span className={cn(
+              'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border',
+              stage.status === 'completed' && 'bg-green-500/20 border-green-500 text-green-500',
+              stage.status === 'ongoing' && 'bg-[#FF4500]/20 border-[#FF4500] text-[#FF4500]',
+              (stage.status === 'pending' || stage.status === 'configuring') && 'border-muted-foreground/30 text-muted-foreground/50',
+            )}>
+              {stage.status === 'completed' ? <Check className="w-3 h-3" /> : i + 1}
+            </span>
+            {stage.name}
+            <span className="text-[10px] font-normal normal-case opacity-70">
+              {TOURNAMENT_FORMAT_LABELS[stage.format]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Stage Content */}
+      {currentStage.format === 'round_robin' && currentStage.group_count > 0 ? (
+        <GroupStageView
+          tournament={tournament}
+          stage={currentStage}
+          stageMatches={stageMatches}
+          onMatchClick={setSelectedMatch}
+          onDispute={setDisputeMatch}
+          onResolve={setResolveMatch}
+          {...sharedProps}
+        />
+      ) : (
+        <EliminationStageView
+          stage={currentStage}
+          stageMatches={stageMatches}
+          onMatchClick={setSelectedMatch}
+          onDispute={setDisputeMatch}
+          onResolve={setResolveMatch}
+          {...sharedProps}
+        />
+      )}
+
+      {/* Score Edit Sheet */}
+      <ScoreEditSheet
+        match={selectedMatch}
+        tournamentId={tournament.id}
+        isHost={isHost}
+        canEdit={isHost && (tournament.status === 'ongoing' || tournament.status === 'bracket_generated')}
+        open={!!selectedMatch}
+        onOpenChange={(open) => { if (!open) setSelectedMatch(null); }}
+      />
+
+      {/* Dispute Dialog */}
+      <DisputeDialog
+        match={disputeMatch}
+        tournamentId={tournament.id}
+        open={!!disputeMatch}
+        onOpenChange={(open) => { if (!open) setDisputeMatch(null); }}
+      />
+
+      {/* Resolve Dispute Dialog */}
+      <ResolveDisputeDialog
+        match={resolveMatch}
+        tournamentId={tournament.id}
+        open={!!resolveMatch}
+        onOpenChange={(open) => { if (!open) setResolveMatch(null); }}
+      />
+    </div>
+  );
+}
+
+// Group stage: show standings per group + match cards
+function GroupStageView({
+  tournament,
+  stage,
+  stageMatches,
+  onMatchClick,
+  onDispute,
+  onResolve,
+  isHost,
+  tournamentId,
+  tournamentName,
+  tournamentStatus,
+  userSquadIds,
+}: {
+  tournament: Tournament;
+  stage: TournamentStage;
+  stageMatches: TournamentMatch[];
+  onMatchClick: (m: TournamentMatch) => void;
+  onDispute: (m: TournamentMatch) => void;
+  onResolve: (m: TournamentMatch) => void;
+  isHost: boolean;
+  tournamentId: string;
+  tournamentName: string;
+  tournamentStatus: string;
+  userSquadIds: string[];
+}) {
+  const { data: groups } = useTournamentGroups(stage.id);
+  const { data: groupTeams } = useTournamentGroupTeams(stage.id);
+
+  if (!groups || groups.length === 0) {
+    return (
+      <GlowCard className="p-6 text-center">
+        <p className="text-muted-foreground text-sm">Groups have not been configured yet.</p>
+      </GlowCard>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {groups.map((group) => {
+        const teamIds = (groupTeams || [])
+          .filter(gt => gt.group_id === group.id)
+          .map(gt => gt.tournament_squad_id);
+
+        const groupMatches = stageMatches.filter(m => m.group_id === group.id);
+
+        // Build squad map from match data
+        const squadMap = new Map<string, TournamentSquad>();
+        for (const m of groupMatches) {
+          if (m.squad_a && teamIds.includes(m.squad_a_id!)) squadMap.set(m.squad_a_id!, m.squad_a);
+          if (m.squad_b && teamIds.includes(m.squad_b_id!)) squadMap.set(m.squad_b_id!, m.squad_b);
+        }
+        // Also use groupTeams data if available
+        for (const gt of (groupTeams || [])) {
+          if (gt.group_id === group.id && (gt as any).tournament_squads) {
+            squadMap.set(gt.tournament_squad_id, (gt as any).tournament_squads);
+          }
+        }
+
+        const standings = computeGroupStandings(groupMatches, squadMap);
+
+        return (
+          <div key={group.id} className="space-y-4">
+            {/* Group Standings */}
+            <GroupStandings
+              standings={standings}
+              groupLabel={group.label}
+              advanceCount={stage.advance_per_group}
+            />
+
+            {/* Group Matches */}
+            {groupMatches.length > 0 && (
+              <div className="pl-1">
+                <p className="text-xs font-display font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                  Group {group.label} Matches
+                </p>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {groupMatches
+                    .sort((a, b) => a.match_number - b.match_number)
+                    .map((match) => (
+                      <MatchCard
+                        key={match.id}
+                        match={match}
+                        onClick={() => onMatchClick(match)}
+                        onDispute={() => onDispute(match)}
+                        onResolve={() => onResolve(match)}
+                        isHost={isHost}
+                        tournamentId={tournamentId}
+                        tournamentName={tournamentName}
+                        tournamentStatus={tournamentStatus}
+                        userSquadIds={userSquadIds}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Elimination bracket for a specific stage
+function EliminationStageView({
+  stage,
+  stageMatches,
+  onMatchClick,
+  onDispute,
+  onResolve,
+  isHost,
+  tournamentId,
+  tournamentName,
+  tournamentStatus,
+  userSquadIds,
+}: {
+  stage: TournamentStage;
+  stageMatches: TournamentMatch[];
+  onMatchClick: (m: TournamentMatch) => void;
+  onDispute: (m: TournamentMatch) => void;
+  onResolve: (m: TournamentMatch) => void;
+  isHost: boolean;
+  tournamentId: string;
+  tournamentName: string;
+  tournamentStatus: string;
+  userSquadIds: string[];
+}) {
+  if (stageMatches.length === 0) {
+    return (
+      <GlowCard className="p-8 text-center">
+        <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+        <h3 className="text-lg font-display font-semibold text-foreground mb-1">No bracket yet</h3>
+        <p className="text-muted-foreground text-sm">
+          This stage's bracket hasn't been generated yet.
+        </p>
+      </GlowCard>
+    );
+  }
+
+  const winnersMatches = stageMatches.filter(m => m.bracket_type === 'winners');
+  const losersMatches = stageMatches.filter(m => m.bracket_type === 'losers');
+  const finalsMatches = stageMatches.filter(m => m.bracket_type === 'finals');
+  const maxRound = Math.max(...stageMatches.map(m => m.round), 0);
+
+  const sharedProps = {
+    isHost,
+    tournamentId,
+    tournamentName,
+    tournamentStatus,
+    userSquadIds,
+  };
+
+  // Round robin without groups (single pool)
+  if (stage.format === 'round_robin') {
+    return (
+      <GlowCard className="p-6">
+        <h3 className="text-lg font-display font-semibold text-foreground mb-4 tracking-wide">
+          {stage.name} — All Matches
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {stageMatches.map((match) => (
+            <MatchCard
+              key={match.id}
+              match={match}
+              onClick={() => onMatchClick(match)}
+              onDispute={() => onDispute(match)}
+              onResolve={() => onResolve(match)}
+              {...sharedProps}
+            />
+          ))}
+        </div>
+      </GlowCard>
+    );
+  }
+
+  return (
+    <>
+      {winnersMatches.length > 0 && (
+        <GlowCard className="p-6">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+            <Trophy className="w-5 h-5 text-[#FF4500]" />
+            {stage.format === 'double_elimination' ? 'Winners Bracket' : 'Bracket'}
+          </h3>
+          <BracketView
+            matches={winnersMatches}
+            maxRound={maxRound}
+            onMatchClick={onMatchClick}
+            onDispute={onDispute}
+            onResolve={onResolve}
+            {...sharedProps}
+          />
+        </GlowCard>
+      )}
+
+      {losersMatches.length > 0 && (
+        <GlowCard glowColor="secondary" className="p-6">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+            <Users className="w-5 h-5 text-[#FF6B35]" />
+            Losers Bracket
+          </h3>
+          <BracketView
+            matches={losersMatches}
+            maxRound={maxRound}
+            onMatchClick={onMatchClick}
+            onDispute={onDispute}
+            onResolve={onResolve}
+            {...sharedProps}
+          />
+        </GlowCard>
+      )}
+
+      {finalsMatches.length > 0 && (
+        <GlowCard glowColor="accent" className="p-6 neon-border">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Grand Finals
+          </h3>
+          <div className="flex justify-center">
+            {finalsMatches.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                onClick={() => onMatchClick(match)}
+                onDispute={() => onDispute(match)}
+                onResolve={() => onResolve(match)}
+                large
+                {...sharedProps}
+              />
+            ))}
+          </div>
+        </GlowCard>
+      )}
+    </>
   );
 }
 

@@ -31,6 +31,7 @@ export interface Tournament {
   region: string | null;
   contact_info: string | null;
   prize_tiers: PrizeTier[] | null;
+  is_multi_stage: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +97,9 @@ export interface TournamentMatch {
   result_screenshot: string | null;
   scheduled_time: string | null;
   completed_at: string | null;
+  // Multi-stage fields
+  stage_id: string | null;
+  group_id: string | null;
   // Check-in & forfeit
   squad_a_checked_in: boolean;
   squad_b_checked_in: boolean;
@@ -119,6 +123,7 @@ export interface RosterChange {
   id: string;
   tournament_squad_id: string;
   tournament_id: string;
+  stage_id: string | null;
   player_out_ign: string;
   player_in_ign: string;
   player_in_mlbb_id: string;
@@ -229,3 +234,55 @@ export interface AuditLogEntry {
   details: Record<string, any>;
   created_at: string;
 }
+
+// ========== Multi-Stage Types ==========
+
+export type StageStatus = 'pending' | 'configuring' | 'ongoing' | 'completed';
+
+export interface TournamentStage {
+  id: string;
+  tournament_id: string;
+  stage_number: number;
+  name: string;
+  format: TournamentFormat;
+  best_of: 1 | 3 | 5;
+  finals_best_of: 1 | 3 | 5 | null;
+  status: StageStatus;
+  group_count: number;
+  advance_per_group: number;
+  advance_best_remaining: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TournamentGroup {
+  id: string;
+  stage_id: string;
+  tournament_id: string;
+  label: string;
+  created_at: string;
+}
+
+export interface TournamentGroupTeam {
+  id: string;
+  group_id: string;
+  tournament_squad_id: string;
+}
+
+export interface GroupStanding {
+  squad_id: string;
+  squad: TournamentSquad;
+  played: number;
+  wins: number;
+  losses: number;
+  score_for: number;
+  score_against: number;
+  points: number;
+}
+
+export const STAGE_STATUS_LABELS: Record<StageStatus, string> = {
+  pending: 'Pending',
+  configuring: 'Configuring',
+  ongoing: 'In Progress',
+  completed: 'Completed',
+};

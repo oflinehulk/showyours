@@ -27,7 +27,18 @@ import {
   useUpdateRegistrationSeed,
   useAutoSeedByRegistrationOrder,
   useWithdrawSquad,
+  useTournamentStages,
+  useTournamentGroups,
+  useTournamentGroupTeams,
+  useStageMatches,
+  useGenerateStageBracket,
+  useCompleteStage,
+  useUpdateStage,
 } from '@/hooks/useTournaments';
+import { StageConfigurator } from '@/components/tournament/StageConfigurator';
+import { GroupAssignment } from '@/components/tournament/GroupAssignment';
+import { GroupStandings } from '@/components/tournament/GroupStandings';
+import { computeGroupStandings, determineAdvancingTeams } from '@/lib/bracket-utils';
 import {
   Settings,
   Play,
@@ -41,12 +52,21 @@ import {
   ListOrdered,
   UserMinus,
   Check,
+  Layers,
+  ArrowRight,
+  Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import type { Tournament, TournamentRegistration, TournamentSquad, TournamentFormat } from '@/lib/tournament-types';
-import { TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
+import type {
+  Tournament,
+  TournamentRegistration,
+  TournamentSquad,
+  TournamentFormat,
+  TournamentStage,
+} from '@/lib/tournament-types';
+import { TOURNAMENT_FORMAT_LABELS, STAGE_STATUS_LABELS } from '@/lib/tournament-types';
 
 interface TournamentHostControlsProps {
   tournament: Tournament;
@@ -69,6 +89,8 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const canGenerateBracket =
     tournament.status === 'registration_closed' &&
     approvedCount >= 2;
+
+  const isMultiStage = tournament.is_multi_stage;
 
   const handleCloseRegistration = async () => {
     try {
@@ -197,6 +219,11 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       <div className="flex items-center gap-2 mb-4">
         <Settings className="w-5 h-5 text-secondary" />
         <h3 className="text-lg font-semibold text-foreground">Host Controls</h3>
+        {isMultiStage && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#FF4500]/10 text-[#FF4500] border border-[#FF4500]/20">
+            Multi-Stage
+          </span>
+        )}
       </div>
 
       {/* Step Progress Indicator */}
@@ -207,7 +234,9 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         {/* Registration Open → Close Registration */}
         {tournament.status === 'registration_open' && (
           <div className="p-4 rounded-lg bg-muted/30 border border-border">
-            <p className="text-xs text-muted-foreground mb-3">Next step: close registration to configure seeding and generate bracket.</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Next step: close registration to {isMultiStage ? 'configure stages and generate brackets.' : 'configure seeding and generate bracket.'}
+            </p>
             <Button
               onClick={handleCloseRegistration}
               disabled={updateTournament.isPending}
@@ -223,8 +252,20 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
           </div>
         )}
 
-        {/* Registration Closed → Seeding + Format + Generate Bracket */}
-        {tournament.status === 'registration_closed' && !tournament.format && (
+        {/* Registration Closed — Multi-Stage Flow */}
+        {tournament.status === 'registration_closed' && isMultiStage && (
+          <MultiStageSetup
+            tournament={tournament}
+            registrations={registrations}
+            approvedRegistrations={approvedRegistrations}
+            approvedCount={approvedCount}
+            onReopenRegistration={handleReopenRegistration}
+            reopenPending={updateTournament.isPending}
+          />
+        )}
+
+        {/* Registration Closed → Seeding + Format + Generate Bracket (Single-Stage) */}
+        {tournament.status === 'registration_closed' && !isMultiStage && !tournament.format && (
           <div className="space-y-4">
             {/* Seeding Section */}
             {approvedCount > 0 && (
@@ -351,8 +392,18 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
           </div>
         )}
 
-        {/* Ongoing → Complete or manage squads */}
-        {tournament.status === 'ongoing' && (
+        {/* Ongoing — Multi-Stage Stage Management */}
+        {tournament.status === 'ongoing' && isMultiStage && (
+          <MultiStageOngoing
+            tournament={tournament}
+            registrations={registrations}
+            onComplete={handleCompleteTournament}
+            completePending={updateTournament.isPending}
+          />
+        )}
+
+        {/* Ongoing → Complete or manage squads (Single-Stage) */}
+        {tournament.status === 'ongoing' && !isMultiStage && (
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <p className="text-xs text-muted-foreground mb-3">Mark the tournament as complete once all matches are finished.</p>
@@ -369,121 +420,15 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                 Mark Completed
               </Button>
             </div>
-
-            {/* Squad Withdrawal */}
-            {approvedRegistrations.length > 0 && (
-              <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserMinus className="w-4 h-4 text-destructive" />
-                  <h4 className="text-sm font-semibold text-foreground">Withdraw Squad</h4>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Forfeit all remaining matches for a squad. Opponents get walkover wins.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {approvedRegistrations.map((reg) => (
-                    <div key={reg.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <Avatar className="h-5 w-5 shrink-0">
-                          {reg.tournament_squads.logo_url ? (
-                            <AvatarImage src={reg.tournament_squads.logo_url} alt={reg.tournament_squads.name} />
-                          ) : null}
-                          <AvatarFallback className="text-[9px] bg-[#1a1a1a] text-muted-foreground">
-                            {reg.tournament_squads.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs font-medium truncate">
-                          {reg.tournament_squads.name}
-                        </span>
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-destructive h-7 px-2 text-xs hover:bg-destructive/10">
-                            <UserMinus className="w-3 h-3 mr-1" />
-                            Withdraw
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Withdraw {reg.tournament_squads.name}?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will forfeit all remaining matches for this squad. Opponents will receive walkover wins and advance in the bracket. This cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleWithdrawSquad(reg)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Withdraw Squad
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Bracket Generated — Squad Withdrawal also available */}
-        {tournament.status === 'bracket_generated' && approvedRegistrations.length > 0 && (
-          <div className="p-4 rounded-lg bg-muted/30 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <UserMinus className="w-4 h-4 text-destructive" />
-              <h4 className="text-sm font-semibold text-foreground">Withdraw Squad</h4>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              Forfeit all remaining matches for a squad. Opponents get walkover wins.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {approvedRegistrations.map((reg) => (
-                <div key={reg.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <Avatar className="h-5 w-5 shrink-0">
-                      {reg.tournament_squads.logo_url ? (
-                        <AvatarImage src={reg.tournament_squads.logo_url} alt={reg.tournament_squads.name} />
-                      ) : null}
-                      <AvatarFallback className="text-[9px] bg-[#1a1a1a] text-muted-foreground">
-                        {reg.tournament_squads.name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-medium truncate">
-                      {reg.tournament_squads.name}
-                    </span>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-destructive h-7 px-2 text-xs hover:bg-destructive/10">
-                        <UserMinus className="w-3 h-3 mr-1" />
-                        Withdraw
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Withdraw {reg.tournament_squads.name}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will forfeit all remaining matches for this squad. Opponents will receive walkover wins and advance in the bracket. This cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleWithdrawSquad(reg)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Withdraw Squad
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Squad Withdrawal (bracket_generated or ongoing) */}
+        {(tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && approvedRegistrations.length > 0 && (
+          <WithdrawSquadSection
+            approvedRegistrations={approvedRegistrations}
+            onWithdraw={handleWithdrawSquad}
+          />
         )}
 
         {/* Cancel Tournament — available in pre-completion stages */}
@@ -556,7 +501,504 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   );
 }
 
-// Step progress indicator
+// ========== Multi-Stage Setup (registration_closed) ==========
+
+function MultiStageSetup({
+  tournament,
+  registrations,
+  approvedRegistrations,
+  approvedCount,
+  onReopenRegistration,
+  reopenPending,
+}: {
+  tournament: Tournament;
+  registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  approvedRegistrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  approvedCount: number;
+  onReopenRegistration: () => void;
+  reopenPending: boolean;
+}) {
+  const { data: stages } = useTournamentStages(tournament.id);
+  const updateTournament = useUpdateTournament();
+  const autoSeed = useAutoSeedByRegistrationOrder();
+  const updateSeed = useUpdateRegistrationSeed();
+  const generateStageBracket = useGenerateStageBracket();
+
+  const hasStages = stages && stages.length > 0;
+  const firstStage = stages?.[0];
+  const firstStageIsGroupStage = firstStage?.format === 'round_robin' && firstStage?.group_count > 0;
+
+  const { data: groups } = useTournamentGroups(firstStage?.id);
+  const { data: groupTeams } = useTournamentGroupTeams(firstStage?.id);
+  const hasGroups = groups && groups.length > 0 && groupTeams && groupTeams.length > 0;
+
+  const handleAutoSeed = async () => {
+    try {
+      await autoSeed.mutateAsync(tournament.id);
+      toast.success('Seeds assigned by registration order');
+    } catch (error: any) {
+      toast.error('Failed to auto-seed', { description: error.message });
+    }
+  };
+
+  const handleSeedChange = async (registrationId: string, value: string) => {
+    const seed = value === '' ? null : parseInt(value);
+    if (value !== '' && (isNaN(seed!) || seed! < 1)) return;
+    try {
+      await updateSeed.mutateAsync({
+        registrationId,
+        seed,
+        tournamentId: tournament.id,
+      });
+    } catch (error: any) {
+      toast.error('Failed to update seed', { description: error.message });
+    }
+  };
+
+  const handleGenerateStage1 = async () => {
+    if (!firstStage) return;
+
+    try {
+      const squadIds = approvedRegistrations
+        .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+        .map(r => r.tournament_squad_id);
+
+      await generateStageBracket.mutateAsync({
+        tournamentId: tournament.id,
+        stageId: firstStage.id,
+        stage: firstStage,
+        squadIds,
+      });
+
+      // Transition tournament to bracket_generated
+      await updateTournament.mutateAsync({
+        id: tournament.id,
+        status: 'bracket_generated',
+        format: firstStage.format,
+      });
+
+      toast.success(`${firstStage.name} bracket generated!`);
+    } catch (error: any) {
+      toast.error('Failed to generate bracket', { description: error.message });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Reopen button */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onReopenRegistration}
+          disabled={reopenPending}
+        >
+          <Play className="w-3 h-3 mr-1" />
+          Reopen Registration
+        </Button>
+      </div>
+
+      {/* Step 1: Seeding */}
+      {approvedCount > 0 && (
+        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ListOrdered className="w-4 h-4 text-secondary" />
+              <h4 className="text-sm font-semibold text-foreground">Seeding</h4>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAutoSeed}
+              disabled={autoSeed.isPending}
+            >
+              {autoSeed.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <ListOrdered className="w-3 h-3 mr-1" />
+              )}
+              Auto-seed
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Seeds used for balanced group assignment (snake-draft).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {approvedRegistrations
+              .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+              .map((reg) => (
+                <div key={reg.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={approvedCount}
+                    value={reg.seed ?? ''}
+                    onChange={(e) => handleSeedChange(reg.id, e.target.value)}
+                    className="w-12 h-7 text-center text-xs"
+                    placeholder="#"
+                  />
+                  <Avatar className="h-5 w-5 shrink-0">
+                    {reg.tournament_squads.logo_url ? (
+                      <AvatarImage src={reg.tournament_squads.logo_url} alt={reg.tournament_squads.name} />
+                    ) : null}
+                    <AvatarFallback className="text-[9px] bg-[#1a1a1a] text-muted-foreground">
+                      {reg.tournament_squads.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium truncate flex-1">
+                    {reg.tournament_squads.name}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Stage Configuration */}
+      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+        <StageConfigurator
+          tournamentId={tournament.id}
+          existingStages={stages || []}
+          approvedCount={approvedCount}
+        />
+      </div>
+
+      {/* Step 3: Group Assignment (if stage 1 is a group stage) */}
+      {hasStages && firstStageIsGroupStage && (
+        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+          <GroupAssignment
+            tournamentId={tournament.id}
+            stage={firstStage!}
+            registrations={registrations}
+          />
+        </div>
+      )}
+
+      {/* Step 4: Generate Stage 1 Bracket */}
+      {hasStages && (
+        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+          <p className="text-xs text-muted-foreground mb-3">
+            {firstStageIsGroupStage && !hasGroups
+              ? 'Assign teams to groups first, then generate the bracket.'
+              : `Generate ${firstStage!.name} bracket to start the tournament.`}
+          </p>
+          <Button
+            onClick={handleGenerateStage1}
+            disabled={
+              generateStageBracket.isPending ||
+              updateTournament.isPending ||
+              approvedCount < 2 ||
+              (firstStageIsGroupStage && !hasGroups)
+            }
+            className="btn-gaming"
+          >
+            {(generateStageBracket.isPending || updateTournament.isPending) ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Shuffle className="w-4 h-4 mr-2" />
+            )}
+            Generate {firstStage?.name || 'Stage 1'} Bracket
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== Multi-Stage Ongoing ==========
+
+function MultiStageOngoing({
+  tournament,
+  registrations,
+  onComplete,
+  completePending,
+}: {
+  tournament: Tournament;
+  registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  onComplete: () => void;
+  completePending: boolean;
+}) {
+  const { data: stages } = useTournamentStages(tournament.id);
+  const completeStage = useCompleteStage();
+  const generateStageBracket = useGenerateStageBracket();
+  const [showAdvancing, setShowAdvancing] = useState(false);
+
+  if (!stages || stages.length === 0) {
+    return (
+      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+        <p className="text-xs text-muted-foreground mb-3">Mark the tournament as complete once all matches are finished.</p>
+        <Button onClick={onComplete} disabled={completePending} className="w-full sm:w-auto">
+          {completePending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+          Mark Completed
+        </Button>
+      </div>
+    );
+  }
+
+  const currentStage = stages.find(s => s.status === 'ongoing') || stages.find(s => s.status === 'pending' || s.status === 'configuring');
+  const nextStage = currentStage ? stages.find(s => s.stage_number === currentStage.stage_number + 1) : undefined;
+  const allStagesComplete = stages.every(s => s.status === 'completed');
+  const isLastStage = currentStage && !nextStage;
+
+  return (
+    <div className="space-y-4">
+      {/* Stage Progress */}
+      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+        <div className="flex items-center gap-2 mb-3">
+          <Layers className="w-4 h-4 text-[#FF4500]" />
+          <h4 className="text-sm font-semibold text-foreground">Stage Progress</h4>
+        </div>
+        <div className="space-y-2">
+          {stages.map((stage, i) => (
+            <div key={stage.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+              <div className={cn(
+                'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2',
+                stage.status === 'completed' && 'bg-green-500/20 border-green-500 text-green-500',
+                stage.status === 'ongoing' && 'bg-[#FF4500]/20 border-[#FF4500] text-[#FF4500]',
+                (stage.status === 'pending' || stage.status === 'configuring') && 'border-muted-foreground/20 text-muted-foreground/40',
+              )}>
+                {stage.status === 'completed' ? <Check className="w-3 h-3" /> : i + 1}
+              </div>
+              <span className={cn(
+                'text-xs font-medium flex-1',
+                stage.status === 'ongoing' && 'text-[#FF4500]',
+                stage.status === 'completed' && 'text-green-500',
+                (stage.status === 'pending' || stage.status === 'configuring') && 'text-muted-foreground/50',
+              )}>
+                {stage.name}
+              </span>
+              <span className={cn(
+                'text-[10px] px-2 py-0.5 rounded',
+                stage.status === 'completed' && 'bg-green-500/10 text-green-500',
+                stage.status === 'ongoing' && 'bg-[#FF4500]/10 text-[#FF4500]',
+                (stage.status === 'pending' || stage.status === 'configuring') && 'bg-muted text-muted-foreground',
+              )}>
+                {STAGE_STATUS_LABELS[stage.status]}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Current Stage Actions */}
+      {currentStage?.status === 'ongoing' && (
+        <CurrentStageActions
+          tournament={tournament}
+          currentStage={currentStage}
+          nextStage={nextStage}
+          registrations={registrations}
+          isLastStage={!!isLastStage}
+        />
+      )}
+
+      {/* Complete Tournament (when all stages done) */}
+      {allStagesComplete && (
+        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+          <p className="text-xs text-green-400 mb-3">All stages completed. Mark the tournament as complete.</p>
+          <Button onClick={onComplete} disabled={completePending} className="btn-gaming w-full sm:w-auto">
+            {completePending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trophy className="w-4 h-4 mr-2" />}
+            Complete Tournament
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Actions for the currently ongoing stage
+function CurrentStageActions({
+  tournament,
+  currentStage,
+  nextStage,
+  registrations,
+  isLastStage,
+}: {
+  tournament: Tournament;
+  currentStage: TournamentStage;
+  nextStage: TournamentStage | undefined;
+  registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  isLastStage: boolean;
+}) {
+  const completeStage = useCompleteStage();
+  const generateStageBracket = useGenerateStageBracket();
+  const { data: stageMatches } = useStageMatches(currentStage.id);
+  const { data: groups } = useTournamentGroups(currentStage.id);
+  const { data: groupTeams } = useTournamentGroupTeams(currentStage.id);
+
+  const allMatchesCompleted = stageMatches && stageMatches.length > 0 && stageMatches.every(m => m.status === 'completed');
+  const isGroupStage = currentStage.format === 'round_robin' && currentStage.group_count > 0;
+
+  const handleCompleteAndAdvance = async () => {
+    try {
+      // Complete current stage
+      await completeStage.mutateAsync({
+        stageId: currentStage.id,
+        tournamentId: tournament.id,
+      });
+
+      // If there is a next stage and this is a group stage, compute advancing teams and generate next stage
+      if (nextStage && isGroupStage && groups && groupTeams && stageMatches) {
+        const squadMap = new Map(
+          registrations
+            .filter(r => r.status === 'approved')
+            .map(r => [r.tournament_squad_id, r.tournament_squads])
+        );
+
+        const groupData = groups.map(group => {
+          const teamIds = (groupTeams || [])
+            .filter(gt => gt.group_id === group.id)
+            .map(gt => gt.tournament_squad_id);
+          const groupSquadMap = new Map<string, typeof squadMap extends Map<string, infer V> ? V : never>();
+          for (const tid of teamIds) {
+            const squad = squadMap.get(tid);
+            if (squad) groupSquadMap.set(tid, squad);
+          }
+          return {
+            label: group.label,
+            matches: (stageMatches || []).filter(m => m.group_id === group.id),
+            squadMap: groupSquadMap,
+          };
+        });
+
+        const advancing = determineAdvancingTeams(
+          groupData,
+          currentStage.advance_per_group,
+          currentStage.advance_best_remaining,
+        );
+
+        const advancingSquadIds = advancing.map(a => a.squadId);
+
+        await generateStageBracket.mutateAsync({
+          tournamentId: tournament.id,
+          stageId: nextStage.id,
+          stage: nextStage,
+          squadIds: advancingSquadIds,
+        });
+
+        toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${advancingSquadIds.length} teams.`);
+      } else if (nextStage) {
+        toast.success(`${currentStage.name} completed! Configure ${nextStage.name} next.`);
+      } else {
+        toast.success(`${currentStage.name} completed!`);
+      }
+    } catch (error: any) {
+      toast.error('Failed', { description: error.message });
+    }
+  };
+
+  return (
+    <div className="p-4 rounded-lg bg-muted/30 border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <Play className="w-4 h-4 text-[#FF4500]" />
+        <h4 className="text-sm font-semibold text-foreground">{currentStage.name}</h4>
+        <span className="text-[10px] text-muted-foreground">
+          {stageMatches ? `${stageMatches.filter(m => m.status === 'completed').length}/${stageMatches.length} matches` : '...'}
+        </span>
+      </div>
+
+      {!allMatchesCompleted && (
+        <p className="text-xs text-muted-foreground mb-3">
+          Complete all matches in this stage before advancing.
+        </p>
+      )}
+
+      {allMatchesCompleted && (
+        <>
+          {/* Show advancing teams preview for group stages */}
+          {isGroupStage && groups && groupTeams && stageMatches && (
+            <div className="mb-3">
+              <p className="text-xs text-green-400 mb-2">
+                All matches done. {nextStage ? `${currentStage.advance_per_group * currentStage.group_count + currentStage.advance_best_remaining} teams will advance to ${nextStage.name}.` : ''}
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={handleCompleteAndAdvance}
+            disabled={completeStage.isPending || generateStageBracket.isPending}
+            className="btn-gaming"
+          >
+            {(completeStage.isPending || generateStageBracket.isPending) ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <ArrowRight className="w-4 h-4 mr-2" />
+            )}
+            {nextStage ? `Complete & Start ${nextStage.name}` : `Complete ${currentStage.name}`}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ========== Withdraw Squad Section ==========
+
+function WithdrawSquadSection({
+  approvedRegistrations,
+  onWithdraw,
+}: {
+  approvedRegistrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  onWithdraw: (reg: TournamentRegistration & { tournament_squads: TournamentSquad }) => void;
+}) {
+  return (
+    <div className="p-4 rounded-lg bg-muted/30 border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <UserMinus className="w-4 h-4 text-destructive" />
+        <h4 className="text-sm font-semibold text-foreground">Withdraw Squad</h4>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Forfeit all remaining matches for a squad. Opponents get walkover wins.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {approvedRegistrations.map((reg) => (
+          <div key={reg.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Avatar className="h-5 w-5 shrink-0">
+                {reg.tournament_squads.logo_url ? (
+                  <AvatarImage src={reg.tournament_squads.logo_url} alt={reg.tournament_squads.name} />
+                ) : null}
+                <AvatarFallback className="text-[9px] bg-[#1a1a1a] text-muted-foreground">
+                  {reg.tournament_squads.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium truncate">
+                {reg.tournament_squads.name}
+              </span>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive h-7 px-2 text-xs hover:bg-destructive/10">
+                  <UserMinus className="w-3 h-3 mr-1" />
+                  Withdraw
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Withdraw {reg.tournament_squads.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will forfeit all remaining matches for this squad. Opponents will receive walkover wins and advance in the bracket. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onWithdraw(reg)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Withdraw Squad
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========== Step Progress Indicator ==========
+
 const STEPS = [
   { key: 'registration_open', label: 'Registration' },
   { key: 'registration_closed', label: 'Closed' },

@@ -67,7 +67,7 @@ const steps: StepConfig[] = [
     icon: ClipboardList,
     title: 'Register Your Squad',
     description:
-      'Once you find a tournament, register your squad with a full roster (5 main players + substitutes). The squad leader handles registration.',
+      'Once you find a tournament, register your squad with a full roster (5 main players + up to 5 substitutes). The squad leader handles registration.',
   },
   {
     icon: MessageCircle,

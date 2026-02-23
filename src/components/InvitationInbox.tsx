@@ -5,11 +5,9 @@ import {
   useRespondToTournamentInvitation,
   type TournamentInvitation 
 } from '@/hooks/useTournamentInvitations';
-import { 
-  useCreateTournamentSquad,
+import {
   useRegisterForTournament,
 } from '@/hooks/useTournaments';
-import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Bell, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
@@ -22,7 +20,6 @@ export function InvitationBadge() {
   const { data: tournamentInvitations } = useMyTournamentInvitations();
   const respondSquad = useRespondToInvitation();
   const respondTournament = useRespondToTournamentInvitation();
-  const createTournamentSquad = useCreateTournamentSquad();
   const registerForTournament = useRegisterForTournament();
   const [open, setOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -50,7 +47,7 @@ export function InvitationBadge() {
     setProcessingId(inv.id);
     try {
       if (response === 'accepted') {
-        // Auto-register: create tournament squad from existing squad and register
+        // Auto-register: create tournament squad and register atomically via RPC
         // First get squad members
         const { data: members, error: membersError } = await supabase
           .from('squad_members')
@@ -72,26 +69,19 @@ export function InvitationBadge() {
 
         if (squadError) throw squadError;
 
-        // Create tournament squad
-        const tournamentSquad = await createTournamentSquad.mutateAsync({
-          squad: {
-            name: squad.name,
-            existing_squad_id: squad.id,
-            logo_url: squad.logo_url,
-          },
+        // Register atomically via RPC
+        await registerForTournament.mutateAsync({
+          tournamentId: inv.tournament_id,
+          squadName: squad.name,
+          existingSquadId: squad.id,
+          logoUrl: squad.logo_url,
           members: members.map((m: any, index: number) => ({
             ign: m.profile?.ign || m.ign || 'Unknown',
             mlbb_id: m.profile?.mlbb_id || m.mlbb_id || '',
-            role: index < 5 ? 'main' as const : 'substitute' as const,
+            role: index < 5 ? 'main' : 'substitute',
             position: index + 1,
             user_id: m.user_id,
           })),
-        });
-
-        // Register for tournament
-        await registerForTournament.mutateAsync({
-          tournamentId: inv.tournament_id,
-          squadId: tournamentSquad.id,
         });
       }
 

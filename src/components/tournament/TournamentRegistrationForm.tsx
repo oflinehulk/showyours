@@ -15,8 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
-import { 
-  useCreateTournamentSquad,
+import {
   useRegisterForTournament,
   useTournamentRegistrations,
 } from '@/hooks/useTournaments';
@@ -51,7 +50,6 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
   const { user } = useAuth();
   const { data: myProfile } = useMyProfile();
   const { data: mySquads } = useMySquads();
-  const createTournamentSquad = useCreateTournamentSquad();
   const registerForTournament = useRegisterForTournament();
 
   const [selectedSquadId, setSelectedSquadId] = useState<string>('');
@@ -152,13 +150,12 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
         return;
       }
 
-      // Create tournament squad from existing squad
-      const tournamentSquad = await createTournamentSquad.mutateAsync({
-        squad: {
-          name: squad.name,
-          existing_squad_id: squad.id,
-          logo_url: squad.logo_url,
-        },
+      // Register atomically via RPC (creates squad, members, and registration in one transaction)
+      await registerForTournament.mutateAsync({
+        tournamentId: tournament.id,
+        squadName: squad.name,
+        existingSquadId: squad.id,
+        logoUrl: squad.logo_url,
         members: squadMembers.map((m, index) => ({
           ign: m.profile?.ign || m.ign || 'Unknown',
           mlbb_id: m.profile?.mlbb_id || m.mlbb_id || '',
@@ -166,12 +163,6 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
           position: index + 1,
           user_id: m.user_id,
         })),
-      });
-
-      // Register for tournament
-      await registerForTournament.mutateAsync({
-        tournamentId: tournament.id,
-        squadId: tournamentSquad.id,
       });
 
       toast.success('Squad registered successfully!', {

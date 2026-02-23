@@ -293,6 +293,7 @@ export function useTournamentSquadMembers(squadId: string | undefined) {
         .from('tournament_squad_members')
         .select('*')
         .eq('tournament_squad_id', squadId)
+        .eq('member_status', 'active')
         .order('position', { ascending: true });
 
       if (error) throw error;
@@ -327,55 +328,39 @@ export function useTournamentRegistrations(tournamentId: string | undefined) {
   });
 }
 
-// Register squad for tournament
+// Register squad for tournament (atomic RPC)
 export function useRegisterForTournament() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
       tournamentId,
-      squadId,
+      squadName,
+      existingSquadId,
+      logoUrl,
+      members,
     }: {
       tournamentId: string;
-      squadId: string;
+      squadName: string;
+      existingSquadId: string;
+      logoUrl: string | null;
+      members: { ign: string; mlbb_id: string; role: string; position: number; user_id: string | null }[];
     }) => {
-      // Server-side max_squads enforcement
-      const { data: tournament, error: tError } = await supabase
-        .from('tournaments')
-        .select('max_squads, status')
-        .eq('id', tournamentId)
-        .single();
-
-      if (tError) throw tError;
-      if (tournament.status !== 'registration_open') {
-        throw new Error('Registration is not open for this tournament');
-      }
-
-      const { count, error: countError } = await supabase
-        .from('tournament_registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'approved');
-
-      if (countError) throw countError;
-      if ((count || 0) >= tournament.max_squads) {
-        throw new Error('Tournament is full — no more spots available');
-      }
-
-      const { data, error } = await supabase
-        .from('tournament_registrations')
-        .insert({
-          tournament_id: tournamentId,
-          tournament_squad_id: squadId,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('rpc_register_for_tournament', {
+        p_tournament_id: tournamentId,
+        p_squad_name: squadName,
+        p_existing_squad_id: existingSquadId,
+        p_logo_url: logoUrl,
+        p_members: JSON.stringify(members),
+      });
 
       if (error) throw error;
-      return data as TournamentRegistration;
+      return data as string; // returns squad id
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-registrations', variables.tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tournament-squads'] });
     },
   });
 }
@@ -648,29 +633,41 @@ export function useGenerateBracket() {
       tournamentId: string;
       format: TournamentFormat;
     }) => {
-      // Get approved registrations
+      // Get approved registrations with seeds
       const { data: registrations, error: regError } = await supabase
         .from('tournament_registrations')
-        .select('tournament_squad_id')
+        .select('tournament_squad_id, seed')
         .eq('tournament_id', tournamentId)
         .eq('status', 'approved');
 
       if (regError) throw regError;
 
-      const squadIds = registrations.map((r) => r.tournament_squad_id);
-      
-      // Shuffle squads for random seeding
-      const shuffled = [...squadIds].sort(() => Math.random() - 0.5);
+      // Sort by seed if seeds exist, otherwise random shuffle
+      const hasSeeds = registrations.some((r) => r.seed != null);
+      let orderedSquadIds: string[];
+
+      if (hasSeeds) {
+        // Sort by seed (nulls last), then use standard bracket placement
+        const sorted = [...registrations].sort((a, b) => {
+          if (a.seed == null && b.seed == null) return 0;
+          if (a.seed == null) return 1;
+          if (b.seed == null) return -1;
+          return a.seed - b.seed;
+        });
+        orderedSquadIds = applyStandardSeeding(sorted.map((r) => r.tournament_squad_id));
+      } else {
+        orderedSquadIds = [...registrations.map((r) => r.tournament_squad_id)].sort(() => Math.random() - 0.5);
+      }
 
       // Generate matches based on format
       let matches: Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b'>[] = [];
 
       if (format === 'single_elimination') {
-        matches = generateSingleEliminationBracket(tournamentId, shuffled);
+        matches = generateSingleEliminationBracket(tournamentId, orderedSquadIds);
       } else if (format === 'double_elimination') {
-        matches = generateDoubleEliminationBracket(tournamentId, shuffled);
+        matches = generateDoubleEliminationBracket(tournamentId, orderedSquadIds);
       } else {
-        matches = generateRoundRobinBracket(tournamentId, shuffled);
+        matches = generateRoundRobinBracket(tournamentId, orderedSquadIds);
       }
 
       // Insert matches
@@ -843,6 +840,349 @@ export function useUpdateRosterChangeStatus() {
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-roster-changes', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['roster-changes'] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-squad-members'] });
+    },
+  });
+}
+
+// ========== Seeding ==========
+
+// Standard bracket seeding placement (1v16, 8v9, 4v13, 5v12, etc.)
+function applyStandardSeeding(seededIds: string[]): string[] {
+  const n = seededIds.length;
+  const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
+
+  // Build standard seed positions for a bracket of this size
+  // Position 0 plays position bracketSize-1, etc.
+  const positions: number[] = new Array(bracketSize).fill(-1);
+  positions[0] = 0; // Seed 1 goes to position 0
+
+  // Recursively fill bracket positions
+  function fillBracket(slots: number[], round: number): number[] {
+    if (slots.length === 1) return slots;
+    const nextRound: number[] = [];
+    for (let i = 0; i < slots.length; i += 2) {
+      nextRound.push(slots[i]);
+    }
+    const filled = fillBracket(nextRound, round + 1);
+    const result: number[] = [];
+    for (const seed of filled) {
+      result.push(seed);
+      result.push(round - seed);
+    }
+    return result;
+  }
+
+  // Generate standard seeding order
+  const seedOrder = generateSeedOrder(bracketSize);
+  const result: string[] = [];
+  for (const seedIndex of seedOrder) {
+    result.push(seedIndex < n ? seededIds[seedIndex] : '');
+  }
+  return result.filter(Boolean);
+}
+
+// Generate standard tournament seed order for bracket placement
+function generateSeedOrder(size: number): number[] {
+  if (size === 1) return [0];
+  if (size === 2) return [0, 1];
+
+  const half = generateSeedOrder(size / 2);
+  const result: number[] = [];
+  for (const seed of half) {
+    result.push(seed);
+    result.push(size - 1 - seed);
+  }
+  return result;
+}
+
+export function useUpdateRegistrationSeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      registrationId,
+      seed,
+      tournamentId,
+    }: {
+      registrationId: string;
+      seed: number | null;
+      tournamentId: string;
+    }) => {
+      const { error } = await supabase
+        .from('tournament_registrations')
+        .update({ seed })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+    },
+  });
+}
+
+export function useAutoSeedByRegistrationOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tournamentId: string) => {
+      const { data: registrations, error: fetchError } = await supabase
+        .from('tournament_registrations')
+        .select('id')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'approved')
+        .order('registered_at', { ascending: true });
+
+      if (fetchError) throw fetchError;
+
+      // Update each registration with sequential seed
+      for (let i = 0; i < registrations.length; i++) {
+        const { error } = await supabase
+          .from('tournament_registrations')
+          .update({ seed: i + 1 })
+          .eq('id', registrations[i].id);
+        if (error) throw error;
+      }
+
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+    },
+  });
+}
+
+// ========== Check-in & Forfeit ==========
+
+export function useUpdateMatchCheckIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      matchId,
+      field,
+      value,
+      tournamentId,
+    }: {
+      matchId: string;
+      field: 'squad_a_checked_in' | 'squad_b_checked_in';
+      value: boolean;
+      tournamentId: string;
+    }) => {
+      const { error } = await supabase
+        .from('tournament_matches')
+        .update({ [field]: value })
+        .eq('id', matchId);
+
+      if (error) throw error;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+    },
+  });
+}
+
+export function useForfeitMatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      matchId,
+      winnerId,
+      bestOf,
+      tournamentId,
+    }: {
+      matchId: string;
+      winnerId: string;
+      bestOf: 1 | 3 | 5;
+      tournamentId: string;
+    }) => {
+      const winsNeeded = Math.ceil(bestOf / 2);
+
+      const { data, error } = await supabase
+        .from('tournament_matches')
+        .update({
+          winner_id: winnerId,
+          status: 'completed' as MatchStatus,
+          is_forfeit: true,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', matchId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Advance winner to next round
+      await advanceWinnerToNextRound(tournamentId, data);
+
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+    },
+  });
+}
+
+// ========== Dispute Resolution ==========
+
+export function useRaiseDispute() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      matchId,
+      reason,
+      screenshotUrl,
+      tournamentId,
+    }: {
+      matchId: string;
+      reason: string;
+      screenshotUrl?: string;
+      tournamentId: string;
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('tournament_matches')
+        .update({
+          status: 'disputed' as MatchStatus,
+          dispute_reason: reason,
+          dispute_screenshot: screenshotUrl || null,
+          dispute_raised_by: user.id,
+        })
+        .eq('id', matchId);
+
+      if (error) throw error;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+    },
+  });
+}
+
+export function useResolveDispute() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      matchId,
+      resolutionNotes,
+      newWinnerId,
+      newSquadAScore,
+      newSquadBScore,
+      tournamentId,
+    }: {
+      matchId: string;
+      resolutionNotes: string;
+      newWinnerId?: string;
+      newSquadAScore?: number;
+      newSquadBScore?: number;
+      tournamentId: string;
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const updates: Record<string, any> = {
+        status: 'completed' as MatchStatus,
+        dispute_resolved_by: user.id,
+        dispute_resolution_notes: resolutionNotes,
+      };
+
+      if (newWinnerId !== undefined) updates.winner_id = newWinnerId;
+      if (newSquadAScore !== undefined) updates.squad_a_score = newSquadAScore;
+      if (newSquadBScore !== undefined) updates.squad_b_score = newSquadBScore;
+
+      const { data, error } = await supabase
+        .from('tournament_matches')
+        .update(updates)
+        .eq('id', matchId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Re-advance winner if result changed
+      if (newWinnerId) {
+        await advanceWinnerToNextRound(tournamentId, data);
+      }
+
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+    },
+  });
+}
+
+// ========== Squad Withdrawal ==========
+
+export function useWithdrawSquad() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      registrationId,
+      squadId,
+      tournamentId,
+    }: {
+      registrationId: string;
+      squadId: string;
+      tournamentId: string;
+    }) => {
+      // Set registration to withdrawn
+      const { error: regError } = await supabase
+        .from('tournament_registrations')
+        .update({ status: 'withdrawn' })
+        .eq('id', registrationId);
+
+      if (regError) throw regError;
+
+      // Get all pending/ongoing matches for this squad
+      const { data: matches, error: matchError } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .in('status', ['pending', 'ongoing'])
+        .or(`squad_a_id.eq.${squadId},squad_b_id.eq.${squadId}`);
+
+      if (matchError) throw matchError;
+
+      // Forfeit each match
+      for (const match of matches || []) {
+        const opponentId = match.squad_a_id === squadId ? match.squad_b_id : match.squad_a_id;
+        if (!opponentId) continue; // Skip if no opponent (TBD match)
+
+        const { data: updated, error: forfeitError } = await supabase
+          .from('tournament_matches')
+          .update({
+            winner_id: opponentId,
+            status: 'completed' as MatchStatus,
+            is_forfeit: true,
+            completed_at: new Date().toISOString(),
+          })
+          .eq('id', match.id)
+          .select()
+          .single();
+
+        if (forfeitError) throw forfeitError;
+
+        // Advance opponent
+        await advanceWinnerToNextRound(tournamentId, updated);
+      }
+
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
     },
   });
 }

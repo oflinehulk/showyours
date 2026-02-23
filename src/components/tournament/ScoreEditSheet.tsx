@@ -14,7 +14,7 @@ import {
   Swords,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { MATCH_STATUS_LABELS } from '@/lib/tournament-types';
+import { MATCH_STATUS_LABELS, validateMatchScores } from '@/lib/tournament-types';
 import type { TournamentMatch } from '@/lib/tournament-types';
 
 interface ScoreEditSheetProps {
@@ -56,8 +56,9 @@ export function ScoreEditSheet({
     const aScore = parseInt(squadAScore) || 0;
     const bScore = parseInt(squadBScore) || 0;
 
-    if (aScore === bScore) {
-      toast.error('Match cannot end in a tie');
+    const validation = validateMatchScores(match.best_of, aScore, bScore);
+    if (!validation.valid) {
+      toast.error(validation.error || 'Invalid scores');
       return;
     }
 
@@ -107,12 +108,16 @@ export function ScoreEditSheet({
           {/* Scores */}
           {canEdit && match.squad_a && match.squad_b ? (
             <div className="space-y-4">
+              <p className="text-xs text-muted-foreground text-center">
+                Winner needs {Math.ceil(match.best_of / 2)} win{Math.ceil(match.best_of / 2) > 1 ? 's' : ''}
+              </p>
               <div className="grid grid-cols-3 gap-4 items-center">
                 <div>
                   <Label className="text-xs text-muted-foreground">{match.squad_a?.name}</Label>
                   <Input
                     type="number"
                     min="0"
+                    max={Math.ceil(match.best_of / 2)}
                     value={squadAScore}
                     onChange={(e) => setSquadAScore(e.target.value)}
                     className="text-center text-lg font-display font-bold bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
@@ -128,6 +133,7 @@ export function ScoreEditSheet({
                   <Input
                     type="number"
                     min="0"
+                    max={Math.ceil(match.best_of / 2)}
                     value={squadBScore}
                     onChange={(e) => setSquadBScore(e.target.value)}
                     className="text-center text-lg font-display font-bold bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"

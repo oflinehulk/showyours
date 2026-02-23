@@ -6,6 +6,13 @@ export type TournamentFormat = 'single_elimination' | 'double_elimination' | 'ro
 export type MatchStatus = 'pending' | 'ongoing' | 'completed' | 'disputed';
 export type SquadMemberRole = 'main' | 'substitute';
 
+export interface PrizeTier {
+  place: number;
+  label: string;
+  prize: string;
+  distributed: boolean;
+}
+
 export interface Tournament {
   id: string;
   host_id: string;
@@ -23,6 +30,7 @@ export interface Tournament {
   entry_fee: string | null;
   region: string | null;
   contact_info: string | null;
+  prize_tiers: PrizeTier[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +45,8 @@ export interface TournamentSquad {
   updated_at: string;
 }
 
+export type MemberStatus = 'active' | 'inactive';
+
 export interface TournamentSquadMember {
   id: string;
   tournament_squad_id: string;
@@ -45,6 +55,7 @@ export interface TournamentSquadMember {
   user_id: string | null;
   role: SquadMemberRole;
   position: number;
+  member_status: MemberStatus;
   created_at: string;
 }
 
@@ -61,7 +72,8 @@ export interface TournamentRegistration {
   tournament_id: string;
   tournament_squad_id: string;
   registered_at: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn';
+  seed: number | null;
   // Roster lock fields
   roster_locked: boolean;
   roster_locked_at: string | null;
@@ -84,6 +96,16 @@ export interface TournamentMatch {
   result_screenshot: string | null;
   scheduled_time: string | null;
   completed_at: string | null;
+  // Check-in & forfeit
+  squad_a_checked_in: boolean;
+  squad_b_checked_in: boolean;
+  is_forfeit: boolean;
+  // Dispute
+  dispute_reason: string | null;
+  dispute_screenshot: string | null;
+  dispute_raised_by: string | null;
+  dispute_resolved_by: string | null;
+  dispute_resolution_notes: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -147,3 +169,63 @@ export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   completed: 'Completed',
   disputed: 'Disputed',
 };
+
+// Score validation helper
+export function validateMatchScores(
+  bestOf: 1 | 3 | 5,
+  scoreA: number,
+  scoreB: number
+): { valid: boolean; error?: string } {
+  const winsNeeded = Math.ceil(bestOf / 2); // 1 for Bo1, 2 for Bo3, 3 for Bo5
+
+  if (scoreA < 0 || scoreB < 0) {
+    return { valid: false, error: 'Scores cannot be negative' };
+  }
+
+  if (scoreA === scoreB) {
+    return { valid: false, error: 'Match cannot end in a tie' };
+  }
+
+  const winnerScore = Math.max(scoreA, scoreB);
+  const loserScore = Math.min(scoreA, scoreB);
+
+  if (winnerScore !== winsNeeded) {
+    return { valid: false, error: `Winner must have exactly ${winsNeeded} wins in a Bo${bestOf}` };
+  }
+
+  if (loserScore >= winsNeeded) {
+    return { valid: false, error: `Loser cannot have ${winsNeeded} or more wins` };
+  }
+
+  return { valid: true };
+}
+
+// Notification types
+export type NotificationType =
+  | 'registration_approved'
+  | 'registration_rejected'
+  | 'roster_change_approved'
+  | 'roster_change_rejected'
+  | 'tournament_cancelled'
+  | 'dispute_raised';
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  tournament_id: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+// Audit log types
+export interface AuditLogEntry {
+  id: string;
+  tournament_id: string;
+  user_id: string | null;
+  action: string;
+  details: Record<string, any>;
+  created_at: string;
+}

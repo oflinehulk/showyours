@@ -9,6 +9,7 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvitationBadge } from '@/components/InvitationInbox';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const navLinks = [
   { to: '/players', label: 'Find Players', icon: Users },
@@ -104,6 +105,7 @@ export function Navbar() {
                   )
                 )}
                 {hasProfile && <InvitationBadge />}
+                {hasProfile && <NotificationBell />}
                 <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9 text-muted-foreground hover:text-[#FF4500]" title="Hard refresh">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
@@ -136,6 +138,7 @@ export function Navbar() {
                   </Button>
                 )}
                 {hasProfile && <InvitationBadge />}
+                {hasProfile && <NotificationBell />}
                 {isAdmin && (
                   <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>
                     <Link to="/admin"><ShieldCheck className="w-4 h-4" /></Link>

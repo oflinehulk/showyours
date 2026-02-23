@@ -17,9 +17,10 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateTournament } from '@/hooks/useTournaments';
-import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, IndianRupee } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, IndianRupee, Plus, Trash2, Medal } from 'lucide-react';
 import { toast } from 'sonner';
 import { MAX_SQUAD_SIZES } from '@/lib/tournament-types';
+import type { PrizeTier } from '@/lib/tournament-types';
 
 export default function CreateTournamentPage() {
   const navigate = useNavigate();
@@ -41,6 +42,10 @@ export default function CreateTournamentPage() {
   const [entryFee, setEntryFee] = useState('');
   const [region, setRegion] = useState('');
   const [contactInfo, setContactInfo] = useState('');
+  const [prizeTiers, setPrizeTiers] = useState<PrizeTier[]>([
+    { place: 1, label: '1st Place', prize: '', distributed: false },
+    { place: 2, label: '2nd Place', prize: '', distributed: false },
+  ]);
 
   const canSubmit = () => {
     return name.trim() && dateTime && maxSquads;
@@ -71,6 +76,7 @@ export default function CreateTournamentPage() {
         entry_fee: entryFee.trim() || null,
         region: region || null,
         contact_info: contactInfo.trim() || null,
+        prize_tiers: prizeTiers.some(t => t.prize.trim()) ? prizeTiers.filter(t => t.prize.trim()) : null,
       });
 
       toast.success('Tournament created!', {
@@ -113,7 +119,7 @@ export default function CreateTournamentPage() {
             <div className="text-sm">
               <p className="font-display font-medium text-[#FF4500] uppercase tracking-wider text-xs">Tournament Rules</p>
               <ul className="text-muted-foreground mt-1 space-y-1">
-                <li>• Squads register with 5 main players + up to 2 substitutes</li>
+                <li>• Squads register with 5 main players + up to 5 substitutes (10 max)</li>
                 <li>• After registration closes, you select the format and generate brackets</li>
                 <li>• Match format: Bo1 for early rounds, Bo3 for semis, Bo5 for finals</li>
               </ul>
@@ -368,6 +374,75 @@ export default function CreateTournamentPage() {
                   If you're offering a prize pool, enter the wallet address where winners will receive USDT.
                 </p>
               </div>
+            </div>
+          </GlowCard>
+
+          {/* Section 7: Prize Tiers */}
+          <GlowCard>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-6 w-1 bg-gradient-to-b from-yellow-500 to-yellow-500/30 rounded-full" />
+                <h2 className="text-sm font-display font-bold uppercase tracking-wider text-yellow-500">Prize Breakdown</h2>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Define how the prize pool is distributed. Leave prize amounts empty to skip.
+              </p>
+
+              <div className="space-y-3">
+                {prizeTiers.map((tier, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                    <div className="w-8 h-8 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
+                      <Medal className="w-4 h-4 text-yellow-500" />
+                    </div>
+                    <Input
+                      value={tier.label}
+                      onChange={(e) => {
+                        const updated = [...prizeTiers];
+                        updated[index] = { ...tier, label: e.target.value };
+                        setPrizeTiers(updated);
+                      }}
+                      placeholder="e.g. 1st Place"
+                      className="flex-1 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                    />
+                    <Input
+                      value={tier.prize}
+                      onChange={(e) => {
+                        const updated = [...prizeTiers];
+                        updated[index] = { ...tier, prize: e.target.value };
+                        setPrizeTiers(updated);
+                      }}
+                      placeholder="e.g. ₹3,000"
+                      className="flex-1 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                    />
+                    {prizeTiers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setPrizeTiers(prizeTiers.filter((_, i) => i !== index))}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPrizeTiers([
+                  ...prizeTiers,
+                  { place: prizeTiers.length + 1, label: '', prize: '', distributed: false },
+                ])}
+                className="border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Prize Tier
+              </Button>
             </div>
           </GlowCard>
 

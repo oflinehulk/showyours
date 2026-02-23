@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -19,21 +20,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  useUpdateTournament, 
+import {
+  useUpdateTournament,
   useGenerateBracket,
-  useDeleteTournament 
+  useDeleteTournament,
+  useUpdateRegistrationSeed,
+  useAutoSeedByRegistrationOrder,
+  useWithdrawSquad,
 } from '@/hooks/useTournaments';
-import { 
-  Settings, 
-  Play, 
-  Pause, 
-  CheckCircle, 
+import {
+  Settings,
+  Play,
+  Pause,
+  CheckCircle,
   XCircle,
   Shuffle,
   Loader2,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ListOrdered,
+  UserMinus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -51,12 +57,16 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const updateTournament = useUpdateTournament();
   const generateBracket = useGenerateBracket();
   const deleteTournament = useDeleteTournament();
-  
+  const updateSeed = useUpdateRegistrationSeed();
+  const autoSeed = useAutoSeedByRegistrationOrder();
+  const withdrawSquad = useWithdrawSquad();
+
   const [selectedFormat, setSelectedFormat] = useState<TournamentFormat>('single_elimination');
 
-  const approvedCount = registrations.filter(r => r.status === 'approved').length;
-  const canGenerateBracket = 
-    tournament.status === 'registration_closed' && 
+  const approvedRegistrations = registrations.filter(r => r.status === 'approved');
+  const approvedCount = approvedRegistrations.length;
+  const canGenerateBracket =
+    tournament.status === 'registration_closed' &&
     approvedCount >= 2;
 
   const handleCloseRegistration = async () => {
@@ -143,6 +153,44 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
     }
   };
 
+  const handleAutoSeed = async () => {
+    try {
+      await autoSeed.mutateAsync(tournament.id);
+      toast.success('Seeds assigned by registration order');
+    } catch (error: any) {
+      toast.error('Failed to auto-seed', { description: error.message });
+    }
+  };
+
+  const handleSeedChange = async (registrationId: string, value: string) => {
+    const seed = value === '' ? null : parseInt(value);
+    if (value !== '' && (isNaN(seed!) || seed! < 1)) return;
+    try {
+      await updateSeed.mutateAsync({
+        registrationId,
+        seed,
+        tournamentId: tournament.id,
+      });
+    } catch (error: any) {
+      toast.error('Failed to update seed', { description: error.message });
+    }
+  };
+
+  const handleWithdrawSquad = async (reg: TournamentRegistration & { tournament_squads: TournamentSquad }) => {
+    try {
+      await withdrawSquad.mutateAsync({
+        registrationId: reg.id,
+        squadId: reg.tournament_squad_id,
+        tournamentId: tournament.id,
+      });
+      toast.success(`${reg.tournament_squads.name} withdrawn`, {
+        description: 'All remaining matches have been forfeited.',
+      });
+    } catch (error: any) {
+      toast.error('Failed to withdraw squad', { description: error.message });
+    }
+  };
+
   return (
     <div className="glass-card p-6 mb-6 border-secondary/30">
       <div className="flex items-center gap-2 mb-4">
@@ -183,8 +231,8 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         {/* Bracket Generation */}
         {tournament.status === 'registration_closed' && !tournament.format && (
           <div className="col-span-2 flex gap-2">
-            <Select 
-              value={selectedFormat} 
+            <Select
+              value={selectedFormat}
               onValueChange={(v) => setSelectedFormat(v as TournamentFormat)}
             >
               <SelectTrigger className="flex-1">
@@ -305,6 +353,106 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
           </AlertDialog>
         )}
       </div>
+
+      {/* Seeding Section */}
+      {tournament.status === 'registration_closed' && !tournament.format && approvedCount > 0 && (
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ListOrdered className="w-4 h-4 text-secondary" />
+              <h4 className="text-sm font-semibold text-foreground">Seeding</h4>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAutoSeed}
+              disabled={autoSeed.isPending}
+            >
+              {autoSeed.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <ListOrdered className="w-3 h-3 mr-1" />
+              )}
+              Auto-seed by registration order
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Assign seed numbers to control bracket placement. Leave empty for random placement.
+          </p>
+          <div className="space-y-2">
+            {approvedRegistrations
+              .sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999))
+              .map((reg) => (
+                <div key={reg.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={approvedCount}
+                    value={reg.seed ?? ''}
+                    onChange={(e) => handleSeedChange(reg.id, e.target.value)}
+                    className="w-16 h-8 text-center text-sm"
+                    placeholder="#"
+                  />
+                  <span className="text-sm font-medium flex-1 truncate">
+                    {reg.tournament_squads.name}
+                  </span>
+                  {reg.seed && (
+                    <Badge variant="outline" className="text-xs">
+                      Seed {reg.seed}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Squad Withdrawal Section */}
+      {['bracket_generated', 'ongoing'].includes(tournament.status) && approvedRegistrations.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <UserMinus className="w-4 h-4 text-destructive" />
+            <h4 className="text-sm font-semibold text-foreground">Squad Management</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Withdraw a squad to forfeit all their remaining matches. Opponents get walkover wins.
+          </p>
+          <div className="space-y-2">
+            {approvedRegistrations.map((reg) => (
+              <div key={reg.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <span className="text-sm font-medium truncate">
+                  {reg.tournament_squads.name}
+                </span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <UserMinus className="w-3 h-3 mr-1" />
+                      Withdraw
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Withdraw {reg.tournament_squads.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will forfeit all remaining matches for this squad. Opponents will receive walkover wins and advance in the bracket. This cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleWithdrawSquad(reg)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Withdraw Squad
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

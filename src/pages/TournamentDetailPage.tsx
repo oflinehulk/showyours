@@ -55,9 +55,14 @@ import {
   MessageCircle,
   Ticket,
   IndianRupee,
+  Medal,
+  CheckCircle,
+  ScrollText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
+import type { PrizeTier } from '@/lib/tournament-types';
+import { TournamentAuditLog } from '@/components/tournament/TournamentAuditLog';
 import { toast } from 'sonner';
 
 export default function TournamentDetailPage() {
@@ -88,6 +93,11 @@ export default function TournamentDetailPage() {
   const registrationCount = registrations?.filter(r => r.status === 'approved').length || 0;
   const spotsLeft = (tournament?.max_squads || 0) - registrationCount;
   const canRegister = tournament?.status === 'registration_open' && spotsLeft > 0;
+
+  // Compute user's squad IDs in this tournament for dispute eligibility
+  const userSquadIds = (registrations || [])
+    .filter(r => r.status === 'approved' && r.tournament_squads?.leader_id === user?.id)
+    .map(r => r.tournament_squad_id);
 
   const statusConfig: Record<string, { color: string; icon: React.ReactNode; glow: string }> = {
     registration_open: { 
@@ -404,6 +414,12 @@ export default function TournamentDetailPage() {
                   Register
                 </TabsTrigger>
               )}
+              {isHost && (
+                <TabsTrigger value="activity" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
+                  <ScrollText className="w-4 h-4 mr-2" />
+                  Activity
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -703,9 +719,17 @@ export default function TournamentDetailPage() {
                 </div>
               </div>
             )}
-          </TabsContent>
 
-          {/* Teams Tab */}
+            {/* Prize Tiers */}
+            {tournament.prize_tiers && tournament.prize_tiers.length > 0 && (
+              <PrizeTiersCard
+                tiers={tournament.prize_tiers}
+                isHost={isHost}
+                isCompleted={tournament.status === 'completed'}
+                tournamentId={tournament.id}
+              />
+            )}
+          </TabsContent>
           <TabsContent value="teams">
             <TournamentRegistrations
               tournamentId={tournament.id}
@@ -723,6 +747,7 @@ export default function TournamentDetailPage() {
                 tournament={tournament}
                 matches={matches || []}
                 isHost={isHost}
+                userSquadIds={userSquadIds}
               />
             </TabsContent>
           )}
@@ -756,8 +781,104 @@ export default function TournamentDetailPage() {
               />
             </TabsContent>
           )}
+
+          {/* Activity Log Tab */}
+          {isHost && (
+            <TabsContent value="activity">
+              <TournamentAuditLog tournamentId={tournament.id} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </Layout>
+  );
+}
+
+// Prize Tiers display card
+function PrizeTiersCard({
+  tiers,
+  isHost,
+  isCompleted,
+  tournamentId,
+}: {
+  tiers: PrizeTier[];
+  isHost: boolean;
+  isCompleted: boolean;
+  tournamentId: string;
+}) {
+  const updateTournament = useUpdateTournament();
+
+  const handleToggleDistributed = async (index: number) => {
+    const updated = tiers.map((t, i) => i === index ? { ...t, distributed: !t.distributed } : t);
+    try {
+      await updateTournament.mutateAsync({
+        id: tournamentId,
+        prize_tiers: updated,
+      });
+      toast.success(updated[index].distributed ? 'Marked as distributed' : 'Marked as pending');
+    } catch (error: any) {
+      toast.error('Failed to update', { description: error.message });
+    }
+  };
+
+  const placeColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
+
+  return (
+    <div className="glass-card relative overflow-hidden group">
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-amber-500/50 to-transparent" />
+      <div className="absolute -top-16 -right-16 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl group-hover:bg-yellow-500/15 transition-colors duration-500" />
+
+      <div className="p-6 relative">
+        <h3 className="text-lg font-display font-black text-foreground mb-4 flex items-center gap-3 uppercase tracking-wide">
+          <div className="h-8 w-1.5 bg-gradient-to-b from-yellow-500 to-yellow-500/30 rounded-full" />
+          <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+            <Medal className="w-4 h-4 text-yellow-500" />
+          </div>
+          Prize Breakdown
+        </h3>
+        <div className="pl-[3.25rem] space-y-2">
+          {tiers.map((tier, i) => (
+            <div
+              key={i}
+              className={cn(
+                'flex items-center justify-between p-3 rounded-lg border',
+                tier.distributed
+                  ? 'bg-green-500/5 border-green-500/20'
+                  : 'bg-muted/30 border-border/50'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className={cn('w-5 h-5', placeColors[i] || 'text-muted-foreground')} />
+                <div>
+                  <p className="text-sm font-semibold">{tier.label}</p>
+                  <p className="text-xs text-muted-foreground">{tier.prize}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {tier.distributed && (
+                  <Badge variant="outline" className="text-xs border-green-500/30 text-green-500">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Distributed
+                  </Badge>
+                )}
+                {isHost && isCompleted && (
+                  <button
+                    onClick={() => handleToggleDistributed(i)}
+                    className={cn(
+                      'w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors',
+                      tier.distributed
+                        ? 'bg-green-500/20 border-green-500/50 text-green-500'
+                        : 'border-muted-foreground/30 text-muted-foreground hover:border-green-500/30'
+                    )}
+                  >
+                    {tier.distributed ? <Check className="w-3 h-3" /> : null}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

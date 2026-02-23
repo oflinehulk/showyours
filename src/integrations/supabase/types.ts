@@ -215,6 +215,7 @@ export type Database = {
           player_in_mlbb_id: string
           player_out_ign: string
           reason: string | null
+          stage_id: string | null
           status: string | null
           tournament_id: string
           tournament_squad_id: string
@@ -228,6 +229,7 @@ export type Database = {
           player_in_mlbb_id: string
           player_out_ign: string
           reason?: string | null
+          stage_id?: string | null
           status?: string | null
           tournament_id: string
           tournament_squad_id: string
@@ -241,11 +243,19 @@ export type Database = {
           player_in_mlbb_id?: string
           player_out_ign?: string
           reason?: string | null
+          stage_id?: string | null
           status?: string | null
           tournament_id?: string
           tournament_squad_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "roster_changes_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_stages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "roster_changes_tournament_id_fkey"
             columns: ["tournament_id"]
@@ -501,6 +511,81 @@ export type Database = {
           },
         ]
       }
+      tournament_group_teams: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          tournament_squad_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          tournament_squad_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          tournament_squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_group_teams_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_group_teams_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_groups: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          stage_id: string
+          tournament_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          stage_id: string
+          tournament_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          stage_id?: string
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_groups_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_groups_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournament_invitations: {
         Row: {
           created_at: string
@@ -560,6 +645,7 @@ export type Database = {
           dispute_resolution_notes: string | null
           dispute_resolved_by: string | null
           dispute_screenshot: string | null
+          group_id: string | null
           id: string
           is_forfeit: boolean | null
           match_number: number
@@ -572,6 +658,7 @@ export type Database = {
           squad_b_checked_in: boolean | null
           squad_b_id: string | null
           squad_b_score: number | null
+          stage_id: string | null
           status: Database["public"]["Enums"]["match_status"]
           tournament_id: string
           updated_at: string
@@ -587,6 +674,7 @@ export type Database = {
           dispute_resolution_notes?: string | null
           dispute_resolved_by?: string | null
           dispute_screenshot?: string | null
+          group_id?: string | null
           id?: string
           is_forfeit?: boolean | null
           match_number: number
@@ -599,6 +687,7 @@ export type Database = {
           squad_b_checked_in?: boolean | null
           squad_b_id?: string | null
           squad_b_score?: number | null
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
           tournament_id: string
           updated_at?: string
@@ -614,6 +703,7 @@ export type Database = {
           dispute_resolution_notes?: string | null
           dispute_resolved_by?: string | null
           dispute_screenshot?: string | null
+          group_id?: string | null
           id?: string
           is_forfeit?: boolean | null
           match_number?: number
@@ -626,12 +716,20 @@ export type Database = {
           squad_b_checked_in?: boolean | null
           squad_b_id?: string | null
           squad_b_score?: number | null
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
           tournament_id?: string
           updated_at?: string
           winner_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tournament_matches_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tournament_matches_squad_a_id_fkey"
             columns: ["squad_a_id"]
@@ -644,6 +742,13 @@ export type Database = {
             columns: ["squad_b_id"]
             isOneToOne: false
             referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_stages"
             referencedColumns: ["id"]
           },
           {
@@ -795,6 +900,62 @@ export type Database = {
           },
         ]
       }
+      tournament_stages: {
+        Row: {
+          advance_best_remaining: number
+          advance_per_group: number
+          best_of: number
+          created_at: string
+          finals_best_of: number
+          format: Database["public"]["Enums"]["tournament_format"]
+          group_count: number
+          id: string
+          name: string
+          stage_number: number
+          status: string
+          tournament_id: string
+          updated_at: string
+        }
+        Insert: {
+          advance_best_remaining?: number
+          advance_per_group?: number
+          best_of?: number
+          created_at?: string
+          finals_best_of?: number
+          format: Database["public"]["Enums"]["tournament_format"]
+          group_count?: number
+          id?: string
+          name: string
+          stage_number: number
+          status?: string
+          tournament_id: string
+          updated_at?: string
+        }
+        Update: {
+          advance_best_remaining?: number
+          advance_per_group?: number
+          best_of?: number
+          created_at?: string
+          finals_best_of?: number
+          format?: Database["public"]["Enums"]["tournament_format"]
+          group_count?: number
+          id?: string
+          name?: string
+          stage_number?: number
+          status?: string
+          tournament_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_stages_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournaments: {
         Row: {
           banner_url: string | null
@@ -806,6 +967,7 @@ export type Database = {
           format: Database["public"]["Enums"]["tournament_format"] | null
           host_id: string
           id: string
+          is_multi_stage: boolean
           max_squads: number
           name: string
           prize_pool: string | null
@@ -827,6 +989,7 @@ export type Database = {
           format?: Database["public"]["Enums"]["tournament_format"] | null
           host_id: string
           id?: string
+          is_multi_stage?: boolean
           max_squads?: number
           name: string
           prize_pool?: string | null
@@ -848,6 +1011,7 @@ export type Database = {
           format?: Database["public"]["Enums"]["tournament_format"] | null
           host_id?: string
           id?: string
+          is_multi_stage?: boolean
           max_squads?: number
           name?: string
           prize_pool?: string | null

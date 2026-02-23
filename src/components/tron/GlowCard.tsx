@@ -6,6 +6,7 @@ interface GlowCardProps {
   glowColor?: 'primary' | 'secondary' | 'accent';
   hoverable?: boolean;
   noBorder?: boolean;
+  id?: string;
 }
 
 const glowColorMap = {
@@ -26,9 +27,11 @@ export function GlowCard({
   glowColor = 'primary',
   hoverable = false,
   noBorder = false,
+  id,
 }: GlowCardProps) {
   return (
     <div
+      id={id}
       className={cn(
         'bg-[#111111] rounded-lg',
         !noBorder && 'border',

@@ -8,9 +8,9 @@ export function useAuditLog(tournamentId: string | undefined) {
     queryFn: async () => {
       if (!tournamentId) return [];
 
-      const { data, error } = await supabase
-        .from('tournament_audit_log')
-        .select('*')
+      const { data, error } = await (supabase
+        .from('tournament_audit_log' as any)
+        .select('*') as any)
         .eq('tournament_id', tournamentId)
         .order('created_at', { ascending: false })
         .limit(100);

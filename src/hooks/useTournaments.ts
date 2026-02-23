@@ -104,12 +104,15 @@ export function useCreateTournament() {
     mutationFn: async (tournament: Omit<Tournament, 'id' | 'host_id' | 'created_at' | 'updated_at'>) => {
       if (!user) throw new Error('Not authenticated');
 
+      const { prize_tiers, ...rest } = tournament;
+      const insertPayload: Record<string, any> = { ...rest, host_id: user.id };
+      if (prize_tiers !== undefined) {
+        insertPayload.prize_tiers = JSON.parse(JSON.stringify(prize_tiers));
+      }
+
       const { data, error } = await supabase
         .from('tournaments')
-        .insert({
-          ...tournament,
-          host_id: user.id,
-        })
+        .insert(insertPayload as any)
         .select()
         .single();
 
@@ -129,9 +132,14 @@ export function useUpdateTournament() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Tournament> & { id: string }) => {
+      const { prize_tiers, ...rest } = updates;
+      const updatePayload: Record<string, any> = { ...rest };
+      if (prize_tiers !== undefined) {
+        updatePayload.prize_tiers = JSON.parse(JSON.stringify(prize_tiers));
+      }
       const { data, error } = await supabase
         .from('tournaments')
-        .update(updates)
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
@@ -346,11 +354,11 @@ export function useRegisterForTournament() {
       logoUrl: string | null;
       members: { ign: string; mlbb_id: string; role: string; position: number; user_id: string | null }[];
     }) => {
-      const { data, error } = await supabase.rpc('rpc_register_for_tournament', {
+      const { data, error } = await supabase.rpc('rpc_register_for_tournament' as any, {
         p_tournament_id: tournamentId,
         p_squad_name: squadName,
         p_existing_squad_id: existingSquadId,
-        p_logo_url: logoUrl,
+        p_logo_url: logoUrl ?? '',
         p_members: JSON.stringify(members),
       });
 
@@ -634,33 +642,32 @@ export function useGenerateBracket() {
       format: TournamentFormat;
     }) => {
       // Get approved registrations with seeds
-      const { data: registrations, error: regError } = await supabase
+      const { data: registrations, error: regError } = await (supabase
         .from('tournament_registrations')
-        .select('tournament_squad_id, seed')
+        .select('tournament_squad_id, seed') as any)
         .eq('tournament_id', tournamentId)
         .eq('status', 'approved');
 
       if (regError) throw regError;
 
       // Sort by seed if seeds exist, otherwise random shuffle
-      const hasSeeds = registrations.some((r) => r.seed != null);
+      const hasSeeds = registrations.some((r: any) => r.seed != null);
       let orderedSquadIds: string[];
 
       if (hasSeeds) {
-        // Sort by seed (nulls last), then use standard bracket placement
-        const sorted = [...registrations].sort((a, b) => {
+        const sorted = [...registrations].sort((a: any, b: any) => {
           if (a.seed == null && b.seed == null) return 0;
           if (a.seed == null) return 1;
           if (b.seed == null) return -1;
           return a.seed - b.seed;
         });
-        orderedSquadIds = applyStandardSeeding(sorted.map((r) => r.tournament_squad_id));
+        orderedSquadIds = applyStandardSeeding(sorted.map((r: any) => r.tournament_squad_id));
       } else {
-        orderedSquadIds = [...registrations.map((r) => r.tournament_squad_id)].sort(() => Math.random() - 0.5);
+        orderedSquadIds = [...registrations.map((r: any) => r.tournament_squad_id)].sort(() => Math.random() - 0.5);
       }
 
       // Generate matches based on format
-      let matches: Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b'>[] = [];
+      let matches: Omit<TournamentMatch, 'id' | 'created_at' | 'updated_at' | 'squad_a' | 'squad_b' | 'squad_a_checked_in' | 'squad_b_checked_in' | 'is_forfeit' | 'dispute_reason' | 'dispute_screenshot' | 'dispute_raised_by' | 'dispute_resolved_by' | 'dispute_resolution_notes'>[] = [];
 
       if (format === 'single_elimination') {
         matches = generateSingleEliminationBracket(tournamentId, orderedSquadIds);
@@ -912,7 +919,7 @@ export function useUpdateRegistrationSeed() {
     }) => {
       const { error } = await supabase
         .from('tournament_registrations')
-        .update({ seed })
+        .update({ seed } as any)
         .eq('id', registrationId);
 
       if (error) throw error;
@@ -942,7 +949,7 @@ export function useAutoSeedByRegistrationOrder() {
       for (let i = 0; i < registrations.length; i++) {
         const { error } = await supabase
           .from('tournament_registrations')
-          .update({ seed: i + 1 })
+          .update({ seed: i + 1 } as any)
           .eq('id', registrations[i].id);
         if (error) throw error;
       }

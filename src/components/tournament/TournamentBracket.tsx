@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,7 +32,15 @@ import {
   Flag,
   AlertTriangle,
   Loader2,
+  MoreHorizontal,
 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import type { Tournament, TournamentMatch, TournamentSquad, MatchStatus } from '@/lib/tournament-types';
@@ -330,21 +337,17 @@ function MatchCard({
       )}
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant="outline" className="text-xs border-[#FF4500]/20">
-            Bo{match.best_of}
-          </Badge>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Bo{match.best_of}</span>
           <DraftSummaryBadge matchId={match.id} />
-          {match.is_forfeit && (
-            <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
-              <Flag className="w-2.5 h-2.5 mr-0.5" />
-              Forfeit
-            </Badge>
-          )}
         </div>
-        <span className={cn('flex items-center gap-1 text-xs', statusColors[match.status])}>
-          {statusIcons[match.status]}
-          {MATCH_STATUS_LABELS[match.status]}
+        <span className={cn('flex items-center gap-1 text-xs',
+          match.status === 'disputed' ? 'text-destructive' :
+          match.status === 'completed' ? (match.is_forfeit ? 'text-destructive' : 'text-green-400') :
+          statusColors[match.status]
+        )}>
+          {match.is_forfeit ? <Flag className="w-3 h-3" /> : statusIcons[match.status]}
+          {match.is_forfeit ? 'Forfeit' : MATCH_STATUS_LABELS[match.status]}
         </span>
       </div>
 
@@ -381,61 +384,69 @@ function MatchCard({
         />
       </div>
 
-      {/* Host: Forfeit button when one team didn't check in */}
-      {isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && (
-        <div className="mt-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
-          {!match.squad_a_checked_in && match.squad_b_checked_in && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs h-7 border-destructive/30 text-destructive"
-              onClick={(e) => handleForfeit(e, match.squad_b_id!)}
-              disabled={forfeitMatch.isPending}
-            >
-              <Flag className="w-3 h-3 mr-1" />
-              Forfeit {match.squad_a?.name || 'Squad A'}
-            </Button>
-          )}
-          {match.squad_a_checked_in && !match.squad_b_checked_in && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs h-7 border-destructive/30 text-destructive"
-              onClick={(e) => handleForfeit(e, match.squad_a_id!)}
-              disabled={forfeitMatch.isPending}
-            >
-              <Flag className="w-3 h-3 mr-1" />
-              Forfeit {match.squad_b?.name || 'Squad B'}
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Action buttons */}
+      {/* Actions row: dropdown + share */}
       <div className="mt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-1">
-          {canDispute && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs h-7 border-yellow-500/30 text-yellow-500"
-              onClick={(e) => { e.stopPropagation(); onDispute(); }}
-            >
-              <AlertTriangle className="w-3 h-3 mr-1" />
-              Dispute
-            </Button>
-          )}
-          {isHost && match.status === 'disputed' && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs h-7 border-primary/30 text-primary"
-              onClick={(e) => { e.stopPropagation(); onResolve(); }}
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Resolve
-            </Button>
-          )}
+          {/* Dropdown for secondary actions */}
+          {(() => {
+            const showForfeitA = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.squad_a_checked_in && match.squad_b_checked_in;
+            const showForfeitB = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && match.squad_a_checked_in && !match.squad_b_checked_in;
+            const showDispute = canDispute;
+            const showResolve = isHost && match.status === 'disputed';
+            const hasActions = showForfeitA || showForfeitB || showDispute || showResolve;
+
+            if (!hasActions) return null;
+
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[160px]">
+                  {showForfeitA && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={(e) => handleForfeit(e, match.squad_b_id!)}
+                      disabled={forfeitMatch.isPending}
+                    >
+                      <Flag className="w-3.5 h-3.5 mr-2" />
+                      Forfeit {match.squad_a?.name || 'Squad A'}
+                    </DropdownMenuItem>
+                  )}
+                  {showForfeitB && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={(e) => handleForfeit(e, match.squad_a_id!)}
+                      disabled={forfeitMatch.isPending}
+                    >
+                      <Flag className="w-3.5 h-3.5 mr-2" />
+                      Forfeit {match.squad_b?.name || 'Squad B'}
+                    </DropdownMenuItem>
+                  )}
+                  {showDispute && (
+                    <DropdownMenuItem
+                      className="text-yellow-500 focus:text-yellow-500"
+                      onClick={(e) => { e.stopPropagation(); onDispute(); }}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 mr-2" />
+                      Dispute Result
+                    </DropdownMenuItem>
+                  )}
+                  {showResolve && (
+                    <DropdownMenuItem
+                      className="text-primary focus:text-primary"
+                      onClick={(e) => { e.stopPropagation(); onResolve(); }}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 mr-2" />
+                      Resolve Dispute
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          })()}
         </div>
         {match.status === 'completed' && (
           <ShareCardGenerator match={match} tournamentName={tournamentName} />
@@ -487,6 +498,14 @@ function MatchTeamRow({
         {!showCheckIn && checkedIn !== undefined && checkedIn && squad && (
           <Check className="w-3 h-3 text-green-500 shrink-0" />
         )}
+        <Avatar className={cn('shrink-0', large ? 'h-7 w-7' : 'h-5 w-5')}>
+          {squad?.logo_url ? (
+            <AvatarImage src={squad.logo_url} alt={squad.name} />
+          ) : null}
+          <AvatarFallback className="text-[10px] bg-[#1a1a1a] text-muted-foreground">
+            {squad?.name?.charAt(0)?.toUpperCase() || '?'}
+          </AvatarFallback>
+        </Avatar>
         <span className={cn('font-medium truncate', large ? 'text-base' : 'text-sm')}>
           {squad?.name || 'TBD'}
         </span>

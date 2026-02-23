@@ -1,0 +1,343 @@
+import { useState } from 'react';
+import { Layout } from '@/components/Layout';
+import { GlowCard } from '@/components/tron/GlowCard';
+import { cn } from '@/lib/utils';
+import { useSEO } from '@/hooks/useSEO';
+import {
+  BookOpen,
+  Trophy,
+  Users,
+  Shield,
+  UserPlus,
+  ClipboardList,
+  Shuffle,
+  Play,
+  Flag,
+  AlertTriangle,
+  CheckCircle,
+  ChevronRight,
+  Search,
+} from 'lucide-react';
+
+const SECTIONS = [
+  { id: 'getting-started', label: 'Getting Started', icon: BookOpen },
+  { id: 'for-players', label: 'For Players', icon: Users },
+  { id: 'for-hosts', label: 'For Hosts', icon: Trophy },
+  { id: 'tournament-lifecycle', label: 'Tournament Lifecycle', icon: ClipboardList },
+  { id: 'brackets-scoring', label: 'Brackets & Scoring', icon: Shuffle },
+  { id: 'disputes-forfeits', label: 'Disputes & Forfeits', icon: AlertTriangle },
+  { id: 'faq', label: 'FAQ', icon: Search },
+] as const;
+
+export default function DocsPage() {
+  useSEO({
+    title: 'Documentation',
+    description: 'Learn how to use ShowYours — guides for players and tournament hosts.',
+    path: '/docs',
+  });
+
+  const [activeSection, setActiveSection] = useState<string>('getting-started');
+
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-display font-bold text-foreground tracking-wide mb-2">Documentation</h1>
+          <p className="text-muted-foreground">Everything you need to know about using ShowYours.</p>
+        </div>
+
+        <div className="flex gap-8">
+          {/* Sidebar — desktop only */}
+          <nav className="hidden lg:block w-48 shrink-0 sticky top-20 self-start">
+            <ul className="space-y-1">
+              {SECTIONS.map((s) => (
+                <li key={s.id}>
+                  <button
+                    onClick={() => scrollToSection(s.id)}
+                    className={cn(
+                      'flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
+                      activeSection === s.id
+                        ? 'bg-[#FF4500]/10 text-[#FF4500] font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    <s.icon className="w-3.5 h-3.5 shrink-0" />
+                    {s.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-10">
+            {/* Getting Started */}
+            <DocSection id="getting-started" title="Getting Started" icon={BookOpen}>
+              <p>
+                ShowYours is a competitive Mobile Legends: Bang Bang (MLBB) community platform.
+                You can create a player profile, form or join squads, and compete in organized tournaments.
+              </p>
+              <h4>Quick Start</h4>
+              <ol>
+                <li><strong>Create an account</strong> — Sign up with your email on the Auth page.</li>
+                <li><strong>Set up your profile</strong> — Add your IGN (In-Game Name), MLBB ID, preferred role, and hero pool.</li>
+                <li><strong>Join or create a squad</strong> — Browse existing squads or create your own (5 members + substitutes).</li>
+                <li><strong>Register for tournaments</strong> — Find open tournaments and register your squad.</li>
+              </ol>
+            </DocSection>
+
+            {/* For Players */}
+            <DocSection id="for-players" title="For Players" icon={Users}>
+              <h4>Player Profile</h4>
+              <p>
+                Your profile showcases your IGN, MLBB ID, main role (EXP, Jungle, Mid, Gold, Roam), and hero pool.
+                Other players can view your profile to find teammates.
+              </p>
+
+              <h4>Squads</h4>
+              <p>
+                Squads are teams of 5-7 players. The squad leader manages the roster, invites members, and registers for tournaments.
+                Each member has a position (1-5) and role assignment.
+              </p>
+              <ul>
+                <li>You can be in multiple squads simultaneously.</li>
+                <li>Squad leaders can invite players directly or share invite links.</li>
+                <li>Members can be added manually by the leader even if they don't have a ShowYours account.</li>
+              </ul>
+
+              <h4>Tournament Registration</h4>
+              <p>
+                To compete in a tournament, your squad leader registers through the tournament page.
+                The host reviews and approves registrations. Once approved, your squad appears in the bracket.
+              </p>
+              <ul>
+                <li>The same MLBB ID cannot be registered in multiple squads within the same tournament.</li>
+                <li>Roster changes (player substitutions) require host approval and are limited to 2 per squad per tournament.</li>
+              </ul>
+
+              <h4>During a Tournament</h4>
+              <ul>
+                <li><strong>Check-in</strong> — The host may require check-in before matches. If your squad doesn't check in, you may be forfeited.</li>
+                <li><strong>Disputes</strong> — If you believe a match result is incorrect, the squad leader can raise a dispute from the match card. Provide a clear reason — the host will review and resolve it.</li>
+                <li><strong>Share results</strong> — After a match completes, use the share button to generate a result card image with team logos and scores.</li>
+              </ul>
+            </DocSection>
+
+            {/* For Hosts */}
+            <DocSection id="for-hosts" title="For Tournament Hosts" icon={Trophy}>
+              <h4>Creating a Tournament</h4>
+              <p>
+                Go to <strong>Tournaments → Create Tournament</strong>. Fill in:
+              </p>
+              <ul>
+                <li><strong>Name & description</strong> — Give your tournament a clear title and rules description.</li>
+                <li><strong>Game & mode</strong> — Select the game type and mode.</li>
+                <li><strong>Date & time</strong> — Set the start date/time.</li>
+                <li><strong>Max squads</strong> — Set the maximum number of teams (e.g., 8, 16, 32).</li>
+                <li><strong>Prize pool & tiers</strong> — Define the total prize and breakdown (1st place, 2nd place, etc.).</li>
+              </ul>
+
+              <h4>Managing Registrations</h4>
+              <p>
+                When squads register, their status is <strong>pending</strong> by default.
+                Review each registration and approve or reject it. You can view the squad's roster before approving.
+              </p>
+
+              <h4>Host Controls</h4>
+              <p>
+                The Host Controls panel shows a <strong>step progress indicator</strong> guiding you through each stage.
+                Only the actions relevant to the current stage are shown:
+              </p>
+              <ol>
+                <li><strong>Registration Open</strong> — Accept registrations. Close registration when ready.</li>
+                <li><strong>Registration Closed</strong> — Configure seeding (auto or manual), choose format (Single/Double Elimination, Round Robin), then generate the bracket.</li>
+                <li><strong>Bracket Generated</strong> — Review the bracket. Start the tournament when teams are ready.</li>
+                <li><strong>Ongoing</strong> — Enter match scores, handle check-ins, manage forfeits and disputes. Mark completed when all matches are done.</li>
+                <li><strong>Completed</strong> — View final standings, mark prize distribution.</li>
+              </ol>
+
+              <h4>Seeding</h4>
+              <p>
+                Before generating the bracket, you can assign seed numbers to approved squads.
+                Seeds determine bracket placement (seed 1 vs highest seed, etc.).
+                Use "Auto-seed" to assign seeds by registration order, or set them manually.
+                Leave seeds empty for random placement.
+              </p>
+
+              <h4>Entering Scores</h4>
+              <p>
+                Click any match card in the bracket to open the score sheet.
+                Enter scores for each team based on the Best-of format:
+              </p>
+              <ul>
+                <li><strong>Bo1</strong> — Winner: 1, Loser: 0</li>
+                <li><strong>Bo3</strong> — Winner: 2, Loser: 0 or 1</li>
+                <li><strong>Bo5</strong> — Winner: 3, Loser: 0, 1, or 2</li>
+              </ul>
+              <p>The system validates scores automatically and advances the winner in the bracket.</p>
+
+              <h4>Roster Changes</h4>
+              <p>
+                Squad leaders can request player substitutions during a tournament.
+                Each squad is limited to <strong>2 approved roster changes</strong>.
+                Review them from the Registrations tab — approve or reject each request.
+              </p>
+
+              <h4>Activity Log</h4>
+              <p>
+                The Activity tab shows a timeline of all tournament events — registration status changes, match results, disputes, and status transitions.
+                This helps you audit what happened and when.
+              </p>
+            </DocSection>
+
+            {/* Tournament Lifecycle */}
+            <DocSection id="tournament-lifecycle" title="Tournament Lifecycle" icon={ClipboardList}>
+              <p>Every tournament follows a strict status flow:</p>
+              <div className="flex flex-wrap items-center gap-2 p-4 bg-muted/30 rounded-lg text-sm">
+                <StatusStep label="Registration Open" color="text-blue-400" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <StatusStep label="Registration Closed" color="text-yellow-400" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <StatusStep label="Bracket Generated" color="text-orange-400" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <StatusStep label="Ongoing" color="text-[#FF4500]" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <StatusStep label="Completed" color="text-green-400" />
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                A tournament can be <strong>cancelled</strong> at any stage (except after completion).
+                Cancellation is irreversible and notifies all registered squads.
+              </p>
+
+              <h4>Transition Rules</h4>
+              <ul>
+                <li>You cannot skip stages (e.g., jump from Registration Open to Ongoing).</li>
+                <li>Bracket generation requires at least 2 approved squads.</li>
+                <li>Completing a tournament requires all matches to be finished.</li>
+                <li>Completed and cancelled tournaments cannot be reactivated.</li>
+              </ul>
+            </DocSection>
+
+            {/* Brackets & Scoring */}
+            <DocSection id="brackets-scoring" title="Brackets & Scoring" icon={Shuffle}>
+              <h4>Tournament Formats</h4>
+              <ul>
+                <li><strong>Single Elimination</strong> — Lose once, you're out. Standard bracket tree.</li>
+                <li><strong>Double Elimination</strong> — Teams get a second chance through the losers bracket. Final between winners and losers bracket champions.</li>
+                <li><strong>Round Robin</strong> — Every team plays every other team. Rankings by wins.</li>
+              </ul>
+
+              <h4>Best-of Format</h4>
+              <p>
+                Each match can be Bo1, Bo3, or Bo5. Scores must be valid for the format — the system enforces this automatically.
+              </p>
+
+              <h4>Winner Advancement</h4>
+              <p>
+                When a match is completed, the winner automatically advances to the next round in the bracket.
+                In double elimination, the loser moves to the losers bracket instead of being eliminated.
+              </p>
+            </DocSection>
+
+            {/* Disputes & Forfeits */}
+            <DocSection id="disputes-forfeits" title="Disputes & Forfeits" icon={AlertTriangle}>
+              <h4>Raising a Dispute</h4>
+              <p>
+                Squad leaders can dispute a completed match result by clicking the actions menu (three dots) on the match card.
+                Provide a clear reason explaining the issue. The match status changes to "Disputed" until the host resolves it.
+              </p>
+
+              <h4>Resolving a Dispute</h4>
+              <p>
+                As a host, click "Resolve Dispute" from the match card dropdown. Review the dispute reason, optionally update the scores, and enter resolution notes.
+                The match returns to "Completed" status with the corrected result.
+              </p>
+
+              <h4>Forfeits</h4>
+              <p>
+                If a squad fails to check in or cannot play, the host can forfeit them from the match card dropdown.
+                The opposing team gets a walkover win with full points (e.g., 2-0 in Bo3).
+              </p>
+
+              <h4>Squad Withdrawal</h4>
+              <p>
+                If a squad needs to withdraw entirely, the host can do so from Host Controls.
+                All remaining matches for that squad are automatically forfeited, and opponents receive walkover wins.
+              </p>
+            </DocSection>
+
+            {/* FAQ */}
+            <DocSection id="faq" title="Frequently Asked Questions" icon={Search}>
+              <FaqItem q="Can I be in multiple squads?">
+                Yes, you can be a member of multiple squads. However, within a single tournament,
+                the same MLBB ID cannot be registered in more than one squad.
+              </FaqItem>
+              <FaqItem q="How many roster changes are allowed?">
+                Each squad can have up to 2 approved roster changes per tournament. The host must approve each change.
+              </FaqItem>
+              <FaqItem q="What happens if my squad doesn't check in?">
+                The host may forfeit your squad for that match. The opposing team gets a walkover win.
+              </FaqItem>
+              <FaqItem q="Can I edit a match result after it's entered?">
+                Yes, the host can update scores through the score edit sheet on any match. If a dispute is raised, the host can also adjust scores during resolution.
+              </FaqItem>
+              <FaqItem q="Who can see the activity log?">
+                The activity (audit) log is visible only to the tournament host and platform admins. It shows all significant events for accountability.
+              </FaqItem>
+              <FaqItem q="How are prizes managed?">
+                Hosts define prize tiers during tournament creation (1st, 2nd, 3rd, MVP, etc.). After the tournament completes, the host can mark each tier as distributed.
+              </FaqItem>
+              <FaqItem q="Can a cancelled tournament be resumed?">
+                No. Cancellation is permanent. If needed, create a new tournament.
+              </FaqItem>
+            </DocSection>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}
+
+function DocSection({
+  id,
+  title,
+  icon: Icon,
+  children,
+}: {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <GlowCard id={id} className="p-6 scroll-mt-20">
+      <h2 className="text-xl font-display font-bold text-foreground flex items-center gap-2 mb-4 tracking-wide">
+        <Icon className="w-5 h-5 text-[#FF4500]" />
+        {title}
+      </h2>
+      <div className="prose-docs space-y-3 text-sm leading-relaxed text-muted-foreground [&_h4]:text-foreground [&_h4]:font-semibold [&_h4]:text-sm [&_h4]:mt-5 [&_h4]:mb-2 [&_strong]:text-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_li]:text-muted-foreground">
+        {children}
+      </div>
+    </GlowCard>
+  );
+}
+
+function StatusStep({ label, color }: { label: string; color: string }) {
+  return (
+    <span className={cn('font-medium whitespace-nowrap', color)}>{label}</span>
+  );
+}
+
+function FaqItem({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <div className="p-3 bg-muted/30 rounded-lg">
+      <p className="text-foreground font-medium text-sm mb-1">{q}</p>
+      <p className="text-muted-foreground text-sm">{children}</p>
+    </div>
+  );
+}

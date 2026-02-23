@@ -24,6 +24,7 @@ const TournamentsPage = lazy(() => import("./pages/TournamentsPage"));
 const CreateTournamentPage = lazy(() => import("./pages/CreateTournamentPage"));
 const TournamentDetailPage = lazy(() => import("./pages/TournamentDetailPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+const DocsPage = lazy(() => import("./pages/DocsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="/squad/:id" element={<SquadDetailPage />} />
                   <Route path="/tournaments" element={<TournamentsPage />} />
                   <Route path="/tournament/:id" element={<TournamentDetailPage />} />
+                  <Route path="/docs" element={<DocsPage />} />
 
                   {/* Protected routes — require authentication */}
                   <Route path="/create-profile" element={<ProtectedRoute><CreateProfilePage /></ProtectedRoute>} />

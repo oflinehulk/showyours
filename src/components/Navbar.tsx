@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
-import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvitationBadge } from '@/components/InvitationInbox';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -15,6 +15,7 @@ const navLinks = [
   { to: '/players', label: 'Find Players', icon: Users },
   { to: '/squads', label: 'Find Squads', icon: Search },
   { to: '/tournaments', label: 'Tournaments', icon: Trophy },
+  { to: '/docs', label: 'Docs', icon: BookOpen },
 ];
 
 export function Navbar() {

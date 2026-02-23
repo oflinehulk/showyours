@@ -830,19 +830,26 @@ export function useUpdateRosterChangeStatus() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
-        .from('roster_changes')
-        .update({
-          status,
-          approved_by: user.id,
-          approved_at: new Date().toISOString(),
-        })
-        .eq('id', changeId)
-        .select()
-        .single();
+      if (status === 'approved') {
+        // Use atomic RPC which enforces host auth + max 2 changes limit
+        const { error } = await supabase.rpc('rpc_approve_roster_change', {
+          p_change_id: changeId,
+        });
+        if (error) throw error;
+      } else {
+        // Reject directly
+        const { error } = await supabase
+          .from('roster_changes')
+          .update({
+            status,
+            approved_by: user.id,
+            approved_at: new Date().toISOString(),
+          })
+          .eq('id', changeId);
+        if (error) throw error;
+      }
 
-      if (error) throw error;
-      return { data, tournamentId };
+      return { tournamentId };
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-roster-changes', tournamentId] });
@@ -860,28 +867,7 @@ function applyStandardSeeding(seededIds: string[]): string[] {
   const n = seededIds.length;
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
 
-  // Build standard seed positions for a bracket of this size
-  // Position 0 plays position bracketSize-1, etc.
-  const positions: number[] = new Array(bracketSize).fill(-1);
-  positions[0] = 0; // Seed 1 goes to position 0
-
-  // Recursively fill bracket positions
-  function fillBracket(slots: number[], round: number): number[] {
-    if (slots.length === 1) return slots;
-    const nextRound: number[] = [];
-    for (let i = 0; i < slots.length; i += 2) {
-      nextRound.push(slots[i]);
-    }
-    const filled = fillBracket(nextRound, round + 1);
-    const result: number[] = [];
-    for (const seed of filled) {
-      result.push(seed);
-      result.push(round - seed);
-    }
-    return result;
-  }
-
-  // Generate standard seeding order
+  // Generate standard seeding order and map to squad IDs
   const seedOrder = generateSeedOrder(bracketSize);
   const result: string[] = [];
   for (const seedIndex of seedOrder) {
@@ -1010,12 +996,22 @@ export function useForfeitMatch() {
     }) => {
       const winsNeeded = Math.ceil(bestOf / 2);
 
+      // Fetch the match to know which side is the winner
+      const { data: match, error: fetchErr } = await supabase
+        .from('tournament_matches')
+        .select('squad_a_id, squad_b_id')
+        .eq('id', matchId)
+        .single();
+      if (fetchErr) throw fetchErr;
+
       const { data, error } = await supabase
         .from('tournament_matches')
         .update({
           winner_id: winnerId,
           status: 'completed' as MatchStatus,
           is_forfeit: true,
+          squad_a_score: winnerId === match.squad_a_id ? winsNeeded : 0,
+          squad_b_score: winnerId === match.squad_b_id ? winsNeeded : 0,
           completed_at: new Date().toISOString(),
         })
         .eq('id', matchId)
@@ -1166,12 +1162,15 @@ export function useWithdrawSquad() {
         const opponentId = match.squad_a_id === squadId ? match.squad_b_id : match.squad_a_id;
         if (!opponentId) continue; // Skip if no opponent (TBD match)
 
+        const winsNeeded = Math.ceil((match.best_of || 1) / 2);
         const { data: updated, error: forfeitError } = await supabase
           .from('tournament_matches')
           .update({
             winner_id: opponentId,
             status: 'completed' as MatchStatus,
             is_forfeit: true,
+            squad_a_score: opponentId === match.squad_a_id ? winsNeeded : 0,
+            squad_b_score: opponentId === match.squad_b_id ? winsNeeded : 0,
             completed_at: new Date().toISOString(),
           })
           .eq('id', match.id)

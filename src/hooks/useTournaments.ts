@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   generateSingleEliminationBracket,
@@ -118,7 +119,7 @@ export function useCreateTournament() {
 
       const { data, error } = await supabase
         .from('tournaments')
-        .insert(insertPayload as any)
+        .insert(insertPayload as any) // Record<string,any> for dynamic prize_tiers JSON
         .select()
         .single();
 
@@ -360,7 +361,7 @@ export function useRegisterForTournament() {
       logoUrl: string | null;
       members: { ign: string; mlbb_id: string; role: string; position: number; user_id: string | null }[];
     }) => {
-      const { data, error } = await supabase.rpc('rpc_register_for_tournament' as any, {
+      const { data, error } = await supabase.rpc('rpc_register_for_tournament', {
         p_tournament_id: tournamentId,
         p_squad_name: squadName,
         p_existing_squad_id: existingSquadId,
@@ -537,42 +538,170 @@ export function useUpdateMatchResult() {
   });
 }
 
-// ========== Winner Advancement ==========
+// ========== Winner & Loser Advancement ==========
+
+// Helper: find a match by criteria
+async function findNextMatch(
+  tournamentId: string,
+  round: number,
+  matchNumber: number,
+  bracketTypes: string[],
+  stageId?: string | null
+) {
+  let query = supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('round', round)
+    .eq('match_number', matchNumber)
+    .in('bracket_type', bracketTypes);
+
+  if (stageId) {
+    query = query.eq('stage_id', stageId);
+  }
+
+  const { data } = await query;
+  return data && data.length > 0 ? data[0] : null;
+}
+
+// Helper: find the Grand Finals match
+async function findGrandFinals(
+  tournamentId: string,
+  stageId?: string | null
+) {
+  let query = supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'finals')
+    .eq('match_number', 1);
+
+  if (stageId) {
+    query = query.eq('stage_id', stageId);
+  }
+
+  const { data } = await query;
+  return data && data.length > 0 ? data[0] : null;
+}
 
 // Advance the winner of a completed match to the next round
 async function advanceWinnerToNextRound(
   tournamentId: string,
   completedMatch: any
 ) {
-  // Round robin doesn't have advancement
-  if (completedMatch.bracket_type === 'winners' || completedMatch.bracket_type === 'losers') {
-    // Find the next round match this winner feeds into
-    const nextRound = completedMatch.round + 1;
-    const isOddMatch = completedMatch.match_number % 2 === 1;
-    const nextMatchNumber = Math.ceil(completedMatch.match_number / 2);
-    const slot = isOddMatch ? 'squad_a_id' : 'squad_b_id';
+  const { bracket_type, round, match_number, winner_id, stage_id } = completedMatch;
 
-    // Build query — scope to stage when present
-    let query = supabase
-      .from('tournament_matches')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .eq('round', nextRound)
-      .eq('match_number', nextMatchNumber)
-      .in('bracket_type', completedMatch.bracket_type === 'winners' ? ['winners', 'finals'] : ['losers', 'finals']);
+  if (bracket_type === 'winners') {
+    // Standard SE advancement within winners bracket, or to Grand Finals
+    const nextRound = round + 1;
+    const nextMatchNumber = Math.ceil(match_number / 2);
+    const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
 
-    if (completedMatch.stage_id) {
-      query = query.eq('stage_id', completedMatch.stage_id);
-    }
+    const nextMatch = await findNextMatch(
+      tournamentId, nextRound, nextMatchNumber, ['winners', 'finals'], stage_id
+    );
 
-    const { data: nextMatches } = await query;
-
-    if (nextMatches && nextMatches.length > 0) {
-      const nextMatch = nextMatches[0];
+    if (nextMatch) {
       await supabase
         .from('tournament_matches')
-        .update({ [slot]: completedMatch.winner_id })
+        .update({ [slot]: winner_id })
         .eq('id', nextMatch.id);
+    }
+
+    // Also advance the loser to losers bracket (double elimination)
+    await advanceLoserToLosersBracket(tournamentId, completedMatch);
+  }
+
+  if (bracket_type === 'losers') {
+    const isOddRound = round % 2 === 1;
+
+    if (isOddRound) {
+      // Odd LB round → Even LB round: 1:1 mapping, winner fills slot A
+      const nextMatch = await findNextMatch(
+        tournamentId, round + 1, match_number, ['losers'], stage_id
+      );
+
+      if (nextMatch) {
+        await supabase
+          .from('tournament_matches')
+          .update({ squad_a_id: winner_id })
+          .eq('id', nextMatch.id);
+      }
+    } else {
+      // Even LB round → Odd LB round: 2:1 SE pairing
+      const nextRound = round + 1;
+      const nextMatchNumber = Math.ceil(match_number / 2);
+      const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+
+      // Try next losers round
+      const nextMatch = await findNextMatch(
+        tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id
+      );
+
+      if (nextMatch) {
+        await supabase
+          .from('tournament_matches')
+          .update({ [slot]: winner_id })
+          .eq('id', nextMatch.id);
+      } else {
+        // No next LB round → this is the LB Final, advance to Grand Finals slot B
+        const gfMatch = await findGrandFinals(tournamentId, stage_id);
+        if (gfMatch) {
+          await supabase
+            .from('tournament_matches')
+            .update({ squad_b_id: winner_id })
+            .eq('id', gfMatch.id);
+        }
+      }
+    }
+  }
+}
+
+// Advance the loser of a winners bracket match to the losers bracket
+async function advanceLoserToLosersBracket(
+  tournamentId: string,
+  completedMatch: any
+) {
+  // Only process winners bracket matches
+  if (completedMatch.bracket_type !== 'winners') return;
+
+  const loserId = completedMatch.winner_id === completedMatch.squad_a_id
+    ? completedMatch.squad_b_id
+    : completedMatch.squad_a_id;
+
+  // No real loser (bye match)
+  if (!loserId) return;
+
+  const { round, match_number, stage_id } = completedMatch;
+
+  if (round === 1) {
+    // WB R1 losers → LB R1: paired like SE (2:1 mapping)
+    const lbMatchNumber = Math.ceil(match_number / 2);
+    const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+
+    const lbMatch = await findNextMatch(
+      tournamentId, 1, lbMatchNumber, ['losers'], stage_id
+    );
+
+    if (lbMatch) {
+      await supabase
+        .from('tournament_matches')
+        .update({ [slot]: loserId })
+        .eq('id', lbMatch.id);
+    }
+  } else {
+    // WB R(w) losers → LB R(2*(w-1)): same match_number, slot B
+    const lbRound = 2 * (round - 1);
+
+    const lbMatch = await findNextMatch(
+      tournamentId, lbRound, match_number, ['losers'], stage_id
+    );
+
+    if (lbMatch) {
+      await supabase
+        .from('tournament_matches')
+        .update({ squad_b_id: loserId })
+        .eq('id', lbMatch.id);
     }
   }
 }
@@ -663,9 +792,9 @@ export function useGenerateBracket() {
       format: TournamentFormat;
     }) => {
       // Get approved registrations with seeds
-      const { data: registrations, error: regError } = await (supabase
+      const { data: registrations, error: regError } = await supabase
         .from('tournament_registrations')
-        .select('tournament_squad_id, seed') as any)
+        .select('tournament_squad_id, seed')
         .eq('tournament_id', tournamentId)
         .eq('status', 'approved');
 
@@ -926,7 +1055,7 @@ export function useUpdateRegistrationSeed() {
     }) => {
       const { error } = await supabase
         .from('tournament_registrations')
-        .update({ seed } as any)
+        .update({ seed })
         .eq('id', registrationId);
 
       if (error) throw error;
@@ -956,7 +1085,7 @@ export function useAutoSeedByRegistrationOrder() {
       for (let i = 0; i < registrations.length; i++) {
         const { error } = await supabase
           .from('tournament_registrations')
-          .update({ seed: i + 1 } as any)
+          .update({ seed: i + 1 })
           .eq('id', registrations[i].id);
         if (error) throw error;
       }
@@ -1222,9 +1351,9 @@ export function useTournamentStages(tournamentId: string | undefined) {
     queryKey: ['tournament-stages', tournamentId],
     queryFn: async () => {
       if (!tournamentId) return [];
-      const { data, error } = await (supabase
-        .from('tournament_stages' as any)
-        .select('*') as any)
+      const { data, error } = await supabase
+        .from('tournament_stages')
+        .select('*')
         .eq('tournament_id', tournamentId)
         .order('stage_number', { ascending: true });
       if (error) throw error;
@@ -1240,9 +1369,9 @@ export function useTournamentGroups(stageId: string | undefined) {
     queryKey: ['tournament-groups', stageId],
     queryFn: async () => {
       if (!stageId) return [];
-      const { data, error } = await (supabase
-        .from('tournament_groups' as any)
-        .select('*') as any)
+      const { data, error } = await supabase
+        .from('tournament_groups')
+        .select('*')
         .eq('stage_id', stageId)
         .order('label', { ascending: true });
       if (error) throw error;
@@ -1258,15 +1387,15 @@ export function useTournamentGroupTeams(stageId: string | undefined) {
     queryKey: ['tournament-group-teams', stageId],
     queryFn: async () => {
       if (!stageId) return [];
-      const { data: groupsData } = await (supabase
-        .from('tournament_groups' as any)
-        .select('id') as any)
+      const { data: groupsData } = await supabase
+        .from('tournament_groups')
+        .select('id')
         .eq('stage_id', stageId);
-      const groupIds = (groupsData || []).map((g: any) => g.id);
+      const groupIds = (groupsData || []).map((g) => g.id);
       if (groupIds.length === 0) return [];
-      const { data, error } = await (supabase
-        .from('tournament_group_teams' as any)
-        .select(`*, tournament_squads:tournament_squad_id(*)`) as any)
+      const { data, error } = await supabase
+        .from('tournament_group_teams')
+        .select(`*, tournament_squads:tournament_squad_id(*)`)
         .in('group_id', groupIds);
       if (error) throw error;
       return (data || []) as (TournamentGroupTeam & { tournament_squads: TournamentSquad })[];
@@ -1323,9 +1452,9 @@ export function useCreateStages() {
         status: 'pending' as StageStatus,
       }));
 
-      const { data, error } = await (supabase
-        .from('tournament_stages' as any)
-        .insert(inserts as any) as any)
+      const { data, error } = await supabase
+        .from('tournament_stages')
+        .insert(inserts)
         .select();
 
       if (error) throw error;
@@ -1347,9 +1476,9 @@ export function useUpdateStage() {
       tournamentId,
       ...updates
     }: Partial<TournamentStage> & { stageId: string; tournamentId: string }) => {
-      const { error } = await (supabase
-        .from('tournament_stages' as any)
-        .update(updates as any) as any)
+      const { error } = await supabase
+        .from('tournament_stages')
+        .update(updates as any)
         .eq('id', stageId);
       if (error) throw error;
       return { tournamentId, stageId };
@@ -1379,31 +1508,31 @@ export function useAssignTeamsToGroups() {
       mode: 'balanced' | 'random';
     }) => {
       // Delete existing groups for this stage
-      const { data: existingGroups } = await (supabase
-        .from('tournament_groups' as any)
-        .select('id') as any)
+      const { data: existingGroups } = await supabase
+        .from('tournament_groups')
+        .select('id')
         .eq('stage_id', stageId);
 
       if (existingGroups && existingGroups.length > 0) {
-        await (supabase
-          .from('tournament_group_teams' as any)
-          .delete() as any)
-          .in('group_id', existingGroups.map((g: any) => g.id));
-        await (supabase
-          .from('tournament_groups' as any)
-          .delete() as any)
+        await supabase
+          .from('tournament_group_teams')
+          .delete()
+          .in('group_id', existingGroups.map((g) => g.id));
+        await supabase
+          .from('tournament_groups')
+          .delete()
           .eq('stage_id', stageId);
       }
 
       // Create groups (A, B, C, ...)
       const labels = Array.from({ length: groupCount }, (_, i) => String.fromCharCode(65 + i));
-      const { data: groups, error: groupError } = await (supabase
-        .from('tournament_groups' as any)
+      const { data: groups, error: groupError } = await supabase
+        .from('tournament_groups')
         .insert(labels.map(label => ({
           stage_id: stageId,
           tournament_id: tournamentId,
           label,
-        })) as any) as any)
+        })))
         .select();
 
       if (groupError) throw groupError;
@@ -1443,9 +1572,9 @@ export function useAssignTeamsToGroups() {
         }
       }
 
-      const { error: teamError } = await (supabase
-        .from('tournament_group_teams' as any)
-        .insert(groupTeamInserts as any) as any);
+      const { error: teamError } = await supabase
+        .from('tournament_group_teams')
+        .insert(groupTeamInserts);
 
       if (teamError) throw teamError;
 
@@ -1482,9 +1611,9 @@ export function useGenerateStageBracket() {
 
       if (stage.format === 'round_robin' && stage.group_count > 0) {
         // Group stage — generate round robin per group
-        const { data: groups, error: gErr } = await (supabase
-          .from('tournament_groups' as any)
-          .select('id, label') as any)
+        const { data: groups, error: gErr } = await supabase
+          .from('tournament_groups')
+          .select('id, label')
           .eq('stage_id', stageId)
           .order('label', { ascending: true });
 
@@ -1495,14 +1624,14 @@ export function useGenerateStageBracket() {
 
         for (const group of groups) {
           // Get team IDs in this group
-          const { data: groupTeams, error: gtErr } = await (supabase
-            .from('tournament_group_teams' as any)
-            .select('tournament_squad_id') as any)
+          const { data: groupTeams, error: gtErr } = await supabase
+            .from('tournament_group_teams')
+            .select('tournament_squad_id')
             .eq('group_id', group.id);
 
           if (gtErr) throw gtErr;
 
-          const teamIds = (groupTeams || []).map((gt: any) => gt.tournament_squad_id);
+          const teamIds = (groupTeams || []).map((gt) => gt.tournament_squad_id);
           if (teamIds.length < 2) continue;
 
           const groupOpts = { ...opts, groupId: group.id };
@@ -1542,9 +1671,9 @@ export function useGenerateStageBracket() {
       }
 
       // Update stage status to ongoing
-      await (supabase
-        .from('tournament_stages' as any)
-        .update({ status: 'ongoing' } as any) as any)
+      await supabase
+        .from('tournament_stages')
+        .update({ status: 'ongoing' })
         .eq('id', stageId);
 
       return { tournamentId, stageId };
@@ -1569,9 +1698,9 @@ export function useCompleteStage() {
       stageId: string;
       tournamentId: string;
     }) => {
-      const { error } = await (supabase
-        .from('tournament_stages' as any)
-        .update({ status: 'completed' } as any) as any)
+      const { error } = await supabase
+        .from('tournament_stages')
+        .update({ status: 'completed' })
         .eq('id', stageId);
       if (error) throw error;
       return { tournamentId, stageId };
@@ -1730,7 +1859,7 @@ export function useSaveGroupDraw() {
           tournament_id: tournamentId,
           stage_id: stageId,
           draw_seed: drawSeed,
-          draw_sequence: drawSequence as any,
+          draw_sequence: drawSequence as unknown as Json,
           confirmed: true,
           confirmed_at: new Date().toISOString(),
         });

@@ -127,21 +127,26 @@ export function generateDoubleEliminationBracket(
     if (matchesInRound < 1) break;
   }
 
-  // Losers bracket
-  let loserMatchNumber = 1;
-  for (let round = 1; round < totalRounds; round++) {
-    const loserMatchesInRound = Math.max(Math.pow(2, totalRounds - round - 1), 1);
-    for (let i = 0; i < loserMatchesInRound; i++) {
+  // Losers bracket: 2*(totalRounds-1) rounds
+  // Odd rounds = "pure LB" (only LB survivors play each other)
+  // Even rounds = "mixed" (LB survivors vs WB dropdowns)
+  const totalLBRounds = 2 * (totalRounds - 1);
+
+  for (let lbRound = 1; lbRound <= totalLBRounds; lbRound++) {
+    // Pair index: rounds (1,2) share count, (3,4) share count, etc.
+    const pairIndex = Math.floor((lbRound - 1) / 2);
+    const matchCount = Math.max(paddedLength / Math.pow(2, pairIndex + 2), 1);
+
+    for (let i = 0; i < matchCount; i++) {
       matches.push({
         ...baseMatch(tournamentId, opts),
-        round,
-        match_number: loserMatchNumber,
+        round: lbRound,
+        match_number: i + 1,
         bracket_type: 'losers',
         squad_a_id: null,
         squad_b_id: null,
-        best_of: bo,
+        best_of: lbRound === totalLBRounds ? Math.max(bo, 3) : bo,
       } as MatchInsert);
-      loserMatchNumber++;
     }
   }
 

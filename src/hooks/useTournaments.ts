@@ -363,7 +363,7 @@ export function useRegisterForTournament() {
         p_squad_name: squadName,
         p_existing_squad_id: existingSquadId,
         p_logo_url: logoUrl ?? '',
-        p_members: JSON.stringify(members),
+        p_members: members,
       });
 
       if (error) throw error;

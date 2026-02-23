@@ -13,6 +13,7 @@ import {
 import { DraftSummaryBadge } from '@/components/tournament/DraftPickPanel';
 import { ScoreEditSheet } from '@/components/tournament/ScoreEditSheet';
 import { ShareCardGenerator } from '@/components/tournament/ShareCardGenerator';
+import { CoinTossOverlay } from '@/components/tournament/CoinTossOverlay';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ import {
   useForfeitMatch,
   useRaiseDispute,
   useResolveDispute,
+  useResetCoinToss,
   useTournamentStages,
   useTournamentGroups,
   useTournamentGroupTeams,
@@ -40,6 +42,7 @@ import {
   Loader2,
   MoreHorizontal,
   Layers,
+  Coins,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -64,6 +67,7 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
   const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
   const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
   const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
+  const [tossMatch, setTossMatch] = useState<TournamentMatch | null>(null);
 
   const isMultiStage = tournament.is_multi_stage;
 
@@ -102,6 +106,7 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
     tournamentName: tournament.name,
     tournamentStatus: tournament.status,
     userSquadIds,
+    onToss: (match: TournamentMatch) => setTossMatch(match),
   };
 
   return (
@@ -211,6 +216,17 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
         open={!!resolveMatch}
         onOpenChange={(open) => { if (!open) setResolveMatch(null); }}
       />
+
+      {/* Coin Toss Overlay */}
+      {tossMatch && tossMatch.squad_a && tossMatch.squad_b && (
+        <CoinTossOverlay
+          match={tossMatch}
+          squadA={tossMatch.squad_a}
+          squadB={tossMatch.squad_b}
+          tournamentId={tournament.id}
+          onClose={() => setTossMatch(null)}
+        />
+      )}
     </div>
   );
 }
@@ -233,6 +249,7 @@ function MultiStageBracket({
   const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
   const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
   const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
+  const [tossMatch, setTossMatch] = useState<TournamentMatch | null>(null);
 
   if (!stages || stages.length === 0) {
     return (
@@ -260,6 +277,7 @@ function MultiStageBracket({
     tournamentName: tournament.name,
     tournamentStatus: tournament.status,
     userSquadIds,
+    onToss: (match: TournamentMatch) => setTossMatch(match),
   };
 
   return (
@@ -341,6 +359,17 @@ function MultiStageBracket({
         open={!!resolveMatch}
         onOpenChange={(open) => { if (!open) setResolveMatch(null); }}
       />
+
+      {/* Coin Toss Overlay */}
+      {tossMatch && tossMatch.squad_a && tossMatch.squad_b && (
+        <CoinTossOverlay
+          match={tossMatch}
+          squadA={tossMatch.squad_a}
+          squadB={tossMatch.squad_b}
+          tournamentId={tournament.id}
+          onClose={() => setTossMatch(null)}
+        />
+      )}
     </div>
   );
 }
@@ -358,6 +387,7 @@ function GroupStageView({
   tournamentName,
   tournamentStatus,
   userSquadIds,
+  onToss,
 }: {
   tournament: Tournament;
   stage: TournamentStage;
@@ -370,6 +400,7 @@ function GroupStageView({
   tournamentName: string;
   tournamentStatus: string;
   userSquadIds: string[];
+  onToss?: (m: TournamentMatch) => void;
 }) {
   const { data: groups } = useTournamentGroups(stage.id);
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
@@ -431,6 +462,7 @@ function GroupStageView({
                         onClick={() => onMatchClick(match)}
                         onDispute={() => onDispute(match)}
                         onResolve={() => onResolve(match)}
+                        onToss={onToss ? () => onToss(match) : undefined}
                         isHost={isHost}
                         tournamentId={tournamentId}
                         tournamentName={tournamentName}
@@ -460,6 +492,7 @@ function EliminationStageView({
   tournamentName,
   tournamentStatus,
   userSquadIds,
+  onToss,
 }: {
   stage: TournamentStage;
   stageMatches: TournamentMatch[];
@@ -471,6 +504,7 @@ function EliminationStageView({
   tournamentName: string;
   tournamentStatus: string;
   userSquadIds: string[];
+  onToss?: (m: TournamentMatch) => void;
 }) {
   if (stageMatches.length === 0) {
     return (
@@ -495,6 +529,7 @@ function EliminationStageView({
     tournamentName,
     tournamentStatus,
     userSquadIds,
+    onToss,
   };
 
   // Round robin without groups (single pool)
@@ -593,6 +628,7 @@ function BracketView({
   tournamentName,
   tournamentStatus,
   userSquadIds,
+  onToss,
 }: {
   matches: TournamentMatch[];
   maxRound: number;
@@ -604,6 +640,7 @@ function BracketView({
   tournamentName: string;
   tournamentStatus: string;
   userSquadIds: string[];
+  onToss?: (m: TournamentMatch) => void;
 }) {
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
 
@@ -626,6 +663,7 @@ function BracketView({
                     onClick={() => onMatchClick(match)}
                     onDispute={() => onDispute(match)}
                     onResolve={() => onResolve(match)}
+                    onToss={onToss ? () => onToss(match) : undefined}
                     isHost={isHost}
                     tournamentId={tournamentId}
                     tournamentName={tournamentName}
@@ -655,6 +693,7 @@ function MatchCard({
   onClick,
   onDispute,
   onResolve,
+  onToss,
   isHost,
   tournamentId,
   tournamentName,
@@ -666,6 +705,7 @@ function MatchCard({
   onClick: () => void;
   onDispute: () => void;
   onResolve: () => void;
+  onToss?: () => void;
   isHost: boolean;
   tournamentId: string;
   tournamentName: string;
@@ -675,6 +715,7 @@ function MatchCard({
 }) {
   const updateCheckIn = useUpdateMatchCheckIn();
   const forfeitMatch = useForfeitMatch();
+  const resetCoinToss = useResetCoinToss();
 
   const isOngoing = tournamentStatus === 'ongoing' || tournamentStatus === 'bracket_generated';
   const userInMatch = userSquadIds.some(id => id === match.squad_a_id || id === match.squad_b_id);
@@ -754,6 +795,7 @@ function MatchCard({
           showCheckIn={isHost && isOngoing && match.status === 'pending' && !!match.squad_a_id}
           onCheckIn={(val) => handleCheckIn('squad_a_checked_in', val)}
           large={large}
+          sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_a_id ? 'blue' : match.red_side_team === match.squad_a_id ? 'red' : undefined) : undefined}
         />
         <div className="flex items-center gap-2 text-xs">
           <div className="flex-1 h-px bg-[#FF4500]/20" />
@@ -768,6 +810,7 @@ function MatchCard({
           showCheckIn={isHost && isOngoing && match.status === 'pending' && !!match.squad_b_id}
           onCheckIn={(val) => handleCheckIn('squad_b_checked_in', val)}
           large={large}
+          sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_b_id ? 'blue' : match.red_side_team === match.squad_b_id ? 'red' : undefined) : undefined}
         />
       </div>
 
@@ -780,7 +823,9 @@ function MatchCard({
             const showForfeitB = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && match.squad_a_checked_in && !match.squad_b_checked_in;
             const showDispute = canDispute;
             const showResolve = isHost && match.status === 'disputed';
-            const hasActions = showForfeitA || showForfeitB || showDispute || showResolve;
+            const showDoToss = onToss && isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.toss_completed_at;
+            const showRedoToss = onToss && isHost && isOngoing && (match.status === 'pending' || match.status === 'ongoing') && match.toss_completed_at;
+            const hasActions = showForfeitA || showForfeitB || showDispute || showResolve || showDoToss || showRedoToss;
 
             if (!hasActions) return null;
 
@@ -792,6 +837,29 @@ function MatchCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="min-w-[160px]">
+                  {showDoToss && (
+                    <DropdownMenuItem
+                      onClick={(e) => { e.stopPropagation(); onToss!(); }}
+                    >
+                      <Coins className="w-3.5 h-3.5 mr-2" />
+                      Do Toss
+                    </DropdownMenuItem>
+                  )}
+                  {showRedoToss && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resetCoinToss.mutate(
+                          { matchId: match.id, tournamentId, stageId: match.stage_id },
+                          { onSuccess: () => { toast.success('Toss reset'); onToss!(); } }
+                        );
+                      }}
+                      disabled={resetCoinToss.isPending}
+                    >
+                      <Coins className="w-3.5 h-3.5 mr-2" />
+                      Redo Toss
+                    </DropdownMenuItem>
+                  )}
                   {showForfeitA && (
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
@@ -851,6 +919,7 @@ function MatchTeamRow({
   showCheckIn,
   onCheckIn,
   large,
+  sideBadge,
 }: {
   squad: TournamentSquad | null | undefined;
   score: number;
@@ -859,6 +928,7 @@ function MatchTeamRow({
   showCheckIn?: boolean;
   onCheckIn?: (value: boolean) => void;
   large: boolean;
+  sideBadge?: 'blue' | 'red';
 }) {
   return (
     <div
@@ -896,6 +966,16 @@ function MatchTeamRow({
         <span className={cn('font-medium truncate', large ? 'text-base' : 'text-sm')}>
           {squad?.name || 'TBD'}
         </span>
+        {sideBadge && (
+          <span className={cn(
+            'text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0',
+            sideBadge === 'blue'
+              ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
+              : 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30',
+          )}>
+            {sideBadge === 'blue' ? 'Blue' : 'Red'}
+          </span>
+        )}
       </div>
       <span className={cn('font-display font-bold', large ? 'text-lg' : 'text-sm')}>
         {score}

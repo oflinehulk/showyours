@@ -3,12 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAssignTeamsToGroups, useTournamentGroups, useTournamentGroupTeams } from '@/hooks/useTournaments';
+import { GroupDrawBowl } from '@/components/tournament/GroupDrawBowl';
 import {
   Users,
   Shuffle,
   Loader2,
   ListOrdered,
   LayoutGrid,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -16,6 +18,7 @@ import type { TournamentSquad, TournamentStage, TournamentRegistration, Tourname
 
 interface GroupAssignmentProps {
   tournamentId: string;
+  tournamentName?: string;
   stage: TournamentStage;
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
   onAssigned?: () => void;
@@ -23,6 +26,7 @@ interface GroupAssignmentProps {
 
 export function GroupAssignment({
   tournamentId,
+  tournamentName,
   stage,
   registrations,
   onAssigned,
@@ -30,6 +34,7 @@ export function GroupAssignment({
   const assignTeams = useAssignTeamsToGroups();
   const { data: groups } = useTournamentGroups(stage.id);
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
+  const [showDrawBowl, setShowDrawBowl] = useState(false);
 
   const approvedRegs = registrations.filter(r => r.status === 'approved');
   const squadMap = new Map(approvedRegs.map(r => [r.tournament_squad_id, r.tournament_squads]));
@@ -77,7 +82,7 @@ export function GroupAssignment({
             Group Assignment — {stage.name}
           </h4>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -99,6 +104,16 @@ export function GroupAssignment({
           >
             <Shuffle className="w-3 h-3 mr-1" />
             Random
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-[#FF4500]/30 text-[#FF4500] hover:bg-[#FF4500]/10"
+            onClick={() => setShowDrawBowl(true)}
+            disabled={approvedRegs.length < 2}
+          >
+            <Sparkles className="w-3 h-3 mr-1" />
+            Draw Ceremony
           </Button>
         </div>
       </div>
@@ -140,6 +155,21 @@ export function GroupAssignment({
           <p>Click "Balanced" or "Random" to assign {approvedRegs.length} teams into {stage.group_count} groups.</p>
           <p className="text-xs mt-1">Balanced uses snake-draft by seed order. Random shuffles teams.</p>
         </div>
+      )}
+
+      {/* Group Draw Bowl overlay */}
+      {showDrawBowl && (
+        <GroupDrawBowl
+          tournamentId={tournamentId}
+          tournamentName={tournamentName}
+          stage={stage}
+          squads={approvedRegs.map(r => r.tournament_squads)}
+          onClose={() => setShowDrawBowl(false)}
+          onConfirmed={() => {
+            setShowDrawBowl(false);
+            onAssigned?.();
+          }}
+        />
       )}
     </div>
   );

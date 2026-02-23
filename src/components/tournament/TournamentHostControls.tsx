@@ -668,6 +668,7 @@ function MultiStageSetup({
         <div className="p-4 rounded-lg bg-muted/30 border border-border">
           <GroupAssignment
             tournamentId={tournament.id}
+            tournamentName={tournament.name}
             stage={firstStage!}
             registrations={registrations}
           />

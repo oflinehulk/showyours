@@ -104,6 +104,11 @@ export interface TournamentMatch {
   squad_a_checked_in: boolean;
   squad_b_checked_in: boolean;
   is_forfeit: boolean;
+  // Coin toss
+  toss_winner: string | null;
+  blue_side_team: string | null;
+  red_side_team: string | null;
+  toss_completed_at: string | null;
   // Dispute
   dispute_reason: string | null;
   dispute_screenshot: string | null;
@@ -286,3 +291,23 @@ export const STAGE_STATUS_LABELS: Record<StageStatus, string> = {
   ongoing: 'In Progress',
   completed: 'Completed',
 };
+
+// ========== Group Draw Types ==========
+
+export interface GroupDraw {
+  id: string;
+  tournament_id: string;
+  stage_id: string;
+  draw_seed: string;
+  draw_sequence: GroupDrawEntry[];
+  confirmed: boolean;
+  created_at: string;
+  confirmed_at: string | null;
+}
+
+export interface GroupDrawEntry {
+  squad_id: string;
+  squad_name: string;
+  group_label: string;
+  draw_order: number;
+}

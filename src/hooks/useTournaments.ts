@@ -1220,13 +1220,13 @@ export function useTournamentStages(tournamentId: string | undefined) {
     queryKey: ['tournament-stages', tournamentId],
     queryFn: async () => {
       if (!tournamentId) return [];
-      const { data, error } = await supabase
-        .from('tournament_stages')
-        .select('*')
+      const { data, error } = await (supabase
+        .from('tournament_stages' as any)
+        .select('*') as any)
         .eq('tournament_id', tournamentId)
         .order('stage_number', { ascending: true });
       if (error) throw error;
-      return data as TournamentStage[];
+      return (data || []) as TournamentStage[];
     },
     enabled: !!tournamentId,
   });
@@ -1238,13 +1238,13 @@ export function useTournamentGroups(stageId: string | undefined) {
     queryKey: ['tournament-groups', stageId],
     queryFn: async () => {
       if (!stageId) return [];
-      const { data, error } = await supabase
-        .from('tournament_groups')
-        .select('*')
+      const { data, error } = await (supabase
+        .from('tournament_groups' as any)
+        .select('*') as any)
         .eq('stage_id', stageId)
         .order('label', { ascending: true });
       if (error) throw error;
-      return data as TournamentGroup[];
+      return (data || []) as TournamentGroup[];
     },
     enabled: !!stageId,
   });
@@ -1256,20 +1256,18 @@ export function useTournamentGroupTeams(stageId: string | undefined) {
     queryKey: ['tournament-group-teams', stageId],
     queryFn: async () => {
       if (!stageId) return [];
-      const { data, error } = await supabase
-        .from('tournament_group_teams')
-        .select(`
-          *,
-          tournament_squads:tournament_squad_id(*)
-        `)
-        .in('group_id', (
-          await supabase
-            .from('tournament_groups')
-            .select('id')
-            .eq('stage_id', stageId)
-        ).data?.map(g => g.id) || []);
+      const { data: groupsData } = await (supabase
+        .from('tournament_groups' as any)
+        .select('id') as any)
+        .eq('stage_id', stageId);
+      const groupIds = (groupsData || []).map((g: any) => g.id);
+      if (groupIds.length === 0) return [];
+      const { data, error } = await (supabase
+        .from('tournament_group_teams' as any)
+        .select(`*, tournament_squads:tournament_squad_id(*)`) as any)
+        .in('group_id', groupIds);
       if (error) throw error;
-      return data as (TournamentGroupTeam & { tournament_squads: TournamentSquad })[];
+      return (data || []) as (TournamentGroupTeam & { tournament_squads: TournamentSquad })[];
     },
     enabled: !!stageId,
   });
@@ -1323,13 +1321,13 @@ export function useCreateStages() {
         status: 'pending' as StageStatus,
       }));
 
-      const { data, error } = await supabase
-        .from('tournament_stages')
-        .insert(inserts)
+      const { data, error } = await (supabase
+        .from('tournament_stages' as any)
+        .insert(inserts as any) as any)
         .select();
 
       if (error) throw error;
-      return { data: data as TournamentStage[], tournamentId };
+      return { data: (data || []) as TournamentStage[], tournamentId };
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
@@ -1347,9 +1345,9 @@ export function useUpdateStage() {
       tournamentId,
       ...updates
     }: Partial<TournamentStage> & { stageId: string; tournamentId: string }) => {
-      const { error } = await supabase
-        .from('tournament_stages')
-        .update(updates)
+      const { error } = await (supabase
+        .from('tournament_stages' as any)
+        .update(updates as any) as any)
         .eq('id', stageId);
       if (error) throw error;
       return { tournamentId, stageId };
@@ -1379,31 +1377,31 @@ export function useAssignTeamsToGroups() {
       mode: 'balanced' | 'random';
     }) => {
       // Delete existing groups for this stage
-      const { data: existingGroups } = await supabase
-        .from('tournament_groups')
-        .select('id')
+      const { data: existingGroups } = await (supabase
+        .from('tournament_groups' as any)
+        .select('id') as any)
         .eq('stage_id', stageId);
 
       if (existingGroups && existingGroups.length > 0) {
-        await supabase
-          .from('tournament_group_teams')
-          .delete()
-          .in('group_id', existingGroups.map(g => g.id));
-        await supabase
-          .from('tournament_groups')
-          .delete()
+        await (supabase
+          .from('tournament_group_teams' as any)
+          .delete() as any)
+          .in('group_id', existingGroups.map((g: any) => g.id));
+        await (supabase
+          .from('tournament_groups' as any)
+          .delete() as any)
           .eq('stage_id', stageId);
       }
 
       // Create groups (A, B, C, ...)
       const labels = Array.from({ length: groupCount }, (_, i) => String.fromCharCode(65 + i));
-      const { data: groups, error: groupError } = await supabase
-        .from('tournament_groups')
+      const { data: groups, error: groupError } = await (supabase
+        .from('tournament_groups' as any)
         .insert(labels.map(label => ({
           stage_id: stageId,
           tournament_id: tournamentId,
           label,
-        })))
+        })) as any) as any)
         .select();
 
       if (groupError) throw groupError;
@@ -1443,9 +1441,9 @@ export function useAssignTeamsToGroups() {
         }
       }
 
-      const { error: teamError } = await supabase
-        .from('tournament_group_teams')
-        .insert(groupTeamInserts);
+      const { error: teamError } = await (supabase
+        .from('tournament_group_teams' as any)
+        .insert(groupTeamInserts as any) as any);
 
       if (teamError) throw teamError;
 
@@ -1482,9 +1480,9 @@ export function useGenerateStageBracket() {
 
       if (stage.format === 'round_robin' && stage.group_count > 0) {
         // Group stage — generate round robin per group
-        const { data: groups, error: gErr } = await supabase
-          .from('tournament_groups')
-          .select('id, label')
+        const { data: groups, error: gErr } = await (supabase
+          .from('tournament_groups' as any)
+          .select('id, label') as any)
           .eq('stage_id', stageId)
           .order('label', { ascending: true });
 
@@ -1495,14 +1493,14 @@ export function useGenerateStageBracket() {
 
         for (const group of groups) {
           // Get team IDs in this group
-          const { data: groupTeams, error: gtErr } = await supabase
-            .from('tournament_group_teams')
-            .select('tournament_squad_id')
+          const { data: groupTeams, error: gtErr } = await (supabase
+            .from('tournament_group_teams' as any)
+            .select('tournament_squad_id') as any)
             .eq('group_id', group.id);
 
           if (gtErr) throw gtErr;
 
-          const teamIds = (groupTeams || []).map(gt => gt.tournament_squad_id);
+          const teamIds = (groupTeams || []).map((gt: any) => gt.tournament_squad_id);
           if (teamIds.length < 2) continue;
 
           const groupOpts = { ...opts, groupId: group.id };
@@ -1542,9 +1540,9 @@ export function useGenerateStageBracket() {
       }
 
       // Update stage status to ongoing
-      await supabase
-        .from('tournament_stages')
-        .update({ status: 'ongoing' as StageStatus })
+      await (supabase
+        .from('tournament_stages' as any)
+        .update({ status: 'ongoing' } as any) as any)
         .eq('id', stageId);
 
       return { tournamentId, stageId };
@@ -1569,9 +1567,9 @@ export function useCompleteStage() {
       stageId: string;
       tournamentId: string;
     }) => {
-      const { error } = await supabase
-        .from('tournament_stages')
-        .update({ status: 'completed' as StageStatus })
+      const { error } = await (supabase
+        .from('tournament_stages' as any)
+        .update({ status: 'completed' } as any) as any)
         .eq('id', stageId);
       if (error) throw error;
       return { tournamentId, stageId };

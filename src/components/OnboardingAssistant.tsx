@@ -16,7 +16,6 @@ import {
   Shield,
   Trophy,
   ClipboardList,
-  MessageCircle,
   Rocket,
   ChevronLeft,
   ChevronRight,
@@ -68,14 +67,6 @@ const steps: StepConfig[] = [
     title: 'Register Your Squad',
     description:
       'Once you find a tournament, register your squad with a full roster (5 main players + up to 5 substitutes). The squad leader handles registration.',
-  },
-  {
-    icon: MessageCircle,
-    title: 'Stay Updated',
-    description:
-      'Join our WhatsApp community to get tournament announcements, find scrims, and connect with other players.',
-    actionLabel: 'Join WhatsApp',
-    externalLink: 'https://chat.whatsapp.com/YOUR_COMMUNITY_LINK',
   },
   {
     icon: Rocket,

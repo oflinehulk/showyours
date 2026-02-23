@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Squad } from '@/lib/types';
 import type { RankId, RoleId, ServerId, ContactTypeId } from '@/lib/constants';
 
@@ -70,10 +71,11 @@ export function useSquad(id: string) {
 }
 
 export function useMySquads() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['my-squads'],
+    queryKey: ['my-squads', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
       const { data, error } = await supabase
@@ -81,10 +83,11 @@ export function useMySquads() {
         .select('*')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as Squad[];
     },
+    enabled: !!user,
   });
 }
 
@@ -200,16 +203,18 @@ export function useDeleteSquad() {
   return useMutation({
     mutationFn: async (id: string) => {
       // Clean up applications
-      await supabase
+      const { error: appsErr } = await supabase
         .from('squad_applications')
         .delete()
         .eq('squad_id', id);
+      if (appsErr) throw appsErr;
 
       // Clean up invitations
-      await supabase
+      const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('squad_id', id);
+      if (invErr) throw invErr;
 
       // Re-enable recruitment for all registered members
       const { data: members } = await supabase

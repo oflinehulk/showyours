@@ -29,6 +29,9 @@ export function generateSingleEliminationBracket(
   squadIds: string[],
   opts?: StageOptions
 ): MatchInsert[] {
+  if (squadIds.length < 2) {
+    throw new Error('Need at least 2 teams to generate a bracket');
+  }
   const matches: MatchInsert[] = [];
   const totalRounds = Math.ceil(Math.log2(squadIds.length));
   const bo = opts?.defaultBestOf ?? 1;
@@ -49,8 +52,8 @@ export function generateSingleEliminationBracket(
       round: 1,
       match_number: matchNumber,
       bracket_type: 'winners',
-      squad_a_id: padded[i] || null,
-      squad_b_id: padded[i + 1] || null,
+      squad_a_id: padded[i] ?? null,
+      squad_b_id: padded[i + 1] ?? null,
       best_of: bo,
     } as MatchInsert);
     matchNumber++;
@@ -84,6 +87,9 @@ export function generateDoubleEliminationBracket(
   squadIds: string[],
   opts?: StageOptions
 ): MatchInsert[] {
+  if (squadIds.length < 2) {
+    throw new Error('Need at least 2 teams to generate a bracket');
+  }
   const totalRounds = Math.ceil(Math.log2(squadIds.length));
   const paddedLength = Math.pow(2, totalRounds);
   const padded: (string | null)[] = [...squadIds];
@@ -103,8 +109,8 @@ export function generateDoubleEliminationBracket(
       round: 1,
       match_number: matchNumber,
       bracket_type: 'winners',
-      squad_a_id: padded[i] || null,
-      squad_b_id: padded[i + 1] || null,
+      squad_a_id: padded[i] ?? null,
+      squad_b_id: padded[i + 1] ?? null,
       best_of: bo,
     } as MatchInsert);
     matchNumber++;
@@ -169,6 +175,9 @@ export function generateRoundRobinBracket(
   squadIds: string[],
   opts?: StageOptions
 ): MatchInsert[] {
+  if (squadIds.length < 2) {
+    throw new Error('Need at least 2 teams to generate a bracket');
+  }
   const matches: MatchInsert[] = [];
   const bo = opts?.defaultBestOf ?? 1;
 
@@ -266,16 +275,20 @@ export function computeGroupStandings(
 }
 
 function getH2HResult(matches: TournamentMatch[], squadA: string, squadB: string): number {
+  let aWins = 0;
+  let bWins = 0;
   for (const m of matches) {
     if (m.status !== 'completed') continue;
     if (
       (m.squad_a_id === squadA && m.squad_b_id === squadB) ||
       (m.squad_a_id === squadB && m.squad_b_id === squadA)
     ) {
-      if (m.winner_id === squadA) return -1; // A wins, sort A higher
-      if (m.winner_id === squadB) return 1;  // B wins, sort B higher
+      if (m.winner_id === squadA) aWins++;
+      else if (m.winner_id === squadB) bWins++;
     }
   }
+  if (aWins > bWins) return -1; // A wins H2H, sort A higher
+  if (bWins > aWins) return 1;  // B wins H2H, sort B higher
   return 0;
 }
 
@@ -310,7 +323,7 @@ export function determineAdvancingTeams(
           points: standings[i].points,
           suggestedSeed: 0, // filled below
         });
-      } else if (i === advancePerGroup && advanceBestRemaining > 0) {
+      } else if (i >= advancePerGroup && advanceBestRemaining > 0) {
         // Candidate for "best remaining"
         remainingCandidates.push({ ...standings[i], groupLabel: group.label });
       }

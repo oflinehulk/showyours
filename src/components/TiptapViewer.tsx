@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
 interface TiptapViewerProps {
@@ -8,7 +9,8 @@ interface TiptapViewerProps {
 export function TiptapViewer({ content, className }: TiptapViewerProps) {
   // If content looks like plain text (no HTML tags), wrap in <p> for consistent rendering
   const isHtml = /<[a-z][\s\S]*>/i.test(content);
-  const html = isHtml ? content : `<p>${content.replace(/\n/g, '<br />')}</p>`;
+  const raw = isHtml ? content : `<p>${content.replace(/\n/g, '<br />')}</p>`;
+  const html = DOMPurify.sanitize(raw);
 
   return (
     <div

@@ -55,9 +55,15 @@ export default function PlayersPage() {
       players = players.filter((p) => p.rank === rankFilter);
     }
 
-    // Role filter
+    // Role filter — check main_roles array first, fall back to main_role
     if (roleFilter !== 'all') {
-      players = players.filter((p) => p.main_role === roleFilter);
+      players = players.filter((p) => {
+        const roles = (p as any).main_roles;
+        if (roles && roles.length > 0) {
+          return roles.includes(roleFilter);
+        }
+        return p.main_role === roleFilter;
+      });
     }
 
     // Class filter
@@ -333,7 +339,7 @@ export default function PlayersPage() {
                           <RankBadge rank={player.rank} size="sm" />
                         </td>
                         <td className="p-4">
-                          <span className="text-[#FF4500] font-display font-semibold">{player.win_rate || '—'}%</span>
+                          <span className="text-[#FF4500] font-display font-semibold">{player.win_rate != null ? `${player.win_rate}%` : '—'}</span>
                         </td>
                         <td className="p-4 text-muted-foreground">
                           {roleDisplay}

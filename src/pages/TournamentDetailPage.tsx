@@ -92,7 +92,7 @@ export default function TournamentDetailPage() {
 
   const isHost = user?.id === tournament?.host_id;
   const registrationCount = registrations?.filter(r => r.status === 'approved').length || 0;
-  const spotsLeft = (tournament?.max_squads || 0) - registrationCount;
+  const spotsLeft = Math.max(0, (tournament?.max_squads || 0) - registrationCount);
   const canRegister = tournament?.status === 'registration_open' && spotsLeft > 0;
 
   // Compute user's squad IDs in this tournament for dispute eligibility
@@ -216,7 +216,12 @@ export default function TournamentDetailPage() {
     );
   }
 
-  const statusInfo = statusConfig[tournament.status];
+  const defaultStatusInfo = {
+    color: 'bg-muted text-muted-foreground border-border',
+    icon: <Trophy className="w-3 h-3" />,
+    glow: '',
+  };
+  const statusInfo = statusConfig[tournament.status] || defaultStatusInfo;
   const fillPercent = tournament.max_squads > 0 ? (registrationCount / tournament.max_squads) * 100 : 0;
 
   return (

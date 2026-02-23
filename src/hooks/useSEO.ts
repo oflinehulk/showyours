@@ -43,5 +43,9 @@ export function useSEO({ title, description, path }: SEOProps) {
       document.head.appendChild(link);
     }
     link.setAttribute('href', url);
+
+    return () => {
+      document.title = BASE_TITLE;
+    };
   }, [title, description, path]);
 }

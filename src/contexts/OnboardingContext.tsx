@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useCompleteOnboarding } from '@/hooks/useOnboarding';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 interface OnboardingContextType {
   isOpen: boolean;

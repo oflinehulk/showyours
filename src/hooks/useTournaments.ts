@@ -560,7 +560,8 @@ async function findNextMatch(
     query = query.eq('stage_id', stageId);
   }
 
-  const { data } = await query;
+  const { data, error: queryError } = await query;
+  if (queryError) throw queryError;
   return data && data.length > 0 ? data[0] : null;
 }
 
@@ -580,7 +581,8 @@ async function findGrandFinals(
     query = query.eq('stage_id', stageId);
   }
 
-  const { data } = await query;
+  const { data, error: queryError } = await query;
+  if (queryError) throw queryError;
   return data && data.length > 0 ? data[0] : null;
 }
 
@@ -602,10 +604,11 @@ async function advanceWinnerToNextRound(
     );
 
     if (nextMatch) {
-      await supabase
+      const { error: advErr } = await supabase
         .from('tournament_matches')
         .update({ [slot]: winner_id })
         .eq('id', nextMatch.id);
+      if (advErr) throw advErr;
     }
 
     // Also advance the loser to losers bracket (double elimination)
@@ -622,10 +625,11 @@ async function advanceWinnerToNextRound(
       );
 
       if (nextMatch) {
-        await supabase
+        const { error: advErr } = await supabase
           .from('tournament_matches')
           .update({ squad_a_id: winner_id })
           .eq('id', nextMatch.id);
+        if (advErr) throw advErr;
       }
     } else {
       // Even LB round → Odd LB round: 2:1 SE pairing
@@ -639,18 +643,20 @@ async function advanceWinnerToNextRound(
       );
 
       if (nextMatch) {
-        await supabase
+        const { error: advErr } = await supabase
           .from('tournament_matches')
           .update({ [slot]: winner_id })
           .eq('id', nextMatch.id);
+        if (advErr) throw advErr;
       } else {
         // No next LB round → this is the LB Final, advance to Grand Finals slot B
         const gfMatch = await findGrandFinals(tournamentId, stage_id);
         if (gfMatch) {
-          await supabase
+          const { error: advErr } = await supabase
             .from('tournament_matches')
             .update({ squad_b_id: winner_id })
             .eq('id', gfMatch.id);
+          if (advErr) throw advErr;
         }
       }
     }
@@ -684,10 +690,11 @@ async function advanceLoserToLosersBracket(
     );
 
     if (lbMatch) {
-      await supabase
+      const { error: advErr } = await supabase
         .from('tournament_matches')
         .update({ [slot]: loserId })
         .eq('id', lbMatch.id);
+      if (advErr) throw advErr;
     }
   } else {
     // WB R(w) losers → LB R(2*(w-1)): same match_number, slot B
@@ -698,10 +705,11 @@ async function advanceLoserToLosersBracket(
     );
 
     if (lbMatch) {
-      await supabase
+      const { error: advErr } = await supabase
         .from('tournament_matches')
         .update({ squad_b_id: loserId })
         .eq('id', lbMatch.id);
+      if (advErr) throw advErr;
     }
   }
 }
@@ -813,7 +821,7 @@ export function useGenerateBracket() {
         });
         orderedSquadIds = applyStandardSeeding(sorted.map((r: any) => r.tournament_squad_id));
       } else {
-        orderedSquadIds = [...registrations.map((r: any) => r.tournament_squad_id)].sort(() => Math.random() - 0.5);
+        orderedSquadIds = secureShuffleArray(registrations.map((r: any) => r.tournament_squad_id));
       }
 
       // Generate matches based on format

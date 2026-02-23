@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,9 @@ const signInSchema = z.object({
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const redirectTo = (location.state as { from?: string })?.from || '/';
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,9 +61,9 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(redirectTo);
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectTo]);
 
   const validateForm = () => {
     try {
@@ -100,7 +102,7 @@ export default function AuthPage() {
           }
         } else {
           toast.success('Welcome back!');
-          navigate('/');
+          navigate(redirectTo);
         }
       } else {
         const { error } = await signUp(email, password);

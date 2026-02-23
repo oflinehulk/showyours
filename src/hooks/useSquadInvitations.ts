@@ -98,14 +98,7 @@ export function useRespondToInvitation() {
       invitationId: string; response: 'accepted' | 'rejected';
       squadId?: string; profileId?: string; userId?: string;
     }) => {
-      // Update invitation status
-      const { error } = await supabase
-        .from('squad_invitations')
-        .update({ status: response })
-        .eq('id', invitationId);
-      if (error) throw error;
-
-      // If accepted, add player to squad
+      // If accepted, add player to squad BEFORE updating invitation status
       if (response === 'accepted' && squadId && profileId && userId) {
         // Check if player is already in a squad
         const { data: existingMembership } = await supabase
@@ -125,7 +118,7 @@ export function useRespondToInvitation() {
           .eq('squad_id', squadId)
           .order('position', { ascending: false })
           .limit(1);
-        
+
         const nextPosition = (members?.[0]?.position || 0) + 1;
 
         const { error: memberError } = await supabase
@@ -145,6 +138,13 @@ export function useRespondToInvitation() {
           .update({ looking_for_squad: false })
           .eq('id', profileId);
       }
+
+      // Update invitation status AFTER membership was successfully created
+      const { error } = await supabase
+        .from('squad_invitations')
+        .update({ status: response })
+        .eq('id', invitationId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-invitations'] });

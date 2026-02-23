@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/Logo';
-import { Gamepad2, Github, Twitter, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -23,14 +23,6 @@ export function Footer() {
               <li><Link to="/create-profile" className="text-muted-foreground hover:text-neon transition-colors">Create Profile</Link></li>
               <li><Link to="/create-squad" className="text-muted-foreground hover:text-neon transition-colors">Post Squad Listing</Link></li>
             </ul>
-          </div>
-          <div>
-            <h4 className="font-display font-semibold text-foreground mb-3 text-sm tracking-wider uppercase">Connect</h4>
-            <div className="flex gap-3">
-              <a href="#" className="w-10 h-10 rounded-lg bg-[#111111] border border-[#FF4500]/10 flex items-center justify-center text-muted-foreground hover:text-neon hover:border-[#FF4500]/30 transition-all duration-200 hover:scale-105 active:scale-95"><Gamepad2 className="w-5 h-5" /></a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-[#111111] border border-[#FF4500]/10 flex items-center justify-center text-muted-foreground hover:text-neon hover:border-[#FF4500]/30 transition-all duration-200 hover:scale-105 active:scale-95"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="w-10 h-10 rounded-lg bg-[#111111] border border-[#FF4500]/10 flex items-center justify-center text-muted-foreground hover:text-neon hover:border-[#FF4500]/30 transition-all duration-200 hover:scale-105 active:scale-95"><Github className="w-5 h-5" /></a>
-            </div>
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-[#FF4500]/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">

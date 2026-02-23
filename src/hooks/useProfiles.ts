@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Profile } from '@/lib/types';
 import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from '@/lib/constants';
 
@@ -62,10 +63,11 @@ export function useProfile(id: string) {
 }
 
 export function useMyProfile() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['my-profile'],
+    queryKey: ['my-profile', user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -73,10 +75,11 @@ export function useMyProfile() {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
-      
+
       if (error) throw error;
       return data as Profile | null;
     },
+    enabled: !!user,
   });
 }
 
@@ -160,15 +163,17 @@ export function useDeleteProfile() {
       }
 
       // Clean up applications and invitations
-      await supabase
+      const { error: appsErr } = await supabase
         .from('squad_applications')
         .delete()
         .eq('applicant_id', id);
+      if (appsErr) throw appsErr;
 
-      await supabase
+      const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('invited_profile_id', id);
+      if (invErr) throw invErr;
 
       const { error } = await supabase
         .from('profiles')

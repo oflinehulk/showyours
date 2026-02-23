@@ -140,6 +140,3 @@ export const ALL_HEROES = [
     ...MLBB_HEROES.support
   ])
 ].sort() as string[];
-
-// Legacy export for backward compatibility
-export const POPULAR_HEROES = ALL_HEROES;

@@ -66,22 +66,25 @@ export function useAdminDeleteProfile() {
   return useMutation({
     mutationFn: async (profileId: string) => {
       // Clean up squad memberships first
-      await supabase
+      const { error: membersErr } = await supabase
         .from('squad_members')
         .delete()
         .eq('profile_id', profileId);
+      if (membersErr) throw membersErr;
 
       // Clean up squad applications
-      await supabase
+      const { error: appsErr } = await supabase
         .from('squad_applications')
         .delete()
         .eq('applicant_id', profileId);
+      if (appsErr) throw appsErr;
 
       // Clean up squad invitations
-      await supabase
+      const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('invited_profile_id', profileId);
+      if (invErr) throw invErr;
 
       const { error } = await supabase
         .from('profiles')
@@ -105,20 +108,23 @@ export function useAdminDeleteSquad() {
   return useMutation({
     mutationFn: async (squadId: string) => {
       // Clean up in correct order (FK constraints)
-      await supabase
+      const { error: appsErr } = await supabase
         .from('squad_applications')
         .delete()
         .eq('squad_id', squadId);
+      if (appsErr) throw appsErr;
 
-      await supabase
+      const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('squad_id', squadId);
+      if (invErr) throw invErr;
 
-      await supabase
+      const { error: membersErr } = await supabase
         .from('squad_members')
         .delete()
         .eq('squad_id', squadId);
+      if (membersErr) throw membersErr;
 
       const { error } = await supabase
         .from('squads')

@@ -57,12 +57,7 @@ export default function CreateProfilePage() {
   const [discord, setDiscord] = useState('');
   const [instagram, setInstagram] = useState('');
 
-  useEffect(() => {
-    if (!user) {
-      toast.error('Please sign in to create a profile');
-      navigate('/auth');
-    }
-  }, [user, navigate]);
+  // Auth check is handled by ProtectedRoute wrapper in App.tsx
 
   // Populate form with existing profile data for editing
   useEffect(() => {
@@ -181,13 +176,20 @@ export default function CreateProfilePage() {
       return;
     }
 
+    const parsedWinRate = winRate ? parseFloat(winRate) : null;
+    if (parsedWinRate != null && (isNaN(parsedWinRate) || parsedWinRate < 0 || parsedWinRate > 100)) {
+      toast.error('Win rate must be between 0 and 100');
+      setCurrentStep(2);
+      return;
+    }
+
     const profileData = {
       ign: ign.trim(),
       avatar_url: avatarUrl,
       rank: rank as any,
       state: state as any,
-      win_rate: winRate ? parseFloat(winRate) : null,
-      main_role: mainRoles[0] || 'gold' as any,
+      win_rate: parsedWinRate,
+      main_role: mainRoles[0] || ('gold' as any),
       main_roles: mainRoles,
       hero_class: 'fighter' as any, // default, not user-facing
       favorite_heroes: favoriteHeroes,

@@ -28,6 +28,8 @@ const DocsPage = lazy(() => import("./pages/DocsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+// Expose queryClient for auth signOut cache clearing
+(window as any).__queryClient = queryClient;
 
 function PageLoader() {
   return (

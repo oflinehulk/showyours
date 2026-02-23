@@ -1,10 +1,7 @@
-import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from './constants';
 import type { Json } from '@/integrations/supabase/types';
 
-export interface Contact {
-  type: ContactTypeId;
-  value: string;
-}
+// Re-export Contact from contacts.ts to avoid duplicate definitions
+export type { Contact } from './contacts';
 
 export interface Profile {
   id: string;

@@ -335,9 +335,11 @@ export function useRemoveSquadMember() {
   return useMutation({
     mutationFn: async ({
       memberId,
+      profileId,
       squadId,
     }: {
       memberId: string;
+      profileId?: string | null;
       squadId: string;
     }) => {
       const { error } = await supabase
@@ -346,10 +348,19 @@ export function useRemoveSquadMember() {
         .eq('id', memberId);
 
       if (error) throw error;
+
+      // Re-enable recruitment visibility for kicked members (same as leave)
+      if (profileId) {
+        await supabase
+          .from('profiles')
+          .update({ looking_for_squad: true })
+          .eq('id', profileId);
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
       queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
   });
 }

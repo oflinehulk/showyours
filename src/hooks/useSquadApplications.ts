@@ -234,6 +234,7 @@ export function useApproveApplication() {
       queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
       queryClient.invalidateQueries({ queryKey: ['my-applications'] });
       queryClient.invalidateQueries({ queryKey: ['my-squad-membership'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
     },
   });
 }

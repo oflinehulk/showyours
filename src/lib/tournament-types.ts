@@ -192,6 +192,10 @@ export function validateMatchScores(
     return { valid: false, error: 'Scores cannot be negative' };
   }
 
+  if (!Number.isInteger(scoreA) || !Number.isInteger(scoreB)) {
+    return { valid: false, error: 'Scores must be whole numbers' };
+  }
+
   if (scoreA === scoreB) {
     return { valid: false, error: 'Match cannot end in a tie' };
   }

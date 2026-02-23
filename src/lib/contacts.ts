@@ -10,20 +10,31 @@ export interface Contact {
  */
 export function parseContacts(contacts: unknown): Contact[] {
   if (!contacts) return [];
-  
+
+  let arr: unknown[];
+
   if (typeof contacts === 'string') {
     try {
-      return JSON.parse(contacts) as Contact[];
+      const parsed = JSON.parse(contacts);
+      if (!Array.isArray(parsed)) return [];
+      arr = parsed;
     } catch {
       return [];
     }
+  } else if (Array.isArray(contacts)) {
+    arr = contacts;
+  } else {
+    return [];
   }
-  
-  if (Array.isArray(contacts)) {
-    return contacts as Contact[];
-  }
-  
-  return [];
+
+  // Validate each entry has type and value strings
+  return arr.filter(
+    (item): item is Contact =>
+      typeof item === 'object' &&
+      item !== null &&
+      typeof (item as any).type === 'string' &&
+      typeof (item as any).value === 'string'
+  );
 }
 
 /**

@@ -95,6 +95,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          tournament_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          tournament_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          tournament_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -425,6 +466,41 @@ export type Database = {
         }
         Relationships: []
       }
+      tournament_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          tournament_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          tournament_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          tournament_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_audit_log_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournament_invitations: {
         Row: {
           created_at: string
@@ -479,13 +555,21 @@ export type Database = {
           bracket_type: string | null
           completed_at: string | null
           created_at: string
+          dispute_raised_by: string | null
+          dispute_reason: string | null
+          dispute_resolution_notes: string | null
+          dispute_resolved_by: string | null
+          dispute_screenshot: string | null
           id: string
+          is_forfeit: boolean | null
           match_number: number
           result_screenshot: string | null
           round: number
           scheduled_time: string | null
+          squad_a_checked_in: boolean | null
           squad_a_id: string | null
           squad_a_score: number | null
+          squad_b_checked_in: boolean | null
           squad_b_id: string | null
           squad_b_score: number | null
           status: Database["public"]["Enums"]["match_status"]
@@ -498,13 +582,21 @@ export type Database = {
           bracket_type?: string | null
           completed_at?: string | null
           created_at?: string
+          dispute_raised_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_resolved_by?: string | null
+          dispute_screenshot?: string | null
           id?: string
+          is_forfeit?: boolean | null
           match_number: number
           result_screenshot?: string | null
           round: number
           scheduled_time?: string | null
+          squad_a_checked_in?: boolean | null
           squad_a_id?: string | null
           squad_a_score?: number | null
+          squad_b_checked_in?: boolean | null
           squad_b_id?: string | null
           squad_b_score?: number | null
           status?: Database["public"]["Enums"]["match_status"]
@@ -517,13 +609,21 @@ export type Database = {
           bracket_type?: string | null
           completed_at?: string | null
           created_at?: string
+          dispute_raised_by?: string | null
+          dispute_reason?: string | null
+          dispute_resolution_notes?: string | null
+          dispute_resolved_by?: string | null
+          dispute_screenshot?: string | null
           id?: string
+          is_forfeit?: boolean | null
           match_number?: number
           result_screenshot?: string | null
           round?: number
           scheduled_time?: string | null
+          squad_a_checked_in?: boolean | null
           squad_a_id?: string | null
           squad_a_score?: number | null
+          squad_b_checked_in?: boolean | null
           squad_b_id?: string | null
           squad_b_score?: number | null
           status?: Database["public"]["Enums"]["match_status"]
@@ -569,6 +669,7 @@ export type Database = {
           roster_locked: boolean | null
           roster_locked_at: string | null
           roster_snapshot: Json | null
+          seed: number | null
           status: string
           tournament_id: string
           tournament_squad_id: string
@@ -579,6 +680,7 @@ export type Database = {
           roster_locked?: boolean | null
           roster_locked_at?: string | null
           roster_snapshot?: Json | null
+          seed?: number | null
           status?: string
           tournament_id: string
           tournament_squad_id: string
@@ -589,6 +691,7 @@ export type Database = {
           roster_locked?: boolean | null
           roster_locked_at?: string | null
           roster_snapshot?: Json | null
+          seed?: number | null
           status?: string
           tournament_id?: string
           tournament_squad_id?: string
@@ -615,6 +718,7 @@ export type Database = {
           created_at: string
           id: string
           ign: string
+          member_status: string
           mlbb_id: string
           position: number
           role: Database["public"]["Enums"]["squad_member_role"]
@@ -625,6 +729,7 @@ export type Database = {
           created_at?: string
           id?: string
           ign: string
+          member_status?: string
           mlbb_id: string
           position: number
           role?: Database["public"]["Enums"]["squad_member_role"]
@@ -635,6 +740,7 @@ export type Database = {
           created_at?: string
           id?: string
           ign?: string
+          member_status?: string
           mlbb_id?: string
           position?: number
           role?: Database["public"]["Enums"]["squad_member_role"]
@@ -703,6 +809,7 @@ export type Database = {
           max_squads: number
           name: string
           prize_pool: string | null
+          prize_tiers: Json | null
           prize_wallet: string | null
           region: string | null
           rules: string | null
@@ -723,6 +830,7 @@ export type Database = {
           max_squads?: number
           name: string
           prize_pool?: string | null
+          prize_tiers?: Json | null
           prize_wallet?: string | null
           region?: string | null
           rules?: string | null
@@ -743,6 +851,7 @@ export type Database = {
           max_squads?: number
           name?: string
           prize_pool?: string | null
+          prize_tiers?: Json | null
           prize_wallet?: string | null
           region?: string | null
           rules?: string | null
@@ -785,6 +894,20 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      rpc_approve_roster_change: {
+        Args: { p_change_id: string }
+        Returns: undefined
+      }
+      rpc_register_for_tournament: {
+        Args: {
+          p_existing_squad_id: string
+          p_logo_url: string
+          p_members: Json
+          p_squad_name: string
+          p_tournament_id: string
+        }
+        Returns: string
       }
       search_profiles:
         | {

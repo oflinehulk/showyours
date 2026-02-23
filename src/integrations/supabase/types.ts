@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      group_draws: {
+        Row: {
+          confirmed: boolean
+          confirmed_at: string | null
+          created_at: string
+          draw_seed: string
+          draw_sequence: Json
+          id: string
+          stage_id: string
+          tournament_id: string
+        }
+        Insert: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          draw_seed: string
+          draw_sequence?: Json
+          id?: string
+          stage_id: string
+          tournament_id: string
+        }
+        Update: {
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          draw_seed?: string
+          draw_sequence?: Json
+          id?: string
+          stage_id?: string
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_draws_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_draws_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       heroes: {
         Row: {
           created_at: string
@@ -637,6 +685,7 @@ export type Database = {
       tournament_matches: {
         Row: {
           best_of: number
+          blue_side_team: string | null
           bracket_type: string | null
           completed_at: string | null
           created_at: string
@@ -649,6 +698,7 @@ export type Database = {
           id: string
           is_forfeit: boolean | null
           match_number: number
+          red_side_team: string | null
           result_screenshot: string | null
           round: number
           scheduled_time: string | null
@@ -660,12 +710,15 @@ export type Database = {
           squad_b_score: number | null
           stage_id: string | null
           status: Database["public"]["Enums"]["match_status"]
+          toss_completed_at: string | null
+          toss_winner: string | null
           tournament_id: string
           updated_at: string
           winner_id: string | null
         }
         Insert: {
           best_of?: number
+          blue_side_team?: string | null
           bracket_type?: string | null
           completed_at?: string | null
           created_at?: string
@@ -678,6 +731,7 @@ export type Database = {
           id?: string
           is_forfeit?: boolean | null
           match_number: number
+          red_side_team?: string | null
           result_screenshot?: string | null
           round: number
           scheduled_time?: string | null
@@ -689,12 +743,15 @@ export type Database = {
           squad_b_score?: number | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
+          toss_completed_at?: string | null
+          toss_winner?: string | null
           tournament_id: string
           updated_at?: string
           winner_id?: string | null
         }
         Update: {
           best_of?: number
+          blue_side_team?: string | null
           bracket_type?: string | null
           completed_at?: string | null
           created_at?: string
@@ -707,6 +764,7 @@ export type Database = {
           id?: string
           is_forfeit?: boolean | null
           match_number?: number
+          red_side_team?: string | null
           result_screenshot?: string | null
           round?: number
           scheduled_time?: string | null
@@ -718,16 +776,32 @@ export type Database = {
           squad_b_score?: number | null
           stage_id?: string | null
           status?: Database["public"]["Enums"]["match_status"]
+          toss_completed_at?: string | null
+          toss_winner?: string | null
           tournament_id?: string
           updated_at?: string
           winner_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "tournament_matches_blue_side_team_fkey"
+            columns: ["blue_side_team"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournament_matches_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "tournament_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_red_side_team_fkey"
+            columns: ["red_side_team"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
             referencedColumns: ["id"]
           },
           {
@@ -749,6 +823,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "tournament_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_matches_toss_winner_fkey"
+            columns: ["toss_winner"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
             referencedColumns: ["id"]
           },
           {

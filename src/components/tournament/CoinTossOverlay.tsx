@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -35,6 +35,14 @@ export function CoinTossOverlay({
   const [blueSide, setBlueSide] = useState<'a' | 'b' | null>(null);
   const [spinRotation, setSpinRotation] = useState(0);
   const saveToss = useSaveCoinToss();
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
 
   const winnerSquad = winner === 'a' ? squadA : winner === 'b' ? squadB : null;
 
@@ -52,13 +60,13 @@ export function CoinTossOverlay({
     playDrumRoll(2500);
 
     // After spin completes
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       playImpactHit();
       setWinner(winSide);
       setBlueSide(winSide); // winner defaults to Blue Side
       setPhase('result');
 
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         playRevealFlourish();
         confetti({
           particleCount: 80,
@@ -67,7 +75,9 @@ export function CoinTossOverlay({
           colors: ['#FF4500', '#3B82F6', '#EF4444', '#ffffff'],
         });
       }, 300);
+      timersRef.current.push(t2);
     }, 2600);
+    timersRef.current.push(t1);
   }, []);
 
   const handleSwapSides = () => {

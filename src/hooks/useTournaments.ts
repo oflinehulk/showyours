@@ -6,6 +6,7 @@ import {
   generateDoubleEliminationBracket,
   generateRoundRobinBracket,
 } from '@/lib/bracket-utils';
+import { secureShuffleArray } from '@/lib/secure-random';
 import type {
   Tournament,
   TournamentWithDetails,
@@ -1410,7 +1411,7 @@ export function useAssignTeamsToGroups() {
       // Order squads
       let ordered: string[];
       if (mode === 'random') {
-        ordered = [...squadIds].sort(() => Math.random() - 0.5);
+        ordered = secureShuffleArray([...squadIds]);
       } else {
         // Balanced: snake-draft (1→A, 2→B, ..., N→N, N+1→N, ..., back to A)
         ordered = [...squadIds]; // assumed already seeded

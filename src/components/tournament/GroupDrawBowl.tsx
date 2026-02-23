@@ -94,9 +94,14 @@ export function GroupDrawBowl({
 
   // Auto-draw remaining
   const autoDrawAll = useCallback(() => {
+    if (isAnimating) return;
+    setIsAnimating(true);
     let idx = revealIndex + 1;
     const doNext = () => {
-      if (idx >= sequence.length) return;
+      if (idx >= sequence.length) {
+        setIsAnimating(false);
+        return;
+      }
       playWhoosh();
       setTimeout(() => {
         setRevealIndex(idx);
@@ -105,6 +110,7 @@ export function GroupDrawBowl({
         if (idx < sequence.length) {
           autoDrawRef.current = setTimeout(doNext, 500);
         } else {
+          setIsAnimating(false);
           setTimeout(() => {
             setPhase('result');
             playRevealFlourish();
@@ -119,7 +125,7 @@ export function GroupDrawBowl({
       }, 300);
     };
     doNext();
-  }, [revealIndex, sequence]);
+  }, [revealIndex, sequence, isAnimating]);
 
   // Cleanup auto-draw on unmount
   useEffect(() => {

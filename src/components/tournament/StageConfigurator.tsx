@@ -219,6 +219,7 @@ export function StageConfigurator({
           advance_per_group: s.format === 'round_robin' ? s.advance_per_group : 0,
           advance_best_remaining: s.format === 'round_robin' ? s.advance_best_remaining : 0,
           advance_to_lower_per_group: s.format === 'round_robin' ? s.advance_to_lower_per_group : 0,
+          lb_initial_rounds: 0,
         })),
       });
       toast.success('Stages configured');

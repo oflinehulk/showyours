@@ -530,7 +530,7 @@ export function useUpdateMatchResult() {
       if (error) throw error;
 
       // Advance winner to next round
-      await advanceWinnerToNextRound(tournamentId, data);
+      await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
 
       return { data, tournamentId };
     },
@@ -922,7 +922,7 @@ async function autoCompleteByes(tournamentId: string, stageId?: string) {
     await advanceWinnerToNextRound(tournamentId, {
       ...match,
       winner_id: match.squad_a_id,
-    });
+    } as unknown as TournamentMatch);
   }
 
   // Also handle reverse byes
@@ -957,7 +957,7 @@ async function autoCompleteByes(tournamentId: string, stageId?: string) {
     await advanceWinnerToNextRound(tournamentId, {
       ...match,
       winner_id: match.squad_b_id,
-    });
+    } as unknown as TournamentMatch);
   }
 }
 
@@ -1488,7 +1488,7 @@ export function useForfeitMatch() {
       if (error) throw error;
 
       // Advance winner to next round
-      await advanceWinnerToNextRound(tournamentId, data);
+      await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
 
       return tournamentId;
     },
@@ -1580,7 +1580,7 @@ export function useResolveDispute() {
 
       // Re-advance winner if result changed
       if (newWinnerId) {
-        await advanceWinnerToNextRound(tournamentId, data);
+        await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
       }
 
       return tournamentId;
@@ -1647,7 +1647,7 @@ export function useWithdrawSquad() {
         if (forfeitError) throw forfeitError;
 
         // Advance opponent
-        await advanceWinnerToNextRound(tournamentId, updated);
+        await advanceWinnerToNextRound(tournamentId, updated as unknown as TournamentMatch);
       }
 
       return tournamentId;

@@ -985,12 +985,14 @@ export type Database = {
         Row: {
           advance_best_remaining: number
           advance_per_group: number
+          advance_to_lower_per_group: number
           best_of: number
           created_at: string
           finals_best_of: number
           format: Database["public"]["Enums"]["tournament_format"]
           group_count: number
           id: string
+          lb_initial_rounds: number
           name: string
           stage_number: number
           status: string
@@ -1000,12 +1002,14 @@ export type Database = {
         Insert: {
           advance_best_remaining?: number
           advance_per_group?: number
+          advance_to_lower_per_group?: number
           best_of?: number
           created_at?: string
           finals_best_of?: number
           format: Database["public"]["Enums"]["tournament_format"]
           group_count?: number
           id?: string
+          lb_initial_rounds?: number
           name: string
           stage_number: number
           status?: string
@@ -1015,12 +1019,14 @@ export type Database = {
         Update: {
           advance_best_remaining?: number
           advance_per_group?: number
+          advance_to_lower_per_group?: number
           best_of?: number
           created_at?: string
           finals_best_of?: number
           format?: Database["public"]["Enums"]["tournament_format"]
           group_count?: number
           id?: string
+          lb_initial_rounds?: number
           name?: string
           stage_number?: number
           status?: string

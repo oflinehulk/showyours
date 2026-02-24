@@ -37,6 +37,7 @@ import {
 } from '@/hooks/useSquadMembers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
+import { useIsAdmin } from '@/hooks/useAdmin';
 import { CONTACT_TYPES } from '@/lib/constants';
 import { parseContacts } from '@/lib/contacts';
 import { 
@@ -67,6 +68,7 @@ export default function SquadDetailPage() {
   const { data: mySquads } = useMySquads();
   const { data: members } = useSquadMembers(id);
   const { data: myProfile } = useMyProfile();
+  const { data: isAdmin } = useIsAdmin();
   const updateSquad = useUpdateSquad();
   const deleteSquad = useDeleteSquad();
   const addMember = useAddSquadMember();
@@ -567,6 +569,7 @@ export default function SquadDetailPage() {
                   squadId={squad.id}
                   isLeader={isLeader}
                   isCoLeader={isCoLeader}
+                  isAdmin={isAdmin === true}
                 />
               </div>
             </GlowCard>

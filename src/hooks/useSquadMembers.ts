@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Json } from '@/integrations/supabase/types';
 
-/** Strip server suffix like "(2451)" from MLBB IDs and trim whitespace */
+/** Normalize MLBB IDs by extracting the leading numeric ID (e.g., "123456789(2451)" -> "123456789") */
 export function normalizeMlbbId(raw: string | null | undefined): string {
   if (!raw) return '';
-  return raw.replace(/\s*\(.*\)\s*$/, '').trim();
+  const match = raw.trim().match(/^(\d+)/);
+  return match?.[1] ?? '';
 }
 
 /** Check if an MLBB ID is already used in any squad (handles server suffix formats) */

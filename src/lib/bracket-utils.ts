@@ -301,8 +301,10 @@ export interface AdvancingTeam {
   suggestedSeed: number;
 }
 
+export type GroupData = { label: string; matches: TournamentMatch[]; squadMap: Map<string, TournamentSquad> };
+
 export function determineAdvancingTeams(
-  groups: { label: string; matches: TournamentMatch[]; squadMap: Map<string, TournamentSquad> }[],
+  groups: GroupData[],
   advancePerGroup: number,
   advanceBestRemaining: number
 ): AdvancingTeam[] {
@@ -363,4 +365,290 @@ export function determineAdvancingTeams(
   }
 
   return advancing;
+}
+
+// ========== Seeded Double Elimination ==========
+
+function nextPow2(n: number): number {
+  if (n <= 1) return 1;
+  return Math.pow(2, Math.ceil(Math.log2(n)));
+}
+
+/** Compute the number of initial LB-only rounds before WB dropdowns merge in. */
+export function computeLBInitialRounds(ubCount: number, lbCount: number): number {
+  if (lbCount === 0) return 0;
+  const pUb = nextPow2(ubCount);
+  const pLb = nextPow2(lbCount);
+  return Math.max(1, Math.round(Math.log2((2 * pLb) / pUb)));
+}
+
+export interface SeededDEOptions extends StageOptions {
+  semiFinalsBestOf?: 1 | 3 | 5;
+}
+
+/**
+ * Generate a seeded double-elimination bracket where the Upper Bracket and
+ * Lower Bracket start with separate team pools.
+ *
+ * UB is a standard SE bracket from ubSquadIds.
+ * LB starts with its own SE bracket from lbSquadIds, then WB losers merge in.
+ * After the main bracket a Semi-Final (UB Final loser vs LB Champion) and
+ * Grand Final (UB Final winner vs SF winner) are created.
+ *
+ * Falls back to standard DE when lbSquadIds is empty.
+ */
+export function generateSeededDoubleEliminationBracket(
+  tournamentId: string,
+  ubSquadIds: string[],
+  lbSquadIds: string[],
+  opts?: SeededDEOptions
+): MatchInsert[] {
+  // Fallback to standard DE if no LB teams
+  if (lbSquadIds.length === 0) {
+    return generateDoubleEliminationBracket(tournamentId, ubSquadIds, opts);
+  }
+
+  if (ubSquadIds.length < 2) {
+    throw new Error('Need at least 2 UB teams to generate a seeded DE bracket');
+  }
+  if (lbSquadIds.length < 2) {
+    throw new Error('Need at least 2 LB teams to generate a seeded DE bracket');
+  }
+
+  const bo = opts?.defaultBestOf ?? 3;
+  const fbo = opts?.finalsBestOf ?? 5;
+  const sfBo = opts?.semiFinalsBestOf ?? fbo;
+
+  const matches: MatchInsert[] = [];
+
+  // --- Pad both pools ---
+  const rUb = Math.ceil(Math.log2(ubSquadIds.length));
+  const pUb = Math.pow(2, rUb);
+  const ubPadded: (string | null)[] = [...ubSquadIds];
+  while (ubPadded.length < pUb) ubPadded.push(null);
+
+  const pLb = nextPow2(lbSquadIds.length);
+  const lbPadded: (string | null)[] = [...lbSquadIds];
+  while (lbPadded.length < pLb) lbPadded.push(null);
+
+  const k = computeLBInitialRounds(ubSquadIds.length, lbSquadIds.length);
+  const totalLBRounds = k + 2 * (rUb - 1);
+
+  // ========== Winners Bracket ==========
+  // WB R1
+  let mn = 1;
+  for (let i = 0; i < ubPadded.length; i += 2) {
+    matches.push({
+      ...baseMatch(tournamentId, opts),
+      round: 1,
+      match_number: mn,
+      bracket_type: 'winners',
+      squad_a_id: ubPadded[i] ?? null,
+      squad_b_id: ubPadded[i + 1] ?? null,
+      best_of: bo,
+    } as MatchInsert);
+    mn++;
+  }
+
+  // WB R2..rUb
+  let wbMatchCount = pUb / 4;
+  for (let round = 2; round <= rUb; round++) {
+    for (let i = 0; i < wbMatchCount; i++) {
+      matches.push({
+        ...baseMatch(tournamentId, opts),
+        round,
+        match_number: i + 1,
+        bracket_type: 'winners',
+        squad_a_id: null,
+        squad_b_id: null,
+        best_of: round === rUb ? Math.max(bo, 3) as 1 | 3 | 5 : bo,
+      } as MatchInsert);
+    }
+    wbMatchCount = Math.max(wbMatchCount / 2, 1);
+    if (wbMatchCount < 1) break;
+  }
+
+  // ========== Losers Bracket ==========
+
+  // --- Initial LB pure rounds (1..k): SE from lbPadded ---
+  // LB R1: lbPadded paired up
+  mn = 1;
+  for (let i = 0; i < lbPadded.length; i += 2) {
+    matches.push({
+      ...baseMatch(tournamentId, opts),
+      round: 1,
+      match_number: mn,
+      bracket_type: 'losers',
+      squad_a_id: lbPadded[i] ?? null,
+      squad_b_id: lbPadded[i + 1] ?? null,
+      best_of: bo,
+    } as MatchInsert);
+    mn++;
+  }
+
+  // LB R2..k: additional initial pure SE rounds (halving each time)
+  for (let r = 2; r <= k; r++) {
+    const matchCount = pLb / Math.pow(2, r);
+    for (let i = 0; i < matchCount; i++) {
+      matches.push({
+        ...baseMatch(tournamentId, opts),
+        round: r,
+        match_number: i + 1,
+        bracket_type: 'losers',
+        squad_a_id: null,
+        squad_b_id: null,
+        best_of: bo,
+      } as MatchInsert);
+    }
+  }
+
+  // --- Post-initial alternating rounds (k+1 .. totalLBRounds) ---
+  // After k initial rounds, LB survivors = pLb / 2^k = pUb / 2
+  // Mixed rounds (odd offset from k): matchCount same as prev pure round
+  // Pure rounds (even offset from k): matchCount halves via SE pairing
+  let currentLBCount = pLb / Math.pow(2, k); // survivors after initial rounds = pUb / 2
+
+  for (let r = k + 1; r <= totalLBRounds; r++) {
+    const offset = r - k;
+    const isMixed = offset % 2 === 1;
+
+    if (isMixed) {
+      // Mixed round: same matchCount as LB survivors coming in (1:1 with WB dropdown)
+      for (let i = 0; i < currentLBCount; i++) {
+        matches.push({
+          ...baseMatch(tournamentId, opts),
+          round: r,
+          match_number: i + 1,
+          bracket_type: 'losers',
+          squad_a_id: null,
+          squad_b_id: null,
+          best_of: r === totalLBRounds ? Math.max(bo, 3) as 1 | 3 | 5 : bo,
+        } as MatchInsert);
+      }
+      // currentLBCount stays the same after mixed (same number of survivors)
+    } else {
+      // Pure round: SE pairing halves the count
+      currentLBCount = currentLBCount / 2;
+      for (let i = 0; i < currentLBCount; i++) {
+        matches.push({
+          ...baseMatch(tournamentId, opts),
+          round: r,
+          match_number: i + 1,
+          bracket_type: 'losers',
+          squad_a_id: null,
+          squad_b_id: null,
+          best_of: r === totalLBRounds ? Math.max(bo, 3) as 1 | 3 | 5 : bo,
+        } as MatchInsert);
+      }
+    }
+  }
+
+  // ========== Semi-Final ==========
+  // UB Final loser (slot A) vs LB Champion (slot B)
+  matches.push({
+    ...baseMatch(tournamentId, opts),
+    round: 1,
+    match_number: 1,
+    bracket_type: 'semi_finals',
+    squad_a_id: null,
+    squad_b_id: null,
+    best_of: sfBo,
+  } as MatchInsert);
+
+  // ========== Grand Final ==========
+  // UB Final winner (slot A) vs SF winner (slot B)
+  matches.push({
+    ...baseMatch(tournamentId, opts),
+    round: 1,
+    match_number: 1,
+    bracket_type: 'finals',
+    squad_a_id: null,
+    squad_b_id: null,
+    best_of: fbo,
+  } as MatchInsert);
+
+  return matches;
+}
+
+// ========== Split Group Advancement ==========
+
+export interface SplitAdvancementResult {
+  upperBracket: AdvancingTeam[];
+  lowerBracket: AdvancingTeam[];
+}
+
+/**
+ * Split group standings into separate UB and LB pools.
+ * Top `advancePerGroup` -> UB, next `advanceToLowerPerGroup` -> LB,
+ * `advanceBestRemaining` from remaining -> LB.
+ */
+export function determineSplitAdvancingTeams(
+  groups: GroupData[],
+  advancePerGroup: number,
+  advanceToLowerPerGroup: number,
+  advanceBestRemaining: number
+): SplitAdvancementResult {
+  const ub: AdvancingTeam[] = [];
+  const lb: AdvancingTeam[] = [];
+  const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];
+
+  for (const group of groups) {
+    const standings = computeGroupStandings(group.matches, group.squadMap);
+
+    for (let i = 0; i < standings.length; i++) {
+      const team: AdvancingTeam = {
+        squadId: standings[i].squad_id,
+        squad: standings[i].squad,
+        groupLabel: group.label,
+        groupRank: i + 1,
+        points: standings[i].points,
+        suggestedSeed: 0,
+      };
+
+      if (i < advancePerGroup) {
+        ub.push(team);
+      } else if (i < advancePerGroup + advanceToLowerPerGroup) {
+        lb.push(team);
+      } else if (advanceBestRemaining > 0) {
+        remainingCandidates.push({ ...standings[i], groupLabel: group.label });
+      }
+    }
+  }
+
+  // Sort remaining candidates for "best remaining" -> LB
+  remainingCandidates.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const diffA = a.score_for - a.score_against;
+    const diffB = b.score_for - b.score_against;
+    if (diffB !== diffA) return diffB - diffA;
+    return b.score_for - a.score_for;
+  });
+
+  for (let i = 0; i < Math.min(advanceBestRemaining, remainingCandidates.length); i++) {
+    const c = remainingCandidates[i];
+    lb.push({
+      squadId: c.squad_id,
+      squad: c.squad,
+      groupLabel: c.groupLabel,
+      groupRank: advancePerGroup + advanceToLowerPerGroup + 1,
+      points: c.points,
+      suggestedSeed: 0,
+    });
+  }
+
+  // Seed each bucket independently
+  const seedBucket = (bucket: AdvancingTeam[]) => {
+    bucket.sort((a, b) => {
+      if (a.groupRank !== b.groupRank) return a.groupRank - b.groupRank;
+      return b.points - a.points;
+    });
+    for (let i = 0; i < bucket.length; i++) {
+      bucket[i].suggestedSeed = i + 1;
+    }
+  };
+
+  seedBucket(ub);
+  seedBucket(lb);
+
+  return { upperBracket: ub, lowerBracket: lb };
 }

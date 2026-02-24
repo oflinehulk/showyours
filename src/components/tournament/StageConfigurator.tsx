@@ -33,6 +33,7 @@ interface StageInput {
   group_count: number;
   advance_per_group: number;
   advance_best_remaining: number;
+  advance_to_lower_per_group: number;
 }
 
 interface StageConfiguratorProps {
@@ -50,6 +51,7 @@ const DEFAULT_STAGE: StageInput = {
   group_count: 4,
   advance_per_group: 2,
   advance_best_remaining: 0,
+  advance_to_lower_per_group: 0,
 };
 
 export function StageConfigurator({
@@ -87,6 +89,7 @@ export function StageConfigurator({
                   {TOURNAMENT_FORMAT_LABELS[stage.format]} &middot; Bo{stage.best_of}
                   {stage.group_count > 0 && ` \u00B7 ${stage.group_count} groups`}
                   {stage.advance_per_group > 0 && ` \u00B7 Top ${stage.advance_per_group}/group`}
+                  {stage.advance_to_lower_per_group > 0 && ` \u00B7 ${stage.advance_to_lower_per_group}/group to LB`}
                   {stage.advance_best_remaining > 0 && ` + ${stage.advance_best_remaining} best`}
                   {stage.finals_best_of && ` \u00B7 Finals Bo${stage.finals_best_of}`}
                 </p>
@@ -158,6 +161,7 @@ export function StageConfigurator({
           group_count: s.format === 'round_robin' ? s.group_count : 0,
           advance_per_group: s.format === 'round_robin' ? s.advance_per_group : 0,
           advance_best_remaining: s.format === 'round_robin' ? s.advance_best_remaining : 0,
+          advance_to_lower_per_group: s.format === 'round_robin' ? s.advance_to_lower_per_group : 0,
         })),
       });
       toast.success('Stages configured');
@@ -295,6 +299,19 @@ export function StageConfigurator({
                           className="h-8 text-xs mt-0.5"
                         />
                       </div>
+                      {stages[index + 1]?.format === 'double_elimination' && (
+                        <div>
+                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider">To LB/Group</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={20}
+                            value={stage.advance_to_lower_per_group}
+                            onChange={(e) => updateStage(index, { advance_to_lower_per_group: parseInt(e.target.value) || 0 })}
+                            className="h-8 text-xs mt-0.5"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Best Extra</label>
                         <Input
@@ -316,7 +333,9 @@ export function StageConfigurator({
                 <p className="text-[10px] text-muted-foreground">
                   ~{Math.ceil(approvedCount / stage.group_count)} teams per group
                   {index < stages.length - 1 && stage.advance_per_group > 0 && (
-                    <> &rarr; {stage.advance_per_group * stage.group_count + stage.advance_best_remaining} advancing</>
+                    stage.advance_to_lower_per_group > 0
+                      ? <> &rarr; {stage.advance_per_group * stage.group_count} UB + {stage.advance_to_lower_per_group * stage.group_count + stage.advance_best_remaining} LB</>
+                      : <> &rarr; {stage.advance_per_group * stage.group_count + stage.advance_best_remaining} advancing</>
                   )}
                 </p>
               )}

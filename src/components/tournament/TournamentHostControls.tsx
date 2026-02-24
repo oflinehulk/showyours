@@ -38,7 +38,7 @@ import {
 import { StageConfigurator } from '@/components/tournament/StageConfigurator';
 import { GroupAssignment } from '@/components/tournament/GroupAssignment';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
-import { computeGroupStandings, determineAdvancingTeams } from '@/lib/bracket-utils';
+import { computeGroupStandings, determineAdvancingTeams, determineSplitAdvancingTeams } from '@/lib/bracket-utils';
 import {
   Settings,
   Play,
@@ -861,22 +861,49 @@ function CurrentStageActions({
           };
         });
 
-        const advancing = determineAdvancingTeams(
-          groupData,
-          currentStage.advance_per_group,
-          currentStage.advance_best_remaining,
-        );
+        const useSplitAdvancement = currentStage.advance_to_lower_per_group > 0
+          && nextStage.format === 'double_elimination';
 
-        const advancingSquadIds = advancing.map(a => a.squadId);
+        if (useSplitAdvancement) {
+          // Split advancement: top -> UB, bottom -> LB
+          const splitResult = determineSplitAdvancingTeams(
+            groupData,
+            currentStage.advance_per_group,
+            currentStage.advance_to_lower_per_group,
+            currentStage.advance_best_remaining,
+          );
 
-        await generateStageBracket.mutateAsync({
-          tournamentId: tournament.id,
-          stageId: nextStage.id,
-          stage: nextStage,
-          squadIds: advancingSquadIds,
-        });
+          const ubSquadIds = splitResult.upperBracket.map(a => a.squadId);
+          const lbSquadIds = splitResult.lowerBracket.map(a => a.squadId);
 
-        toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${advancingSquadIds.length} teams.`);
+          await generateStageBracket.mutateAsync({
+            tournamentId: tournament.id,
+            stageId: nextStage.id,
+            stage: nextStage,
+            ubSquadIds,
+            lbSquadIds,
+          });
+
+          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${ubSquadIds.length} UB + ${lbSquadIds.length} LB teams.`);
+        } else {
+          // Flat advancement
+          const advancing = determineAdvancingTeams(
+            groupData,
+            currentStage.advance_per_group,
+            currentStage.advance_best_remaining,
+          );
+
+          const advancingSquadIds = advancing.map(a => a.squadId);
+
+          await generateStageBracket.mutateAsync({
+            tournamentId: tournament.id,
+            stageId: nextStage.id,
+            stage: nextStage,
+            squadIds: advancingSquadIds,
+          });
+
+          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${advancingSquadIds.length} teams.`);
+        }
       } else if (nextStage) {
         toast.success(`${currentStage.name} completed! Configure ${nextStage.name} next.`);
       } else {

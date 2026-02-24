@@ -6,6 +6,8 @@ import {
   generateSingleEliminationBracket,
   generateDoubleEliminationBracket,
   generateRoundRobinBracket,
+  generateSeededDoubleEliminationBracket,
+  computeLBInitialRounds,
 } from '@/lib/bracket-utils';
 import { secureShuffleArray } from '@/lib/secure-random';
 import type {
@@ -586,6 +588,39 @@ async function findGrandFinals(
   return data && data.length > 0 ? data[0] : null;
 }
 
+// Helper: find the Semi-Finals match (seeded DE)
+async function findSemiFinals(
+  tournamentId: string,
+  stageId?: string | null
+) {
+  let query = supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'semi_finals')
+    .eq('match_number', 1);
+
+  if (stageId) {
+    query = query.eq('stage_id', stageId);
+  }
+
+  const { data, error: queryError } = await query;
+  if (queryError) throw queryError;
+  return data && data.length > 0 ? data[0] : null;
+}
+
+// Helper: fetch lb_initial_rounds (k) for a stage (0 = standard DE)
+async function fetchStageK(stageId: string | null | undefined): Promise<number> {
+  if (!stageId) return 0;
+  const { data, error } = await supabase
+    .from('tournament_stages')
+    .select('lb_initial_rounds')
+    .eq('id', stageId)
+    .maybeSingle();
+  if (error || !data) return 0;
+  return (data as any).lb_initial_rounds ?? 0;
+}
+
 // Advance the winner of a completed match to the next round
 async function advanceWinnerToNextRound(
   tournamentId: string,
@@ -615,48 +650,149 @@ async function advanceWinnerToNextRound(
     await advanceLoserToLosersBracket(tournamentId, completedMatch);
   }
 
+  if (bracket_type === 'semi_finals') {
+    // SF winner -> Grand Final slot B
+    const gfMatch = await findGrandFinals(tournamentId, stage_id);
+    if (gfMatch) {
+      const { error: advErr } = await supabase
+        .from('tournament_matches')
+        .update({ squad_b_id: winner_id })
+        .eq('id', gfMatch.id);
+      if (advErr) throw advErr;
+    }
+  }
+
   if (bracket_type === 'losers') {
-    const isOddRound = round % 2 === 1;
+    const k = await fetchStageK(stage_id);
 
-    if (isOddRound) {
-      // Odd LB round → Even LB round: 1:1 mapping, winner fills slot A
-      const nextMatch = await findNextMatch(
-        tournamentId, round + 1, match_number, ['losers'], stage_id
-      );
+    if (k > 0) {
+      // ===== Seeded DE losers bracket advancement =====
+      const offset = round - k;
 
-      if (nextMatch) {
-        const { error: advErr } = await supabase
-          .from('tournament_matches')
-          .update({ squad_a_id: winner_id })
-          .eq('id', nextMatch.id);
-        if (advErr) throw advErr;
-      }
-    } else {
-      // Even LB round → Odd LB round: 2:1 SE pairing
-      const nextRound = round + 1;
-      const nextMatchNumber = Math.ceil(match_number / 2);
-      const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+      if (round < k) {
+        // Initial pure LB rounds (r < k): 2:1 SE pairing to next round
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
 
-      // Try next losers round
-      const nextMatch = await findNextMatch(
-        tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id
-      );
+        const nextMatch = await findNextMatch(
+          tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id
+        );
 
-      if (nextMatch) {
-        const { error: advErr } = await supabase
-          .from('tournament_matches')
-          .update({ [slot]: winner_id })
-          .eq('id', nextMatch.id);
-        if (advErr) throw advErr;
-      } else {
-        // No next LB round → this is the LB Final, advance to Grand Finals slot B
-        const gfMatch = await findGrandFinals(tournamentId, stage_id);
-        if (gfMatch) {
+        if (nextMatch) {
           const { error: advErr } = await supabase
             .from('tournament_matches')
-            .update({ squad_b_id: winner_id })
-            .eq('id', gfMatch.id);
+            .update({ [slot]: winner_id })
+            .eq('id', nextMatch.id);
           if (advErr) throw advErr;
+        }
+      } else if (round === k) {
+        // Last initial round (r = k): 1:1 to next round slot A
+        const nextMatch = await findNextMatch(
+          tournamentId, round + 1, match_number, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ squad_a_id: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw advErr;
+        }
+      } else if (offset % 2 === 1) {
+        // Mixed round (odd offset from k): 1:1 to next round slot A
+        const nextMatch = await findNextMatch(
+          tournamentId, round + 1, match_number, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ squad_a_id: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw advErr;
+        }
+      } else {
+        // Pure round (even offset from k): 2:1 SE pairing
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+
+        const nextMatch = await findNextMatch(
+          tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ [slot]: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw advErr;
+        } else {
+          // No next LB round → LB champion → Semi-Final slot B (or Grand Final if no SF)
+          const sfMatch = await findSemiFinals(tournamentId, stage_id);
+          if (sfMatch) {
+            const { error: advErr } = await supabase
+              .from('tournament_matches')
+              .update({ squad_b_id: winner_id })
+              .eq('id', sfMatch.id);
+            if (advErr) throw advErr;
+          } else {
+            const gfMatch = await findGrandFinals(tournamentId, stage_id);
+            if (gfMatch) {
+              const { error: advErr } = await supabase
+                .from('tournament_matches')
+                .update({ squad_b_id: winner_id })
+                .eq('id', gfMatch.id);
+              if (advErr) throw advErr;
+            }
+          }
+        }
+      }
+    } else {
+      // ===== Standard DE losers bracket advancement =====
+      const isOddRound = round % 2 === 1;
+
+      if (isOddRound) {
+        // Odd LB round → Even LB round: 1:1 mapping, winner fills slot A
+        const nextMatch = await findNextMatch(
+          tournamentId, round + 1, match_number, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ squad_a_id: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw advErr;
+        }
+      } else {
+        // Even LB round → Odd LB round: 2:1 SE pairing
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+
+        // Try next losers round
+        const nextMatch = await findNextMatch(
+          tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ [slot]: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw advErr;
+        } else {
+          // No next LB round → this is the LB Final, advance to Grand Finals slot B
+          const gfMatch = await findGrandFinals(tournamentId, stage_id);
+          if (gfMatch) {
+            const { error: advErr } = await supabase
+              .from('tournament_matches')
+              .update({ squad_b_id: winner_id })
+              .eq('id', gfMatch.id);
+            if (advErr) throw advErr;
+          }
         }
       }
     }
@@ -679,37 +815,76 @@ async function advanceLoserToLosersBracket(
   if (!loserId) return;
 
   const { round, match_number, stage_id } = completedMatch;
+  const k = await fetchStageK(stage_id);
 
-  if (round === 1) {
-    // WB R1 losers → LB R1: paired like SE (2:1 mapping)
-    const lbMatchNumber = Math.ceil(match_number / 2);
-    const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
-
-    const lbMatch = await findNextMatch(
-      tournamentId, 1, lbMatchNumber, ['losers'], stage_id
+  if (k > 0) {
+    // ===== Seeded DE: WB losers drop into LB at specific rounds =====
+    // Check if this is the WB Final (no next WB match exists)
+    const nextWbRound = round + 1;
+    const nextWbMatchNumber = Math.ceil(match_number / 2);
+    const nextWbMatch = await findNextMatch(
+      tournamentId, nextWbRound, nextWbMatchNumber, ['winners'], stage_id
     );
 
-    if (lbMatch) {
-      const { error: advErr } = await supabase
-        .from('tournament_matches')
-        .update({ [slot]: loserId })
-        .eq('id', lbMatch.id);
-      if (advErr) throw advErr;
+    if (!nextWbMatch) {
+      // WB Final loser → Semi-Final slot A
+      const sfMatch = await findSemiFinals(tournamentId, stage_id);
+      if (sfMatch) {
+        const { error: advErr } = await supabase
+          .from('tournament_matches')
+          .update({ squad_a_id: loserId })
+          .eq('id', sfMatch.id);
+        if (advErr) throw advErr;
+      }
+    } else {
+      // WB R(w) loser → LB R(k + 2*w - 1), slot B, 1:1 mapping
+      const lbRound = k + 2 * round - 1;
+
+      const lbMatch = await findNextMatch(
+        tournamentId, lbRound, match_number, ['losers'], stage_id
+      );
+
+      if (lbMatch) {
+        const { error: advErr } = await supabase
+          .from('tournament_matches')
+          .update({ squad_b_id: loserId })
+          .eq('id', lbMatch.id);
+        if (advErr) throw advErr;
+      }
     }
   } else {
-    // WB R(w) losers → LB R(2*(w-1)): same match_number, slot B
-    const lbRound = 2 * (round - 1);
+    // ===== Standard DE dropout mapping =====
+    if (round === 1) {
+      // WB R1 losers → LB R1: paired like SE (2:1 mapping)
+      const lbMatchNumber = Math.ceil(match_number / 2);
+      const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
 
-    const lbMatch = await findNextMatch(
-      tournamentId, lbRound, match_number, ['losers'], stage_id
-    );
+      const lbMatch = await findNextMatch(
+        tournamentId, 1, lbMatchNumber, ['losers'], stage_id
+      );
 
-    if (lbMatch) {
-      const { error: advErr } = await supabase
-        .from('tournament_matches')
-        .update({ squad_b_id: loserId })
-        .eq('id', lbMatch.id);
-      if (advErr) throw advErr;
+      if (lbMatch) {
+        const { error: advErr } = await supabase
+          .from('tournament_matches')
+          .update({ [slot]: loserId })
+          .eq('id', lbMatch.id);
+        if (advErr) throw advErr;
+      }
+    } else {
+      // WB R(w) losers → LB R(2*(w-1)): same match_number, slot B
+      const lbRound = 2 * (round - 1);
+
+      const lbMatch = await findNextMatch(
+        tournamentId, lbRound, match_number, ['losers'], stage_id
+      );
+
+      if (lbMatch) {
+        const { error: advErr } = await supabase
+          .from('tournament_matches')
+          .update({ squad_b_id: loserId })
+          .eq('id', lbMatch.id);
+        if (advErr) throw advErr;
+      }
     }
   }
 }
@@ -1605,11 +1780,15 @@ export function useGenerateStageBracket() {
       stageId,
       stage,
       squadIds,
+      ubSquadIds,
+      lbSquadIds,
     }: {
       tournamentId: string;
       stageId: string;
       stage: TournamentStage;
       squadIds?: string[]; // for knockout stage, pass advancing team IDs
+      ubSquadIds?: string[]; // for seeded DE, upper bracket team IDs
+      lbSquadIds?: string[]; // for seeded DE, lower bracket team IDs
     }) => {
       const opts = {
         stageId,
@@ -1655,16 +1834,34 @@ export function useGenerateStageBracket() {
         }
       } else {
         // Elimination bracket
-        const ids = squadIds || [];
-        if (ids.length < 2) throw new Error('Need at least 2 teams');
-
         let matches: any[];
-        if (stage.format === 'single_elimination') {
-          matches = generateSingleEliminationBracket(tournamentId, ids, opts);
-        } else if (stage.format === 'double_elimination') {
-          matches = generateDoubleEliminationBracket(tournamentId, ids, opts);
+
+        if (stage.format === 'double_elimination' && ubSquadIds && lbSquadIds && lbSquadIds.length >= 2) {
+          // Seeded Double Elimination: separate UB and LB pools
+          const k = computeLBInitialRounds(ubSquadIds.length, lbSquadIds.length);
+          matches = generateSeededDoubleEliminationBracket(
+            tournamentId, ubSquadIds, lbSquadIds, {
+              ...opts,
+              semiFinalsBestOf: opts.finalsBestOf,
+            }
+          );
+
+          // Store computed k in stage for advancement logic
+          await supabase
+            .from('tournament_stages')
+            .update({ lb_initial_rounds: k })
+            .eq('id', stageId);
         } else {
-          matches = generateRoundRobinBracket(tournamentId, ids, opts);
+          const ids = squadIds || [];
+          if (ids.length < 2) throw new Error('Need at least 2 teams');
+
+          if (stage.format === 'single_elimination') {
+            matches = generateSingleEliminationBracket(tournamentId, ids, opts);
+          } else if (stage.format === 'double_elimination') {
+            matches = generateDoubleEliminationBracket(tournamentId, ids, opts);
+          } else {
+            matches = generateRoundRobinBracket(tournamentId, ids, opts);
+          }
         }
 
         const { error: insertErr } = await supabase

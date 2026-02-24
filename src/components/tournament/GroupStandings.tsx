@@ -5,10 +5,11 @@ import type { GroupStanding } from '@/lib/tournament-types';
 interface GroupStandingsProps {
   standings: GroupStanding[];
   groupLabel: string;
-  advanceCount?: number; // Number of teams that advance (highlighted green)
+  advanceCount?: number; // Number of teams that advance to UB (highlighted green)
+  advanceToLowerCount?: number; // Number of teams that advance to LB (highlighted orange)
 }
 
-export function GroupStandings({ standings, groupLabel, advanceCount = 0 }: GroupStandingsProps) {
+export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanceToLowerCount = 0 }: GroupStandingsProps) {
   return (
     <div className="rounded-lg border border-border/50 overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b border-border/50">
@@ -33,12 +34,14 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0 }: Grou
           <tbody>
             {standings.map((s, i) => {
               const isAdvancing = advanceCount > 0 && i < advanceCount;
+              const isLowerBracket = !isAdvancing && advanceToLowerCount > 0 && i < advanceCount + advanceToLowerCount;
               return (
                 <tr
                   key={s.squad_id}
                   className={cn(
                     'border-b border-border/20 last:border-0 transition-colors',
                     isAdvancing && 'bg-green-500/5',
+                    isLowerBracket && 'bg-orange-500/5',
                   )}
                 >
                   <td className="px-3 py-2">
@@ -46,7 +49,9 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0 }: Grou
                       'inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold',
                       isAdvancing
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'text-muted-foreground'
+                        : isLowerBracket
+                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                          : 'text-muted-foreground'
                     )}>
                       {i + 1}
                     </span>
@@ -63,7 +68,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0 }: Grou
                       </Avatar>
                       <span className={cn(
                         'font-medium truncate max-w-[120px]',
-                        isAdvancing ? 'text-green-400' : 'text-foreground'
+                        isAdvancing ? 'text-green-400' : isLowerBracket ? 'text-orange-400' : 'text-foreground'
                       )}>
                         {s.squad.name}
                       </span>
@@ -84,7 +89,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0 }: Grou
                   <td className="text-center px-2 py-2">
                     <span className={cn(
                       'font-bold',
-                      isAdvancing ? 'text-green-400' : 'text-[#FF4500]'
+                      isAdvancing ? 'text-green-400' : isLowerBracket ? 'text-orange-400' : 'text-[#FF4500]'
                     )}>
                       {s.points}
                     </span>

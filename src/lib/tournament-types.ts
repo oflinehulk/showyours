@@ -86,7 +86,7 @@ export interface TournamentMatch {
   tournament_id: string;
   round: number;
   match_number: number;
-  bracket_type: 'winners' | 'losers' | 'finals';
+  bracket_type: 'winners' | 'losers' | 'finals' | 'semi_finals';
   squad_a_id: string | null;
   squad_b_id: string | null;
   winner_id: string | null;
@@ -260,6 +260,8 @@ export interface TournamentStage {
   group_count: number;
   advance_per_group: number;
   advance_best_remaining: number;
+  advance_to_lower_per_group: number;
+  lb_initial_rounds: number;
   created_at: string;
   updated_at: string;
 }

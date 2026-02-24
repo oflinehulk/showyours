@@ -85,6 +85,7 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
   // Single-stage fallback — original behavior
   const winnersMatches = matches.filter(m => m.bracket_type === 'winners');
   const losersMatches = matches.filter(m => m.bracket_type === 'losers');
+  const semiFinalsMatches = matches.filter(m => m.bracket_type === 'semi_finals');
   const finalsMatches = matches.filter(m => m.bracket_type === 'finals');
   const maxRound = Math.max(...matches.map(m => m.round), 0);
 
@@ -164,6 +165,30 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
                 onResolve={(match) => setResolveMatch(match)}
                 {...sharedProps}
               />
+            </GlowCard>
+          )}
+
+          {semiFinalsMatches.length > 0 && (
+            <GlowCard glowColor="accent" className="p-6">
+              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+                <Trophy className="w-5 h-5 text-orange-400" />
+                Semi-Final
+              </h3>
+              <div className="flex justify-center">
+                {semiFinalsMatches.map((match) => (
+                  <div key={match.id} className="flex flex-col items-center gap-1">
+                    <MatchCard
+                      match={match}
+                      onClick={() => setSelectedMatch(match)}
+                      onDispute={() => setDisputeMatch(match)}
+                      onResolve={() => setResolveMatch(match)}
+                      large
+                      {...sharedProps}
+                    />
+                    <span className="text-[10px] text-muted-foreground">Loser finishes 3rd place</span>
+                  </div>
+                ))}
+              </div>
             </GlowCard>
           )}
 
@@ -444,6 +469,7 @@ function GroupStageView({
               standings={standings}
               groupLabel={group.label}
               advanceCount={stage.advance_per_group}
+              advanceToLowerCount={stage.advance_to_lower_per_group}
             />
 
             {/* Group Matches */}
@@ -520,6 +546,7 @@ function EliminationStageView({
 
   const winnersMatches = stageMatches.filter(m => m.bracket_type === 'winners');
   const losersMatches = stageMatches.filter(m => m.bracket_type === 'losers');
+  const semiFinalsMatches = stageMatches.filter(m => m.bracket_type === 'semi_finals');
   const finalsMatches = stageMatches.filter(m => m.bracket_type === 'finals');
   const maxRound = Math.max(...stageMatches.map(m => m.round), 0);
 
@@ -588,6 +615,30 @@ function EliminationStageView({
             onResolve={onResolve}
             {...sharedProps}
           />
+        </GlowCard>
+      )}
+
+      {semiFinalsMatches.length > 0 && (
+        <GlowCard glowColor="accent" className="p-6">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+            <Trophy className="w-5 h-5 text-orange-400" />
+            Semi-Final
+          </h3>
+          <div className="flex justify-center">
+            {semiFinalsMatches.map((match) => (
+              <div key={match.id} className="flex flex-col items-center gap-1">
+                <MatchCard
+                  match={match}
+                  onClick={() => onMatchClick(match)}
+                  onDispute={() => onDispute(match)}
+                  onResolve={() => onResolve(match)}
+                  large
+                  {...sharedProps}
+                />
+                <span className="text-[10px] text-muted-foreground">Loser finishes 3rd place</span>
+              </div>
+            ))}
+          </div>
         </GlowCard>
       )}
 

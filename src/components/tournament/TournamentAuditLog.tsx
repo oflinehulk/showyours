@@ -49,7 +49,7 @@ function getActionDescription(action: string, details: Record<string, unknown>):
     case 'match_result_entered':
       return `R${details.round} M${details.match_number}: ${details.squad_a_score}-${details.squad_b_score}`;
     case 'dispute_raised':
-      return details.reason ? details.reason.slice(0, 80) : 'Dispute filed';
+      return details.reason ? String(details.reason).slice(0, 80) : 'Dispute filed';
     case 'status_changed':
       return `${details.old_status} → ${details.new_status}`;
     default:

@@ -105,20 +105,20 @@ export default function SquadDetailPage() {
         ? 'Squad is now hidden from listings' 
         : 'Squad is now visible in listings!'
       );
-    } catch (error: any) {
-      toast.error('Failed to update status', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update status', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
   const handleDeleteSquad = async () => {
     if (!squad || !isOwner) return;
-    
+
     try {
       await deleteSquad.mutateAsync(squad.id);
       toast.success('Squad deleted successfully');
       navigate('/squads');
-    } catch (error: any) {
-      toast.error('Failed to delete squad', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to delete squad', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -133,8 +133,8 @@ export default function SquadDetailPage() {
         role: 'member',
       });
       toast.success(`${profile.ign} added to squad!`);
-    } catch (error: any) {
-      toast.error('Failed to add member', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to add member', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -167,20 +167,20 @@ export default function SquadDetailPage() {
       setManualMlbbId('');
       setManualWhatsapp('');
       setManualRole('member');
-    } catch (error: any) {
-      toast.error('Failed to add member', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to add member', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
   const handleLeaveSquad = async () => {
     if (!squad || !canLeave) return;
-    
+
     try {
       await leaveSquad.mutateAsync(squad.id);
       toast.success('You have left the squad');
       navigate('/squads');
-    } catch (error: any) {
-      toast.error('Failed to leave squad', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to leave squad', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

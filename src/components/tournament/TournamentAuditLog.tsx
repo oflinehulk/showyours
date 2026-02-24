@@ -36,7 +36,7 @@ function getDateLabel(dateStr: string): string {
   return format(date, 'MMMM d, yyyy');
 }
 
-function getActionDescription(action: string, details: Record<string, any>): string {
+function getActionDescription(action: string, details: Record<string, unknown>): string {
   switch (action) {
     case 'registration_approved':
     case 'registration_rejected':

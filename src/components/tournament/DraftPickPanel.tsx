@@ -94,8 +94,8 @@ export function DraftPickPanel({ match, tournamentId, isHost, open, onClose }: D
       });
       toast.success('Draft saved');
       onClose();
-    } catch (error: any) {
-      toast.error('Failed to save draft', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to save draft', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

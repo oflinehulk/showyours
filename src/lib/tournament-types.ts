@@ -240,7 +240,7 @@ export interface AuditLogEntry {
   tournament_id: string;
   user_id: string | null;
   action: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   created_at: string;
 }
 

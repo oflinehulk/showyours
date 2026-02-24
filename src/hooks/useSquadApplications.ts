@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface SquadApplication {
   id: string;
@@ -20,7 +21,7 @@ export interface SquadApplication {
     avatar_url: string | null;
     rank: string;
     main_role: string;
-    contacts: any;
+    contacts: Json | null;
   };
   squad?: {
     id: string;

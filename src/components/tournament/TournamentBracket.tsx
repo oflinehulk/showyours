@@ -455,8 +455,8 @@ function GroupStageView({
         }
         // Also use groupTeams data if available
         for (const gt of (groupTeams || [])) {
-          if (gt.group_id === group.id && (gt as any).tournament_squads) {
-            squadMap.set(gt.tournament_squad_id, (gt as any).tournament_squads);
+          if (gt.group_id === group.id && gt.tournament_squads) {
+            squadMap.set(gt.tournament_squad_id, gt.tournament_squads);
           }
         }
 
@@ -799,7 +799,7 @@ function MatchCard({
       tournamentId,
     }, {
       onSuccess: () => toast.success('Match forfeited'),
-      onError: (err: any) => toast.error('Failed to forfeit', { description: err.message }),
+      onError: (err: Error) => toast.error('Failed to forfeit', { description: err.message }),
     });
   };
 
@@ -1061,8 +1061,8 @@ function DisputeDialog({
       toast.success('Dispute raised', { description: 'The host will review your dispute.' });
       setReason('');
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error('Failed to raise dispute', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to raise dispute', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -1145,8 +1145,8 @@ function ResolveDisputeDialog({
       setNewScoreA('');
       setNewScoreB('');
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error('Failed to resolve dispute', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to resolve dispute', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

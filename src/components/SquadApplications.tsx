@@ -39,8 +39,8 @@ export function SquadApplications({ squadId, maxMembers, currentMemberCount }: S
         userId: app.user_id,
       });
       toast.success(`${app.applicant?.ign} has been added to the squad!`);
-    } catch (error: any) {
-      toast.error('Failed to approve application', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to approve application', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -51,8 +51,8 @@ export function SquadApplications({ squadId, maxMembers, currentMemberCount }: S
         squadId: app.squad_id,
       });
       toast.success('Application rejected');
-    } catch (error: any) {
-      toast.error('Failed to reject application', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to reject application', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

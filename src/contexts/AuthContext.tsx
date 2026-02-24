@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     // Clear all cached data so the next user doesn't see stale data
     try {
-      const queryClient = (window as any).__queryClient;
+      const queryClient = (window as unknown as Record<string, { clear: () => void } | undefined>).__queryClient;
       if (queryClient) queryClient.clear();
     } catch {
       // queryClient not available outside provider - that's ok
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await lovable.auth.signInWithOAuth('google', {
         redirect_uri: window.location.origin,
       });
-      return { error: (result as any)?.error ?? null };
+      return { error: (result as unknown as { error?: Error | null })?.error ?? null };
     } catch (err) {
       return { error: err instanceof Error ? err : new Error('Google sign-in failed') };
     }

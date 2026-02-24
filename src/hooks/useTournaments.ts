@@ -114,14 +114,14 @@ export function useCreateTournament() {
       if (!user) throw new Error('Not authenticated');
 
       const { prize_tiers, ...rest } = tournament;
-      const insertPayload: Record<string, any> = { ...rest, host_id: user.id };
+      const insertPayload: Record<string, unknown> = { ...rest, host_id: user.id };
       if (prize_tiers !== undefined) {
         insertPayload.prize_tiers = JSON.parse(JSON.stringify(prize_tiers));
       }
 
       const { data, error } = await supabase
         .from('tournaments')
-        .insert(insertPayload as any) // Record<string,any> for dynamic prize_tiers JSON
+        .insert(insertPayload as never) // Record<string,unknown> for dynamic prize_tiers JSON
         .select()
         .single();
 
@@ -142,13 +142,13 @@ export function useUpdateTournament() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Tournament> & { id: string }) => {
       const { prize_tiers, ...rest } = updates;
-      const updatePayload: Record<string, any> = { ...rest };
+      const updatePayload: Record<string, unknown> = { ...rest };
       if (prize_tiers !== undefined) {
         updatePayload.prize_tiers = JSON.parse(JSON.stringify(prize_tiers));
       }
       const { data, error } = await supabase
         .from('tournaments')
-        .update(updatePayload)
+        .update(updatePayload as never)
         .eq('id', id)
         .select()
         .single();
@@ -618,13 +618,13 @@ async function fetchStageK(stageId: string | null | undefined): Promise<number> 
     .eq('id', stageId)
     .maybeSingle();
   if (error || !data) return 0;
-  return (data as any).lb_initial_rounds ?? 0;
+  return (data as { lb_initial_rounds?: number }).lb_initial_rounds ?? 0;
 }
 
 // Advance the winner of a completed match to the next round
 async function advanceWinnerToNextRound(
   tournamentId: string,
-  completedMatch: any
+  completedMatch: TournamentMatch
 ) {
   const { bracket_type, round, match_number, winner_id, stage_id } = completedMatch;
 
@@ -802,7 +802,7 @@ async function advanceWinnerToNextRound(
 // Advance the loser of a winners bracket match to the losers bracket
 async function advanceLoserToLosersBracket(
   tournamentId: string,
-  completedMatch: any
+  completedMatch: TournamentMatch
 ) {
   // Only process winners bracket matches
   if (completedMatch.bracket_type !== 'winners') return;
@@ -984,19 +984,19 @@ export function useGenerateBracket() {
       if (regError) throw regError;
 
       // Sort by seed if seeds exist, otherwise random shuffle
-      const hasSeeds = registrations.some((r: any) => r.seed != null);
+      const hasSeeds = registrations.some((r) => r.seed != null);
       let orderedSquadIds: string[];
 
       if (hasSeeds) {
-        const sorted = [...registrations].sort((a: any, b: any) => {
+        const sorted = [...registrations].sort((a, b) => {
           if (a.seed == null && b.seed == null) return 0;
           if (a.seed == null) return 1;
           if (b.seed == null) return -1;
           return a.seed - b.seed;
         });
-        orderedSquadIds = applyStandardSeeding(sorted.map((r: any) => r.tournament_squad_id));
+        orderedSquadIds = applyStandardSeeding(sorted.map((r) => r.tournament_squad_id));
       } else {
-        orderedSquadIds = secureShuffleArray(registrations.map((r: any) => r.tournament_squad_id));
+        orderedSquadIds = secureShuffleArray(registrations.map((r) => r.tournament_squad_id));
       }
 
       // Generate matches based on format
@@ -1425,7 +1425,7 @@ export function useResolveDispute() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
-      const updates: Record<string, any> = {
+      const updates: Record<string, unknown> = {
         status: 'completed' as MatchStatus,
         dispute_resolved_by: user.id,
         dispute_resolution_notes: resolutionNotes,
@@ -1437,7 +1437,7 @@ export function useResolveDispute() {
 
       const { data, error } = await supabase
         .from('tournament_matches')
-        .update(updates)
+        .update(updates as never)
         .eq('id', matchId)
         .select()
         .single();
@@ -1661,7 +1661,7 @@ export function useUpdateStage() {
     }: Partial<TournamentStage> & { stageId: string; tournamentId: string }) => {
       const { error } = await supabase
         .from('tournament_stages')
-        .update(updates as any)
+        .update(updates as never)
         .eq('id', stageId);
       if (error) throw error;
       return { tournamentId, stageId };
@@ -1807,7 +1807,7 @@ export function useGenerateStageBracket() {
         if (gErr) throw gErr;
         if (!groups || groups.length === 0) throw new Error('No groups configured');
 
-        const allMatches: any[] = [];
+        const allMatches: Record<string, unknown>[] = [];
 
         for (const group of groups) {
           // Get team IDs in this group
@@ -1829,12 +1829,12 @@ export function useGenerateStageBracket() {
         if (allMatches.length > 0) {
           const { error: insertErr } = await supabase
             .from('tournament_matches')
-            .insert(allMatches);
+            .insert(allMatches as never);
           if (insertErr) throw insertErr;
         }
       } else {
         // Elimination bracket
-        let matches: any[];
+        let matches: Record<string, unknown>[];
 
         if (stage.format === 'double_elimination' && ubSquadIds && lbSquadIds && lbSquadIds.length >= 2) {
           // Seeded Double Elimination: separate UB and LB pools
@@ -1866,7 +1866,7 @@ export function useGenerateStageBracket() {
 
         const { error: insertErr } = await supabase
           .from('tournament_matches')
-          .insert(matches);
+          .insert(matches as never);
         if (insertErr) throw insertErr;
 
         // Auto-complete byes for elimination formats

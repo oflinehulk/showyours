@@ -8,7 +8,7 @@ export function useCompleteOnboarding() {
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from('profiles')
-        .update({ has_completed_onboarding: true } as any)
+        .update({ has_completed_onboarding: true })
         .eq('user_id', userId);
 
       if (error) throw error;

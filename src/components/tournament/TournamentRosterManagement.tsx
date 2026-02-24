@@ -58,8 +58,8 @@ export function TournamentRosterManagement({ tournament, isHost }: TournamentRos
         tournamentId: tournament.id,
       });
       toast.success('Roster change approved');
-    } catch (error: any) {
-      toast.error('Failed to approve', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to approve', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -71,8 +71,8 @@ export function TournamentRosterManagement({ tournament, isHost }: TournamentRos
         tournamentId: tournament.id,
       });
       toast.success('Roster change rejected');
-    } catch (error: any) {
-      toast.error('Failed to reject', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to reject', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

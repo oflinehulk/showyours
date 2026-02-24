@@ -108,8 +108,8 @@ export default function PlayerProfilePage() {
         ? 'You are now marked as recruited! Your profile is hidden from listings.' 
         : 'You are now visible in the recruitment listings!'
       );
-    } catch (error: any) {
-      toast.error('Failed to update status', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update status', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -120,8 +120,8 @@ export default function PlayerProfilePage() {
       await deleteProfile.mutateAsync(player.id);
       toast.success('Profile deleted successfully');
       navigate('/');
-    } catch (error: any) {
-      toast.error('Failed to delete profile', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to delete profile', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -376,8 +376,8 @@ export default function PlayerProfilePage() {
 
                   <div className="flex flex-wrap gap-3">
                     {/* Show multiple roles if available */}
-                    {((player as any).main_roles?.length > 0 
-                      ? (player as any).main_roles 
+                    {(player.main_roles && player.main_roles.length > 0
+                      ? player.main_roles 
                       : [player.main_role]
                     ).map((role: string) => (
                       <RoleIcon key={role} role={role} size="md" />

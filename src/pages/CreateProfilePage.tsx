@@ -17,6 +17,7 @@ import { ImageUpload, MultiImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateProfile, useMyProfile, useUpdateProfile } from '@/hooks/useProfiles';
 import { RANKS, INDIAN_STATES, ALL_HEROES } from '@/lib/constants';
+import type { RankId, RoleId, HeroClassId, StateId, ContactTypeId } from '@/lib/constants';
 import { ArrowLeft, ArrowRight, Check, X, Loader2, AlertCircle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -68,7 +69,7 @@ export default function CreateProfilePage() {
       setState(existingProfile.state || '');
       setRank(existingProfile.rank || '');
       setWinRate(existingProfile.win_rate?.toString() || '');
-      const roles = (existingProfile as any).main_roles;
+      const roles = existingProfile.main_roles;
       if (roles && roles.length > 0) {
         setMainRoles(roles);
       } else if (existingProfile.main_role) {
@@ -82,7 +83,7 @@ export default function CreateProfilePage() {
       // Parse contacts - use game-id as the single Game ID field
       const contacts = parseContacts(existingProfile.contacts);
       const gameIdContact = contacts.find((c: { type: string }) => c.type === 'game-id');
-      setGameId(gameIdContact?.value || (existingProfile as any).mlbb_id || '');
+      setGameId(gameIdContact?.value || existingProfile.mlbb_id || '');
       
       contacts.forEach((contact: { type: string; value: string }) => {
         switch (contact.type) {
@@ -140,7 +141,7 @@ export default function CreateProfilePage() {
   ).slice(0, 8);
 
   const buildContacts = () => {
-    const contacts: { type: string; value: string }[] = [];
+    const contacts: { type: ContactTypeId; value: string }[] = [];
     if (gameId.trim()) contacts.push({ type: 'game-id', value: gameId.trim() });
     if (whatsapp.trim()) contacts.push({ type: 'whatsapp', value: whatsapp.trim() });
     if (discord.trim()) contacts.push({ type: 'discord', value: discord.trim() });
@@ -186,16 +187,16 @@ export default function CreateProfilePage() {
     const profileData = {
       ign: ign.trim(),
       avatar_url: avatarUrl,
-      rank: rank as any,
-      state: state as any,
+      rank: rank as RankId,
+      state: state as StateId,
       win_rate: parsedWinRate,
-      main_role: mainRoles[0] || ('gold' as any),
+      main_role: (mainRoles[0] || 'gold') as RoleId,
       main_roles: mainRoles,
-      hero_class: 'fighter' as any, // default, not user-facing
+      hero_class: 'fighter' as HeroClassId, // default, not user-facing
       favorite_heroes: favoriteHeroes,
       bio: bio.trim() || null,
       looking_for_squad: lookingForSquad,
-      contacts: buildContacts() as any,
+      contacts: buildContacts(),
       screenshots,
       mlbb_id: gameId.trim() || null, // use same Game ID for mlbb_id
     };
@@ -213,9 +214,9 @@ export default function CreateProfilePage() {
         toast.success('Profile created successfully!');
         navigate('/players');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(isEditMode ? 'Failed to update profile' : 'Failed to create profile', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };

@@ -169,8 +169,8 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
         description: 'Your registration is pending approval from the host.',
       });
       onSuccess();
-    } catch (error: any) {
-      toast.error('Failed to register', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to register', { description: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setIsSubmitting(false);
     }

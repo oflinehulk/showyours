@@ -166,8 +166,8 @@ export function StageConfigurator({
       });
       toast.success('Stages configured');
       onStagesCreated?.();
-    } catch (error: any) {
-      toast.error('Failed to create stages', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to create stages', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

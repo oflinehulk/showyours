@@ -18,6 +18,7 @@ import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES } from '@/lib/constants';
+import type { RankId, RoleId, ContactTypeId } from '@/lib/constants';
 import { hasContactType } from '@/lib/contacts';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
@@ -75,7 +76,7 @@ export default function CreateSquadPage() {
   };
 
   const buildContacts = () => {
-    const contacts: { type: string; value: string }[] = [];
+    const contacts: { type: ContactTypeId; value: string }[] = [];
     if (whatsapp.trim()) contacts.push({ type: 'whatsapp', value: whatsapp.trim() });
     if (discord.trim()) contacts.push({ type: 'discord', value: discord.trim() });
     return contacts;
@@ -127,21 +128,21 @@ export default function CreateSquadPage() {
         name: name.trim(),
         logo_url: logoUrl,
         description: description.trim(),
-        min_rank: minRank as any,
-        needed_roles: neededRoles as any,
+        min_rank: minRank as RankId,
+        needed_roles: neededRoles as RoleId[],
         max_members: parseInt(maxMembers) || 10,
-        contacts: buildContacts() as any,
+        contacts: buildContacts(),
         is_recruiting: true,
         skipOwnerCheck: isAdmin,
-      } as any);
+      });
       
       toast.success('Squad created!', {
         description: 'Now add members by searching for registered players.',
       });
       navigate(`/squad/${result.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to create squad', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };

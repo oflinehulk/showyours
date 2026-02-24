@@ -47,7 +47,7 @@ const AdminPage = () => {
   // Build profile->squad map
   const profileSquadMap = useMemo(() => {
     const map: Record<string, string> = {};
-    allSquadMembers?.forEach((m: any) => {
+    allSquadMembers?.forEach((m: { profile_id: string | null; squad_id: string; squads: { name: string } | null }) => {
       if (m.profile_id && m.squads?.name) {
         map[m.profile_id] = m.squads.name;
       }

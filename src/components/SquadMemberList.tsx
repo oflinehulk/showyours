@@ -73,8 +73,8 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     try {
       await removeMember.mutateAsync({ memberId: member.id, profileId: member.profile_id, squadId });
       toast.success(`${member.profile?.ign || member.ign || 'Member'} removed from squad`);
-    } catch (error: any) {
-      toast.error('Failed to remove member', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to remove member', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -84,8 +84,8 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     try {
       await updateRole.mutateAsync({ memberId: member.id, squadId, role: newRole });
       toast.success(`${member.profile?.ign || 'Member'} promoted to ${ROLE_LABELS[newRole].label}`);
-    } catch (error: any) {
-      toast.error('Failed to update role', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update role', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -95,8 +95,8 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
     try {
       await updateRole.mutateAsync({ memberId: member.id, squadId, role: newRole });
       toast.success(`${member.profile?.ign || 'Member'} demoted to ${ROLE_LABELS[newRole].label}`);
-    } catch (error: any) {
-      toast.error('Failed to update role', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update role', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -121,8 +121,8 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
         oldLeaderNewRole: newRole,
       });
       toast.success(`Leadership transferred to ${targetMember.profile?.ign || targetMember.ign || 'member'}`);
-    } catch (error: any) {
-      toast.error('Failed to transfer leadership', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to transfer leadership', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

@@ -159,8 +159,8 @@ function MatchTimingRow({
       });
       toast.success('Match timing updated');
       onClose();
-    } catch (error: any) {
-      toast.error('Failed to update timing', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update timing', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -174,8 +174,8 @@ function MatchTimingRow({
       setDate(undefined);
       toast.success('Timing cleared');
       onClose();
-    } catch (error: any) {
-      toast.error('Failed to clear timing', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to clear timing', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -321,8 +321,8 @@ function AutoSchedulerDialog({
       });
       toast.success(`Scheduled ${previewSchedule.length} matches`);
       onClose();
-    } catch (error: any) {
-      toast.error('Failed to apply schedule', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to apply schedule', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

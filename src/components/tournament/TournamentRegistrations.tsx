@@ -74,8 +74,8 @@ export function TournamentRegistrations({
     try {
       await updateStatus.mutateAsync({ registrationId, status: 'approved', tournamentId });
       toast.success('Registration approved');
-    } catch (error: any) {
-      toast.error('Failed to approve', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to approve', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -83,8 +83,8 @@ export function TournamentRegistrations({
     try {
       await updateStatus.mutateAsync({ registrationId, status: 'rejected', tournamentId });
       toast.success('Registration rejected');
-    } catch (error: any) {
-      toast.error('Failed to reject', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to reject', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -92,8 +92,8 @@ export function TournamentRegistrations({
     try {
       await deleteRegistration.mutateAsync({ registrationId, tournamentId });
       toast.success('Registration removed');
-    } catch (error: any) {
-      toast.error('Failed to remove', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to remove', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

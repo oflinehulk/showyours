@@ -34,8 +34,8 @@ export function SquadInviteButton({ player, size = 'sm' }: SquadInviteButtonProp
       });
       setSent(true);
       toast.success(`Invitation sent to ${player.ign}!`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to send invitation');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send invitation');
     }
   };
 

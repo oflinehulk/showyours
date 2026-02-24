@@ -85,8 +85,8 @@ export function TournamentInviteSquads({ tournament }: TournamentInviteSquadsPro
         squadId,
       });
       toast.success(`Invitation sent to ${squadName}`);
-    } catch (error: any) {
-      toast.error('Failed to invite', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to invite', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -97,8 +97,8 @@ export function TournamentInviteSquads({ tournament }: TournamentInviteSquadsPro
         tournamentId: tournament.id,
       });
       toast.success('Invitation cancelled');
-    } catch (error: any) {
-      toast.error('Failed to cancel', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to cancel', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

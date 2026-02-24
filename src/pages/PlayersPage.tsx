@@ -58,7 +58,7 @@ export default function PlayersPage() {
     // Role filter — check main_roles array first, fall back to main_role
     if (roleFilter !== 'all') {
       players = players.filter((p) => {
-        const roles = (p as any).main_roles;
+        const roles = p.main_roles;
         if (roles && roles.length > 0) {
           return roles.includes(roleFilter);
         }
@@ -310,8 +310,8 @@ export default function PlayersPage() {
                 </thead>
                 <tbody>
                   {filteredPlayers.map((player, index) => {
-                    const mainRoles = (player as any).main_roles?.length > 0
-                      ? (player as any).main_roles
+                    const mainRoles = player.main_roles && player.main_roles.length > 0
+                      ? player.main_roles
                       : [player.main_role];
                     const roleDisplay = mainRoles.map((roleId: string) => {
                       const role = ROLES.find((r) => r.id === roleId);

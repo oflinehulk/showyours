@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Profile } from '@/lib/types';
 import type { RankId, RoleId, HeroClassId, ServerId, ContactTypeId, StateId } from '@/lib/constants';
+import type { TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 interface ProfileInput {
   ign: string;
@@ -100,7 +101,7 @@ export function useCreateProfile() {
           main_roles: profile.main_roles || [profile.main_role],
           contacts: profile.contacts || [],
           mlbb_id: profile.mlbb_id || null,
-        } as any)
+        } as TablesInsert<'profiles'>)
         .select()
         .single();
       
@@ -119,11 +120,11 @@ export function useUpdateProfile() {
 
   return useMutation({
     mutationFn: async ({ id, ...profile }: Partial<ProfileInput> & { id: string }) => {
-      const updateData: any = {
+      const updateData: TablesUpdate<'profiles'> = {
         ...profile,
-        contacts: profile.contacts || undefined,
+        contacts: profile.contacts as TablesUpdate<'profiles'>['contacts'],
       };
-      
+
       if (profile.main_roles) {
         updateData.main_roles = profile.main_roles;
       }

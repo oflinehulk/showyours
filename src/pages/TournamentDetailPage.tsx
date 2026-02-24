@@ -139,8 +139,8 @@ export default function TournamentDetailPage() {
       await updateTournament.mutateAsync({ id: tournament.id, description: editDesc });
       toast.success('Description updated');
       setIsEditingDesc(false);
-    } catch (error: any) {
-      toast.error('Failed to update', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -150,8 +150,8 @@ export default function TournamentDetailPage() {
       await updateTournament.mutateAsync({ id: tournament.id, rules: editRules });
       toast.success('Rules updated');
       setIsEditingRules(false);
-    } catch (error: any) {
-      toast.error('Failed to update', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -168,8 +168,8 @@ export default function TournamentDetailPage() {
       });
       toast.success('Tournament details updated');
       setIsEditingDetails(false);
-    } catch (error: any) {
-      toast.error('Failed to update', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -828,8 +828,8 @@ function PrizeTiersCard({
         prize_tiers: updated,
       });
       toast.success(updated[index].distributed ? 'Marked as distributed' : 'Marked as pending');
-    } catch (error: any) {
-      toast.error('Failed to update', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

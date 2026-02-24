@@ -86,9 +86,9 @@ export default function CreateTournamentPage() {
         description: 'Squads can now register for your tournament.',
       });
       navigate(`/tournament/${tournament.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to create tournament', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };

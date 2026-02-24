@@ -51,7 +51,7 @@ export default function SquadsPage() {
 
     // Role filter (shows squads needing that role)
     if (roleFilter !== 'all') {
-      squadList = squadList.filter((s) => (s.needed_roles || []).includes(roleFilter as any));
+      squadList = squadList.filter((s) => (s.needed_roles || []).includes(roleFilter));
     }
 
     // Sort by most recent

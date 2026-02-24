@@ -32,8 +32,8 @@ export function parseContacts(contacts: unknown): Contact[] {
     (item): item is Contact =>
       typeof item === 'object' &&
       item !== null &&
-      typeof (item as any).type === 'string' &&
-      typeof (item as any).value === 'string'
+      typeof (item as Record<string, unknown>).type === 'string' &&
+      typeof (item as Record<string, unknown>).value === 'string'
   );
 }
 

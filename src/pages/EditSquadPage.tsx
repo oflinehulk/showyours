@@ -16,6 +16,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSquad, useUpdateSquad } from '@/hooks/useSquads';
 import { RANKS, ROLES } from '@/lib/constants';
+import type { RankId, RoleId, ContactTypeId } from '@/lib/constants';
 import { parseContacts } from '@/lib/contacts';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
@@ -86,7 +87,7 @@ export default function EditSquadPage() {
   };
 
   const buildContacts = () => {
-    const contacts: { type: string; value: string }[] = [];
+    const contacts: { type: ContactTypeId; value: string }[] = [];
     if (whatsapp.trim()) contacts.push({ type: 'whatsapp', value: whatsapp.trim() });
     if (discord.trim()) contacts.push({ type: 'discord', value: discord.trim() });
     return contacts;
@@ -110,17 +111,17 @@ export default function EditSquadPage() {
         name: name.trim(),
         logo_url: logoUrl,
         description: description.trim(),
-        min_rank: minRank as any,
-        needed_roles: neededRoles as any,
+        min_rank: minRank as RankId,
+        needed_roles: neededRoles as RoleId[],
         max_members: parseInt(maxMembers) || 10,
-        contacts: buildContacts() as any,
+        contacts: buildContacts(),
       });
-      
+
       toast.success('Squad updated!');
       navigate(`/squad/${id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Failed to update squad', {
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };

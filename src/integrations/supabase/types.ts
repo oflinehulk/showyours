@@ -1146,6 +1146,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_mlbb_id: { Args: { p_input: string }; Returns: string }
       rpc_approve_roster_change: {
         Args: { p_change_id: string }
         Returns: undefined

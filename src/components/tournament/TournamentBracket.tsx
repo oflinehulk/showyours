@@ -705,7 +705,7 @@ function MatchCard({
   onClick: () => void;
   onDispute: () => void;
   onResolve: () => void;
-  onToss?: () => void;
+  onToss?: (match: TournamentMatch) => void;
   isHost: boolean;
   tournamentId: string;
   tournamentName: string;
@@ -839,7 +839,7 @@ function MatchCard({
                 <DropdownMenuContent align="start" className="min-w-[160px]">
                   {showDoToss && (
                     <DropdownMenuItem
-                      onClick={(e) => { e.stopPropagation(); onToss!(); }}
+                      onClick={(e) => { e.stopPropagation(); onToss!(match); }}
                     >
                       <Coins className="w-3.5 h-3.5 mr-2" />
                       Do Toss
@@ -851,7 +851,7 @@ function MatchCard({
                         e.stopPropagation();
                         resetCoinToss.mutate(
                           { matchId: match.id, tournamentId, stageId: match.stage_id },
-                          { onSuccess: () => { toast.success('Toss reset'); onToss!(); } }
+                          { onSuccess: () => { toast.success('Toss reset'); onToss!(match); } }
                         );
                       }}
                       disabled={resetCoinToss.isPending}

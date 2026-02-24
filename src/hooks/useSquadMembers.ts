@@ -3,6 +3,66 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Json } from '@/integrations/supabase/types';
 
+/** Strip server suffix like "(2451)" from MLBB IDs and trim whitespace */
+export function normalizeMlbbId(raw: string | null | undefined): string {
+  if (!raw) return '';
+  return raw.replace(/\s*\(.*\)\s*$/, '').trim();
+}
+
+/** Check if an MLBB ID is already used in any squad (handles server suffix formats) */
+async function checkMlbbIdDuplicate(mlbbId: string, excludeSquadId?: string): Promise<{ isDuplicate: boolean; squadName?: string }> {
+  const cleanId = normalizeMlbbId(mlbbId);
+  if (!cleanId) return { isDuplicate: false };
+
+  const { data: allMembers } = await supabase
+    .from('squad_members')
+    .select('id, squad_id, mlbb_id, ign')
+    .not('mlbb_id', 'is', null);
+
+  if (!allMembers) return { isDuplicate: false };
+
+  const match = allMembers.find(m => {
+    const memberCleanId = normalizeMlbbId(m.mlbb_id);
+    return memberCleanId === cleanId && (!excludeSquadId || m.squad_id !== excludeSquadId);
+  });
+
+  if (!match) return { isDuplicate: false };
+
+  const { data: squad } = await supabase
+    .from('squads')
+    .select('name')
+    .eq('id', match.squad_id)
+    .single();
+
+  return { isDuplicate: true, squadName: squad?.name || 'another squad' };
+}
+
+/** Check if an IGN is used in any other squad (for warning) */
+async function checkIgnDuplicate(ign: string, excludeSquadId?: string): Promise<{ isDuplicate: boolean; squadName?: string }> {
+  if (!ign) return { isDuplicate: false };
+
+  const { data: members } = await supabase
+    .from('squad_members')
+    .select('id, squad_id, ign')
+    .ilike('ign', ign);
+
+  if (!members) return { isDuplicate: false };
+
+  const match = members.find(m =>
+    m.ign?.toLowerCase() === ign.toLowerCase() && (!excludeSquadId || m.squad_id !== excludeSquadId)
+  );
+
+  if (!match) return { isDuplicate: false };
+
+  const { data: squad } = await supabase
+    .from('squads')
+    .select('name')
+    .eq('id', match.squad_id)
+    .single();
+
+  return { isDuplicate: true, squadName: squad?.name || 'another squad' };
+}
+
 export type SquadMemberRole = 'leader' | 'co_leader' | 'member';
 
 export interface SquadMember {
@@ -148,7 +208,18 @@ export function useAddSquadMember() {
         .limit(1);
 
       if (existingMembership && existingMembership.length > 0) {
-        throw new Error('This player is already in a squad. A player can only be in one squad at a time.');
+        const { data: sq } = await supabase.from('squads').select('name').eq('id', existingMembership[0].squad_id).single();
+        throw new Error(`This player is already in "${sq?.name || 'another squad'}". A player can only be in one squad at a time.`);
+      }
+
+      // Also check if their MLBB ID (normalized) is used by a manual member
+      const { data: profile } = await supabase.from('profiles').select('mlbb_id').eq('id', profileId).single();
+      const cleanId = normalizeMlbbId(profile?.mlbb_id);
+      if (cleanId) {
+        const { isDuplicate, squadName } = await checkMlbbIdDuplicate(cleanId, squadId);
+        if (isDuplicate) {
+          throw new Error(`A player with this MLBB ID is already in "${squadName}".`);
+        }
       }
 
       // Get current member count for position
@@ -173,7 +244,12 @@ export function useAddSquadMember() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('unique_squad_member')) {
+          throw new Error('This player is already in a squad. A player can only be in one squad at a time.');
+        }
+        throw error;
+      }
 
       // Auto-hide player from recruitment listings when they join a squad
       await supabase
@@ -210,36 +286,42 @@ export function useAddManualSquadMember() {
       whatsapp?: string;
       role?: SquadMemberRole;
     }) => {
-      // Check if MLBB ID is already used by another squad member
-      if (mlbbId) {
-        // Check manual members with same mlbb_id
-        const { data: existingManual } = await supabase
-          .from('squad_members')
-          .select('id, squad_id')
-          .eq('mlbb_id', mlbbId)
-          .limit(1);
+      const cleanMlbbId = normalizeMlbbId(mlbbId);
 
-        if (existingManual && existingManual.length > 0) {
-          throw new Error('A player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
+      // Smart MLBB ID duplicate check (handles server suffix)
+      if (cleanMlbbId) {
+        const { isDuplicate, squadName } = await checkMlbbIdDuplicate(cleanMlbbId, squadId);
+        if (isDuplicate) {
+          throw new Error(`A player with this MLBB ID is already in "${squadName}". Each player can only be in one squad at a time.`);
         }
 
-        // Check registered profiles with same mlbb_id
-        const { data: existingProfile } = await supabase
+        // Also check registered profiles with normalized mlbb_id
+        const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, user_id')
-          .eq('mlbb_id', mlbbId)
-          .limit(1);
+          .select('id, user_id, mlbb_id')
+          .not('mlbb_id', 'is', null);
 
-        if (existingProfile && existingProfile.length > 0 && existingProfile[0].user_id) {
+        const matchedProfile = profiles?.find(p => normalizeMlbbId(p.mlbb_id) === cleanMlbbId);
+        if (matchedProfile?.user_id) {
           const { data: existingMembership } = await supabase
             .from('squad_members')
-            .select('id')
-            .eq('user_id', existingProfile[0].user_id)
+            .select('id, squad_id')
+            .eq('user_id', matchedProfile.user_id)
             .limit(1);
 
           if (existingMembership && existingMembership.length > 0) {
-            throw new Error('A registered player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
+            const { data: sq } = await supabase.from('squads').select('name').eq('id', existingMembership[0].squad_id).single();
+            throw new Error(`A registered player with this MLBB ID is already in "${sq?.name || 'another squad'}".`);
           }
+        }
+      }
+
+      // IGN warning check (returned as part of result, not blocking)
+      let ignWarning: string | undefined;
+      if (ign) {
+        const { isDuplicate, squadName } = await checkIgnDuplicate(ign, squadId);
+        if (isDuplicate) {
+          ignWarning = `Note: A player named "${ign}" already exists in "${squadName}". Make sure this isn't the same person.`;
         }
       }
 
@@ -260,7 +342,7 @@ export function useAddManualSquadMember() {
           profile_id: null,
           user_id: null,
           ign,
-          mlbb_id: mlbbId || null,
+          mlbb_id: cleanMlbbId || null, // Store normalized ID
           whatsapp: whatsapp || null,
           role,
           position: nextPosition,
@@ -268,8 +350,13 @@ export function useAddManualSquadMember() {
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        if (error.message?.includes('unique_squad_member_mlbb_id')) {
+          throw new Error('A player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
+        }
+        throw error;
+      }
+      return { ...data, ignWarning };
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });

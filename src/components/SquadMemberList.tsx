@@ -46,6 +46,7 @@ interface SquadMemberListProps {
   squadId: string;
   isLeader: boolean;
   isCoLeader: boolean;
+  isAdmin?: boolean;
 }
 
 const ROLE_LABELS: Record<SquadMemberRole, { label: string; icon: React.ReactNode; color: string }> = {
@@ -54,15 +55,14 @@ const ROLE_LABELS: Record<SquadMemberRole, { label: string; icon: React.ReactNod
   member: { label: 'Member', icon: <User className="w-3 h-3" />, color: 'bg-muted text-muted-foreground border-border' },
 };
 
-export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberListProps) {
+export function SquadMemberList({ squadId, isLeader, isCoLeader, isAdmin = false }: SquadMemberListProps) {
   const { user } = useAuth();
   const { data: members, isLoading } = useSquadMembers(squadId);
   const removeMember = useRemoveSquadMember();
   const updateRole = useUpdateSquadMemberRole();
   const transferLeadership = useTransferLeadership();
 
-
-  const canManage = isLeader || isCoLeader;
+  const canManage = isLeader || isCoLeader || isAdmin;
 
   const handleRemoveMember = async (member: SquadMember) => {
     if (member.role === 'leader') {
@@ -97,6 +97,26 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
       toast.success(`${member.profile?.ign || 'Member'} demoted to ${ROLE_LABELS[newRole].label}`);
     } catch (error: unknown) {
       toast.error('Failed to update role', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  const handleMakeLeader = async (member: SquadMember) => {
+    const currentLeader = members?.find(m => m.role === 'leader');
+    try {
+      // Demote current leader to co_leader
+      if (currentLeader) {
+        await updateRole.mutateAsync({ memberId: currentLeader.id, squadId, role: 'co_leader' });
+      }
+      // Promote target to leader
+      await updateRole.mutateAsync({ memberId: member.id, squadId, role: 'leader' });
+      // Update squad owner_id
+      if (member.user_id) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.from('squads').update({ owner_id: member.user_id }).eq('id', squadId);
+      }
+      toast.success(`${member.profile?.ign || member.ign || 'Member'} is now the Leader`);
+    } catch (error: unknown) {
+      toast.error('Failed to make leader', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -169,7 +189,7 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
           const isMe = user?.id === member.user_id;
           const whatsapp = isManual ? member.whatsapp : (profile && getWhatsAppNumber(profile.contacts));
           const discord = isManual ? undefined : (profile && getDiscordId(profile.contacts));
-          const canTransferTo = isLeader && !isMe && member.role !== 'leader' && memberHasWhatsApp(member);
+          const canTransferTo = (isLeader || isAdmin) && !isMe && member.role !== 'leader' && memberHasWhatsApp(member);
 
           return (
             <div
@@ -277,7 +297,7 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
               )}
 
               {/* Actions for leaders */}
-              {canManage && !isMe && member.role !== 'leader' && (
+              {((canManage && !isMe && member.role !== 'leader') || (isAdmin && !isMe)) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
@@ -292,16 +312,22 @@ export function SquadMemberList({ squadId, isLeader, isCoLeader }: SquadMemberLi
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {isLeader && member.role !== 'co_leader' && (
+                    {(isLeader || isAdmin) && member.role !== 'co_leader' && member.role !== 'leader' && (
                       <DropdownMenuItem onClick={() => handlePromote(member)}>
                         <ArrowUp className="w-4 h-4 mr-2" />
                         Promote to Co-Leader
                       </DropdownMenuItem>
                     )}
-                    {isLeader && member.role === 'co_leader' && (
+                    {(isLeader || isAdmin) && member.role === 'co_leader' && (
                       <DropdownMenuItem onClick={() => handleDemote(member)}>
                         <ArrowDown className="w-4 h-4 mr-2" />
                         Demote to Member
+                      </DropdownMenuItem>
+                    )}
+                    {(isLeader || isAdmin) && member.role !== 'leader' && (
+                      <DropdownMenuItem onClick={() => handleMakeLeader(member)}>
+                        <Crown className="w-4 h-4 mr-2 text-yellow-400" />
+                        Make Leader
                       </DropdownMenuItem>
                     )}
                     {canTransferTo && (

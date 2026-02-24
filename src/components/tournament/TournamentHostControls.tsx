@@ -34,6 +34,9 @@ import {
   useGenerateStageBracket,
   useCompleteStage,
   useUpdateStage,
+  useResetBracket,
+  useResetStageBracket,
+  useDeleteStages,
 } from '@/hooks/useTournaments';
 import { StageConfigurator } from '@/components/tournament/StageConfigurator';
 import { GroupAssignment } from '@/components/tournament/GroupAssignment';
@@ -55,6 +58,7 @@ import {
   Layers,
   ArrowRight,
   Trophy,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -78,6 +82,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const updateTournament = useUpdateTournament();
   const generateBracket = useGenerateBracket();
   const deleteTournament = useDeleteTournament();
+  const resetBracket = useResetBracket();
   const updateSeed = useUpdateRegistrationSeed();
   const autoSeed = useAutoSeedByRegistrationOrder();
   const withdrawSquad = useWithdrawSquad();
@@ -139,6 +144,15 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       toast.success('Tournament started!');
     } catch (error: unknown) {
       toast.error('Failed to start tournament', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  const handleResetBracket = async () => {
+    try {
+      await resetBracket.mutateAsync(tournament.id);
+      toast.success('Bracket reset', { description: 'You can now reconfigure seeding and format.' });
+    } catch (error: unknown) {
+      toast.error('Failed to reset bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -373,22 +387,53 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
           </div>
         )}
 
-        {/* Bracket Generated → Start Tournament */}
+        {/* Bracket Generated → Start Tournament or Reset */}
         {tournament.status === 'bracket_generated' && (
           <div className="p-4 rounded-lg bg-muted/30 border border-border">
             <p className="text-xs text-muted-foreground mb-3">Bracket is ready. Start the tournament when all teams are prepared.</p>
-            <Button
-              onClick={handleStartTournament}
-              disabled={updateTournament.isPending}
-              className="btn-gaming w-full sm:w-auto"
-            >
-              {updateTournament.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              Start Tournament
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleStartTournament}
+                disabled={updateTournament.isPending || resetBracket.isPending}
+                className="btn-gaming w-full sm:w-auto"
+              >
+                {updateTournament.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
+                Start Tournament
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={resetBracket.isPending || updateTournament.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {resetBracket.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                    )}
+                    Reset Bracket
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset Bracket?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all generated matches and return to the seeding & format selection step. Seeds and registrations are preserved.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleResetBracket}>Reset</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         )}
 
@@ -822,11 +867,13 @@ function CurrentStageActions({
 }) {
   const completeStage = useCompleteStage();
   const generateStageBracket = useGenerateStageBracket();
+  const resetStageBracket = useResetStageBracket();
   const { data: stageMatches } = useStageMatches(currentStage.id);
   const { data: groups } = useTournamentGroups(currentStage.id);
   const { data: groupTeams } = useTournamentGroupTeams(currentStage.id);
 
   const allMatchesCompleted = stageMatches && stageMatches.length > 0 && stageMatches.every(m => m.status === 'completed');
+  const hasResults = stageMatches && stageMatches.some(m => m.status === 'completed' || m.status === 'ongoing');
   const isGroupStage = currentStage.format === 'round_robin' && currentStage.group_count > 0;
 
   const handleCompleteAndAdvance = async () => {
@@ -914,6 +961,18 @@ function CurrentStageActions({
     }
   };
 
+  const handleResetStage = async () => {
+    try {
+      await resetStageBracket.mutateAsync({
+        tournamentId: tournament.id,
+        stageId: currentStage.id,
+      });
+      toast.success('Stage bracket reset', { description: 'You can now reconfigure groups and regenerate the bracket.' });
+    } catch (error: unknown) {
+      toast.error('Failed to reset stage', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
   return (
     <div className="p-4 rounded-lg bg-muted/30 border border-border">
       <div className="flex items-center gap-2 mb-2">
@@ -955,6 +1014,41 @@ function CurrentStageActions({
           </Button>
         </>
       )}
+
+      {/* Reset Stage Bracket */}
+      <div className="mt-3 pt-3 border-t border-border">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resetStageBracket.isPending}
+              className="text-xs"
+            >
+              {resetStageBracket.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <RotateCcw className="w-3 h-3 mr-1" />
+              )}
+              Reset Stage Bracket
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset {currentStage.name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {hasResults
+                  ? 'Some matches have results. This will delete ALL matches for this stage, including completed results. Group assignments are preserved.'
+                  : 'This will delete all matches for this stage and return to the group/bracket setup step. Group assignments are preserved.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleResetStage}>Reset Stage</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

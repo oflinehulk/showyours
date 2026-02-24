@@ -8,8 +8,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { GlowCard } from '@/components/tron/GlowCard';
-import { useCreateStages } from '@/hooks/useTournaments';
+import { useCreateStages, useDeleteStages } from '@/hooks/useTournaments';
 import {
   Layers,
   Plus,
@@ -19,6 +30,7 @@ import {
   Users,
   Trophy,
   ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -61,6 +73,7 @@ export function StageConfigurator({
   onStagesCreated,
 }: StageConfiguratorProps) {
   const createStages = useCreateStages();
+  const deleteStages = useDeleteStages();
 
   const [stages, setStages] = useState<StageInput[]>(() => {
     if (existingStages.length > 0) return []; // Already configured
@@ -70,12 +83,56 @@ export function StageConfigurator({
     ];
   });
 
+  const canReconfigure = existingStages.length > 0 && existingStages.every(s => s.status === 'pending' || s.status === 'configuring');
+
+  const handleReconfigure = async () => {
+    try {
+      await deleteStages.mutateAsync(tournamentId);
+      toast.success('Stages deleted', { description: 'You can now reconfigure stages.' });
+    } catch (error: unknown) {
+      toast.error('Failed to delete stages', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
   if (existingStages.length > 0) {
     return (
       <GlowCard className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Layers className="w-4 h-4 text-[#FF4500]" />
-          <h4 className="text-sm font-semibold text-foreground">Stages Configured</h4>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#FF4500]" />
+            <h4 className="text-sm font-semibold text-foreground">Stages Configured</h4>
+          </div>
+          {canReconfigure && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={deleteStages.isPending}
+                  className="text-xs"
+                >
+                  {deleteStages.isPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                  )}
+                  Reconfigure
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reconfigure Stages?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete all stages, matches, and group assignments. Registrations and seeds are preserved. You can set up stages from scratch.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleReconfigure}>Delete & Reconfigure</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
         <div className="space-y-2">
           {existingStages.map((stage, i) => (

@@ -1010,7 +1010,12 @@ export function useGenerateBracket() {
         matches = generateRoundRobinBracket(tournamentId, orderedSquadIds);
       }
 
-      // Insert matches
+      // Insert matches (delete any existing first as a safety net)
+      await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('tournament_id', tournamentId);
+
       const { error: matchError } = await supabase
         .from('tournament_matches')
         .insert(matches);
@@ -1037,6 +1042,135 @@ export function useGenerateBracket() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    },
+  });
+}
+
+// ========== Bracket Reset ==========
+
+export function useResetBracket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tournamentId: string) => {
+      // Delete all matches for this tournament
+      const { error: deleteError } = await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('tournament_id', tournamentId);
+
+      if (deleteError) throw deleteError;
+
+      // Reset tournament status and format
+      const { error: updateError } = await supabase
+        .from('tournaments')
+        .update({
+          status: 'registration_closed' as TournamentStatus,
+          format: null,
+        })
+        .eq('id', tournamentId);
+
+      if (updateError) throw updateError;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    },
+  });
+}
+
+export function useResetStageBracket() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stageId,
+    }: {
+      tournamentId: string;
+      stageId: string;
+    }) => {
+      // Delete all matches for this stage
+      const { error: deleteError } = await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('tournament_id', tournamentId)
+        .eq('stage_id', stageId);
+
+      if (deleteError) throw deleteError;
+
+      // Reset stage status back to pending
+      const { error: updateError } = await supabase
+        .from('tournament_stages')
+        .update({ status: 'pending' as StageStatus })
+        .eq('id', stageId);
+
+      if (updateError) throw updateError;
+      return { tournamentId, stageId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+    },
+  });
+}
+
+export function useDeleteStages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tournamentId: string) => {
+      // Delete matches first (FK dependency)
+      await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('tournament_id', tournamentId);
+
+      // Delete group teams and groups
+      const { data: stages } = await supabase
+        .from('tournament_stages')
+        .select('id')
+        .eq('tournament_id', tournamentId);
+
+      if (stages && stages.length > 0) {
+        const stageIds = stages.map(s => s.id);
+
+        const { data: groups } = await supabase
+          .from('tournament_groups')
+          .select('id')
+          .in('stage_id', stageIds);
+
+        if (groups && groups.length > 0) {
+          const groupIds = groups.map(g => g.id);
+          await supabase
+            .from('tournament_group_teams')
+            .delete()
+            .in('group_id', groupIds);
+
+          await supabase
+            .from('tournament_groups')
+            .delete()
+            .in('stage_id', stageIds);
+        }
+      }
+
+      // Delete stages
+      const { error } = await supabase
+        .from('tournament_stages')
+        .delete()
+        .eq('tournament_id', tournamentId);
+
+      if (error) throw error;
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
     },
@@ -1827,6 +1961,13 @@ export function useGenerateStageBracket() {
         }
 
         if (allMatches.length > 0) {
+          // Delete any existing matches for this stage as a safety net
+          await supabase
+            .from('tournament_matches')
+            .delete()
+            .eq('tournament_id', tournamentId)
+            .eq('stage_id', stageId);
+
           const { error: insertErr } = await supabase
             .from('tournament_matches')
             .insert(allMatches as never);
@@ -1863,6 +2004,13 @@ export function useGenerateStageBracket() {
             matches = generateRoundRobinBracket(tournamentId, ids, opts);
           }
         }
+
+        // Delete any existing matches for this stage as a safety net
+        await supabase
+          .from('tournament_matches')
+          .delete()
+          .eq('tournament_id', tournamentId)
+          .eq('stage_id', stageId);
 
         const { error: insertErr } = await supabase
           .from('tournament_matches')

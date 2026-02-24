@@ -210,6 +210,39 @@ export function useAddManualSquadMember() {
       whatsapp?: string;
       role?: SquadMemberRole;
     }) => {
+      // Check if MLBB ID is already used by another squad member
+      if (mlbbId) {
+        // Check manual members with same mlbb_id
+        const { data: existingManual } = await supabase
+          .from('squad_members')
+          .select('id, squad_id')
+          .eq('mlbb_id', mlbbId)
+          .limit(1);
+
+        if (existingManual && existingManual.length > 0) {
+          throw new Error('A player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
+        }
+
+        // Check registered profiles with same mlbb_id
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id, user_id')
+          .eq('mlbb_id', mlbbId)
+          .limit(1);
+
+        if (existingProfile && existingProfile.length > 0 && existingProfile[0].user_id) {
+          const { data: existingMembership } = await supabase
+            .from('squad_members')
+            .select('id')
+            .eq('user_id', existingProfile[0].user_id)
+            .limit(1);
+
+          if (existingMembership && existingMembership.length > 0) {
+            throw new Error('A registered player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
+          }
+        }
+      }
+
       // Get current member count for position
       const { data: existing } = await supabase
         .from('squad_members')

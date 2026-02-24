@@ -15,6 +15,7 @@ import {
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSquad, useMySquads } from '@/hooks/useSquads';
+import { useMySquadMembership } from '@/hooks/useSquadMembers';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { RANKS, ROLES } from '@/lib/constants';
@@ -30,6 +31,7 @@ export default function CreateSquadPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: existingSquads, isLoading: squadsLoading } = useMySquads();
+  const { data: myMembership, isLoading: membershipLoading } = useMySquadMembership();
   const { data: myProfile, isLoading: profileLoading } = useMyProfile();
   const { data: isAdmin } = useIsAdmin();
   const createSquad = useCreateSquad();
@@ -60,6 +62,14 @@ export default function CreateSquadPage() {
       navigate(`/squad/${existingSquads[0].id}`);
     }
   }, [existingSquads, squadsLoading, navigate, isAdmin]);
+
+  // Block users who are already a member of any squad (not just owners)
+  useEffect(() => {
+    if (!membershipLoading && myMembership && !isAdmin) {
+      toast.info('You are already in a squad. Leave your current squad before creating a new one.');
+      navigate(`/squad/${myMembership.squad_id}`);
+    }
+  }, [myMembership, membershipLoading, navigate, isAdmin]);
 
   // Check if user has a profile
   const hasProfile = !!myProfile;
@@ -148,7 +158,7 @@ export default function CreateSquadPage() {
   };
 
   // Show loading state
-  if (profileLoading || squadsLoading) {
+  if (profileLoading || squadsLoading || membershipLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-2xl">

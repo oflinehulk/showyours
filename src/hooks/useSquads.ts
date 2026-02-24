@@ -110,6 +110,17 @@ export function useCreateSquad() {
         if (existingSquads && existingSquads.length > 0) {
           throw new Error('You can only create one squad. Please manage your existing squad.');
         }
+
+        // Check if user is already a member of any squad
+        const { data: existingMembership } = await supabase
+          .from('squad_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (existingMembership && existingMembership.length > 0) {
+          throw new Error('You are already in a squad. Leave your current squad before creating a new one.');
+        }
       }
 
       // Check if user has a profile

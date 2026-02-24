@@ -124,6 +124,17 @@ export function useApplyToSquad() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
+      // Check if user is already in a squad
+      const { data: existingMembership } = await supabase
+        .from('squad_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (existingMembership && existingMembership.length > 0) {
+        throw new Error('You are already in a squad. Leave your current squad before applying to another.');
+      }
+
       const { data, error } = await supabase
         .from('squad_applications')
         .insert({

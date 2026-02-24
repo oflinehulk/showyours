@@ -141,7 +141,7 @@ export default function DocsPage() {
                 Each member has a position (1-5) and role assignment.
               </p>
               <ul>
-                <li>You can be in multiple squads simultaneously.</li>
+                <li>You can only be in one squad at a time. Leave your current squad to join another.</li>
                 <li>Squad leaders can invite players directly or share invite links.</li>
                 <li>Members can be added manually by the leader even if they don't have a ShowYours account.</li>
               </ul>
@@ -514,8 +514,9 @@ export default function DocsPage() {
             {/* FAQ */}
             <DocSection id="faq" title="Frequently Asked Questions" icon={Search}>
               <FaqItem q="Can I be in multiple squads?">
-                Yes, you can be a member of multiple squads. However, within a single tournament,
-                the same MLBB ID cannot be registered in more than one squad.
+                No. You can only be in one squad at a time. If you want to join a different squad,
+                you must leave your current squad first. Within a single tournament,
+                the same MLBB ID also cannot be registered in more than one squad.
               </FaqItem>
               <FaqItem q="How many roster changes are allowed?">
                 Each squad can have up to 2 approved roster changes per tournament (or per stage in multi-stage tournaments). The host must approve each change.

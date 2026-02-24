@@ -60,11 +60,22 @@ export function useSquadSentInvitations(squadId: string | undefined) {
 export function useSendInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ squadId, profileId, userId, message }: { 
-      squadId: string; profileId: string; userId: string; message?: string 
+    mutationFn: async ({ squadId, profileId, userId, message }: {
+      squadId: string; profileId: string; userId: string; message?: string
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Check if target player is already in a squad
+      const { data: existingMembership } = await supabase
+        .from('squad_members')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1);
+
+      if (existingMembership && existingMembership.length > 0) {
+        throw new Error('This player is already in a squad. They must leave their current squad first.');
+      }
 
       const { data, error } = await supabase
         .from('squad_invitations')

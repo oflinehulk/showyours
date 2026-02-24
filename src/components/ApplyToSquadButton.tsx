@@ -102,11 +102,12 @@ export function ApplyToSquadButton({ squadId, squadName }: ApplyToSquadButtonPro
       });
       setOpen(false);
       setMessage('');
-    } catch (error: any) {
-      if (error.message.includes('duplicate')) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      if (msg.includes('duplicate')) {
         toast.error('You have already applied to this squad');
       } else {
-        toast.error('Failed to apply', { description: error.message });
+        toast.error('Failed to apply', { description: msg });
       }
     }
   };

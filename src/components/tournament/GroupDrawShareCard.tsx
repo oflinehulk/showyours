@@ -29,6 +29,15 @@ export function GroupDrawShareButton({
     groupMap.get(entry.group_label)?.push(entry);
   }
 
+  const hasPots = sequence.some(e => e.pot_number != null);
+
+  const POT_COLORS: Record<number, string> = {
+    1: '#EAB308',
+    2: '#3B82F6',
+    3: '#22C55E',
+    4: '#A855F7',
+  };
+
   const handleCapture = async (mode: 'share' | 'download') => {
     setSharing(true);
     setRenderCard(true);
@@ -118,6 +127,17 @@ export function GroupDrawShareButton({
             }}>
               {stageName}
             </div>
+            {hasPots && (
+              <div style={{
+                fontSize: '9px',
+                color: '#EAB308',
+                marginTop: '4px',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '1px',
+              }}>
+                Pot-Seeded Draw
+              </div>
+            )}
           </div>
 
           {/* Separator */}
@@ -192,9 +212,21 @@ export function GroupDrawShareButton({
                         }}>
                           {entry.squad_name.charAt(0)}
                         </div>
-                        <span style={{ fontSize: '10px', color: '#cccccc' }}>
+                        <span style={{ fontSize: '10px', color: '#cccccc', flex: 1 }}>
                           {entry.squad_name}
                         </span>
+                        {entry.pot_number != null && (
+                          <span style={{
+                            fontSize: '7px',
+                            fontWeight: 700,
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            backgroundColor: `${POT_COLORS[entry.pot_number] ?? '#FF4500'}20`,
+                            color: POT_COLORS[entry.pot_number] ?? '#FF4500',
+                          }}>
+                            P{entry.pot_number}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>

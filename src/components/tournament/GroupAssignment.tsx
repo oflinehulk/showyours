@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAssignTeamsToGroups, useTournamentGroups, useTournamentGroupTeams } from '@/hooks/useTournaments';
 import { GroupDrawBowl } from '@/components/tournament/GroupDrawBowl';
+import { PotAssignmentEditor } from '@/components/tournament/PotAssignmentEditor';
 import {
   Users,
   Shuffle,
@@ -11,10 +12,11 @@ import {
   ListOrdered,
   LayoutGrid,
   Sparkles,
+  Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { TournamentSquad, TournamentStage, TournamentRegistration, TournamentGroup, TournamentGroupTeam } from '@/lib/tournament-types';
+import type { TournamentSquad, TournamentStage, TournamentRegistration, PotAssignment } from '@/lib/tournament-types';
 
 interface GroupAssignmentProps {
   tournamentId: string;
@@ -35,6 +37,8 @@ export function GroupAssignment({
   const { data: groups } = useTournamentGroups(stage.id);
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
   const [showDrawBowl, setShowDrawBowl] = useState(false);
+  const [showPotEditor, setShowPotEditor] = useState(false);
+  const [potAssignments, setPotAssignments] = useState<PotAssignment[] | null>(null);
 
   const approvedRegs = registrations.filter(r => r.status === 'approved');
   const squadMap = new Map(approvedRegs.map(r => [r.tournament_squad_id, r.tournament_squads]));
@@ -68,8 +72,8 @@ export function GroupAssignment({
       });
       toast.success(`Teams assigned to ${stage.group_count} groups (${mode})`);
       onAssigned?.();
-    } catch (error: any) {
-      toast.error('Failed to assign groups', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to assign groups', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -115,6 +119,18 @@ export function GroupAssignment({
             <Sparkles className="w-3 h-3 mr-1" />
             Draw Ceremony
           </Button>
+          {stage.group_count >= 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10"
+              onClick={() => setShowPotEditor(true)}
+              disabled={approvedRegs.length < 2}
+            >
+              <Trophy className="w-3 h-3 mr-1" />
+              Pot Draw
+            </Button>
+          )}
         </div>
       </div>
 
@@ -164,12 +180,34 @@ export function GroupAssignment({
           tournamentName={tournamentName}
           stage={stage}
           squads={approvedRegs.map(r => r.tournament_squads)}
-          onClose={() => setShowDrawBowl(false)}
+          potAssignments={potAssignments ?? undefined}
+          onClose={() => {
+            setShowDrawBowl(false);
+            setPotAssignments(null);
+          }}
           onConfirmed={() => {
             setShowDrawBowl(false);
+            setPotAssignments(null);
             onAssigned?.();
           }}
         />
+      )}
+
+      {/* Pot Assignment Editor overlay */}
+      {showPotEditor && (
+        <div className="mt-4">
+          <PotAssignmentEditor
+            squads={approvedRegs.map(r => r.tournament_squads)}
+            potCount={Math.min(4, stage.group_count)}
+            groupCount={stage.group_count}
+            onConfirm={(assignments) => {
+              setPotAssignments(assignments);
+              setShowPotEditor(false);
+              setShowDrawBowl(true);
+            }}
+            onBack={() => setShowPotEditor(false)}
+          />
+        </div>
       )}
     </div>
   );

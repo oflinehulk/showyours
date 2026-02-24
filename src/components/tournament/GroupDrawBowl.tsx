@@ -10,17 +10,75 @@ import { secureShuffleArray, generateDrawSeed } from '@/lib/secure-random';
 import { resumeAudioContext, playWhoosh, playImpactHit, playRevealFlourish } from '@/lib/audio-effects';
 import { useSaveGroupDraw } from '@/hooks/useTournaments';
 import { GroupDrawShareButton } from '@/components/tournament/GroupDrawShareCard';
-import type { TournamentSquad, TournamentStage, GroupDrawEntry } from '@/lib/tournament-types';
+import type { TournamentSquad, TournamentStage, GroupDrawEntry, PotAssignment } from '@/lib/tournament-types';
+import { POT_LABELS } from '@/lib/tournament-types';
 
 type Phase = 'setup' | 'drawing' | 'result';
+
+const POT_COLORS: Record<number, string> = {
+  1: '#EAB308', // yellow
+  2: '#3B82F6', // blue
+  3: '#22C55E', // green
+  4: '#A855F7', // purple
+};
 
 interface GroupDrawBowlProps {
   tournamentId: string;
   tournamentName?: string;
   stage: TournamentStage;
   squads: TournamentSquad[];
+  potAssignments?: PotAssignment[];
   onClose: () => void;
   onConfirmed?: () => void;
+}
+
+/**
+ * Generate a pot-constrained draw sequence.
+ * For each group slot, draw 1 team from each pot so no group gets 2 from the same pot.
+ */
+function generatePotConstrainedSequence(
+  squads: TournamentSquad[],
+  potAssignments: PotAssignment[],
+  groupCount: number,
+  groupLabels: string[],
+): GroupDrawEntry[] {
+  // Build pot pools: pot number -> shuffled squad ids
+  const potMap = new Map<number, string[]>();
+  for (const pa of potAssignments) {
+    if (!potMap.has(pa.pot_number)) potMap.set(pa.pot_number, []);
+    potMap.get(pa.pot_number)!.push(pa.squad_id);
+  }
+
+  // Shuffle each pot
+  const potNumbers = [...potMap.keys()].sort((a, b) => a - b);
+  for (const potNum of potNumbers) {
+    const pool = potMap.get(potNum)!;
+    const shuffled = secureShuffleArray(pool.map(id => squads.find(s => s.id === id)!));
+    potMap.set(potNum, shuffled.map(s => s.id));
+  }
+
+  const entries: GroupDrawEntry[] = [];
+  let drawOrder = 0;
+
+  // For each pot, assign one team to each group in order
+  for (const potNum of potNumbers) {
+    const pool = potMap.get(potNum)!;
+    for (let g = 0; g < Math.min(pool.length, groupCount); g++) {
+      const squadId = pool[g];
+      const squad = squads.find(s => s.id === squadId);
+      if (!squad) continue;
+      entries.push({
+        squad_id: squad.id,
+        squad_name: squad.name,
+        group_label: groupLabels[g],
+        draw_order: drawOrder,
+        pot_number: potNum,
+      });
+      drawOrder++;
+    }
+  }
+
+  return entries;
 }
 
 export function GroupDrawBowl({
@@ -28,6 +86,7 @@ export function GroupDrawBowl({
   tournamentName,
   stage,
   squads,
+  potAssignments,
   onClose,
   onConfirmed,
 }: GroupDrawBowlProps) {
@@ -42,25 +101,39 @@ export function GroupDrawBowl({
   const groupCount = stage.group_count;
   const groupLabels = Array.from({ length: groupCount }, (_, i) => String.fromCharCode(65 + i));
 
+  const hasPots = potAssignments && potAssignments.length > 0;
+
+  // Current pot being drawn from (for display)
+  const currentPotNumber = hasPots && revealIndex >= 0 && revealIndex < sequence.length
+    ? sequence[revealIndex]?.pot_number ?? null
+    : hasPots && revealIndex < 0 && sequence.length > 0
+    ? sequence[0]?.pot_number ?? null
+    : null;
+
   // Pre-compute draw sequence
   const startDraw = useCallback(async () => {
     await resumeAudioContext();
     const seed = generateDrawSeed();
-    const shuffled = secureShuffleArray(squads);
 
-    // Round-robin assignment: squad 0 → Group A, squad 1 → Group B, ..., repeat
-    const entries: GroupDrawEntry[] = shuffled.map((squad, i) => ({
-      squad_id: squad.id,
-      squad_name: squad.name,
-      group_label: groupLabels[i % groupCount],
-      draw_order: i,
-    }));
+    let entries: GroupDrawEntry[];
+
+    if (hasPots) {
+      entries = generatePotConstrainedSequence(squads, potAssignments!, groupCount, groupLabels);
+    } else {
+      const shuffled = secureShuffleArray(squads);
+      entries = shuffled.map((squad, i) => ({
+        squad_id: squad.id,
+        squad_name: squad.name,
+        group_label: groupLabels[i % groupCount],
+        draw_order: i,
+      }));
+    }
 
     setDrawSeed(seed);
     setSequence(entries);
     setRevealIndex(-1);
     setPhase('drawing');
-  }, [squads, groupCount, groupLabels]);
+  }, [squads, groupCount, groupLabels, hasPots, potAssignments]);
 
   // Reveal next team
   const revealNext = useCallback(() => {
@@ -161,11 +234,16 @@ export function GroupDrawBowl({
     label,
     squads: sequence
       .filter((e, i) => i <= revealIndex && e.group_label === label)
-      .map(e => squads.find(s => s.id === e.squad_id)!)
-      .filter(Boolean),
+      .map(e => ({ squad: squads.find(s => s.id === e.squad_id)!, potNumber: e.pot_number }))
+      .filter(e => e.squad),
   }));
 
   const remainingCount = sequence.length - (revealIndex + 1);
+
+  // Figure out which pot we're currently drawing from for display
+  const activePotNum = revealIndex + 1 < sequence.length
+    ? sequence[revealIndex + 1]?.pot_number
+    : currentPotNumber;
 
   // Close on Escape (not during animation)
   useEffect(() => {
@@ -207,14 +285,19 @@ export function GroupDrawBowl({
                 <div className="relative w-48 h-32 mx-auto">
                   <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-[#FF4500]/20 to-transparent rounded-b-[60%] border-2 border-[#FF4500]/30 border-t-0" />
                   <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-1 w-32">
-                    {squads.slice(0, 12).map((s, i) => (
-                      <motion.div
-                        key={s.id}
-                        className="w-5 h-5 rounded-full bg-[#FF4500]/40 border border-[#FF4500]/60"
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
-                      />
-                    ))}
+                    {squads.slice(0, 12).map((s, i) => {
+                      const potNum = hasPots ? potAssignments!.find(p => p.squad_id === s.id)?.pot_number : undefined;
+                      const color = potNum ? POT_COLORS[potNum] : '#FF4500';
+                      return (
+                        <motion.div
+                          key={s.id}
+                          className="w-5 h-5 rounded-full border"
+                          style={{ backgroundColor: `${color}40`, borderColor: `${color}60` }}
+                          animate={{ y: [0, -3, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                        />
+                      );
+                    })}
                     {squads.length > 12 && (
                       <span className="text-[9px] text-white/40">+{squads.length - 12}</span>
                     )}
@@ -223,7 +306,11 @@ export function GroupDrawBowl({
 
                 <div>
                   <p className="text-white/60 text-sm">{squads.length} teams into {groupCount} groups</p>
-                  <p className="text-white/30 text-xs mt-1">Cryptographically secure random shuffle</p>
+                  {hasPots ? (
+                    <p className="text-white/30 text-xs mt-1">Pot-seeded draw: 1 team per pot per group</p>
+                  ) : (
+                    <p className="text-white/30 text-xs mt-1">Cryptographically secure random shuffle</p>
+                  )}
                 </div>
 
                 <Button
@@ -239,6 +326,26 @@ export function GroupDrawBowl({
 
             {phase === 'drawing' && (
               <div className="text-center space-y-6 w-full max-w-xs">
+                {/* Pot indicator */}
+                {hasPots && activePotNum && (
+                  <motion.div
+                    key={activePotNum}
+                    className="px-3 py-1.5 rounded-full border mx-auto w-fit"
+                    style={{
+                      backgroundColor: `${POT_COLORS[activePotNum] ?? '#FF4500'}15`,
+                      borderColor: `${POT_COLORS[activePotNum] ?? '#FF4500'}40`,
+                      color: POT_COLORS[activePotNum] ?? '#FF4500',
+                    }}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: 'spring', damping: 12 }}
+                  >
+                    <span className="text-xs font-bold">
+                      Now drawing from {POT_LABELS[activePotNum] ?? `Pot ${activePotNum}`}
+                    </span>
+                  </motion.div>
+                )}
+
                 {/* Bowl with remaining balls */}
                 <div className="relative w-48 h-32 mx-auto">
                   <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-[#FF4500]/20 to-transparent rounded-b-[60%] border-2 border-[#FF4500]/30 border-t-0" />
@@ -275,6 +382,17 @@ export function GroupDrawBowl({
                       </Avatar>
                       <span className="text-sm font-medium text-white">{sequence[revealIndex]?.squad_name}</span>
                       <span className="text-xs font-bold text-[#FF4500]">→ Group {sequence[revealIndex]?.group_label}</span>
+                      {hasPots && sequence[revealIndex]?.pot_number && (
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{
+                            backgroundColor: `${POT_COLORS[sequence[revealIndex].pot_number!] ?? '#FF4500'}20`,
+                            color: POT_COLORS[sequence[revealIndex].pot_number!] ?? '#FF4500',
+                          }}
+                        >
+                          P{sequence[revealIndex].pot_number}
+                        </span>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -372,7 +490,7 @@ export function GroupDrawBowl({
                     <span className="text-[10px] text-white/40">{group.squads.length} teams</span>
                   </div>
                   <div className="space-y-1 min-h-[40px]">
-                    {group.squads.map((squad) => (
+                    {group.squads.map(({ squad, potNumber }) => (
                       <motion.div
                         key={squad.id}
                         className="flex items-center gap-1.5 p-1 rounded bg-white/5"
@@ -387,6 +505,17 @@ export function GroupDrawBowl({
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-[10px] text-white/80 font-medium truncate">{squad.name}</span>
+                        {hasPots && potNumber && (
+                          <span
+                            className="text-[8px] font-bold px-1 rounded ml-auto shrink-0"
+                            style={{
+                              backgroundColor: `${POT_COLORS[potNumber] ?? '#FF4500'}20`,
+                              color: POT_COLORS[potNumber] ?? '#FF4500',
+                            }}
+                          >
+                            P{potNumber}
+                          </span>
+                        )}
                       </motion.div>
                     ))}
                   </div>

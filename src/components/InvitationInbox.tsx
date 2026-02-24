@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useMyInvitations, useRespondToInvitation } from '@/hooks/useSquadInvitations';
-import { 
-  useMyTournamentInvitations, 
+import { useMyInvitations, useRespondToInvitation, type SquadInvitation } from '@/hooks/useSquadInvitations';
+import {
+  useMyTournamentInvitations,
   useRespondToTournamentInvitation,
-  type TournamentInvitation 
+  type TournamentInvitation
 } from '@/hooks/useTournamentInvitations';
 import {
   useRegisterForTournament,
@@ -14,6 +14,13 @@ import { Bell, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+
+interface SquadMemberRow {
+  user_id: string;
+  ign?: string;
+  mlbb_id?: string;
+  profile?: { ign?: string; mlbb_id?: string } | null;
+}
 
 export function InvitationBadge() {
   const { data: squadInvitations } = useMyInvitations();
@@ -28,7 +35,7 @@ export function InvitationBadge() {
   const tournamentCount = tournamentInvitations?.length || 0;
   const totalCount = squadCount + tournamentCount;
 
-  const handleRespondSquad = async (inv: any, response: 'accepted' | 'rejected') => {
+  const handleRespondSquad = async (inv: SquadInvitation, response: 'accepted' | 'rejected') => {
     try {
       await respondSquad.mutateAsync({
         invitationId: inv.id,
@@ -38,8 +45,8 @@ export function InvitationBadge() {
         userId: inv.invited_user_id,
       });
       toast.success(response === 'accepted' ? `Joined ${inv.squad?.name}!` : 'Invitation declined');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to respond');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to respond');
     }
   };
 
@@ -75,10 +82,10 @@ export function InvitationBadge() {
           squadName: squad.name,
           existingSquadId: squad.id,
           logoUrl: squad.logo_url,
-          members: members.map((m: any, index: number) => ({
+          members: (members as SquadMemberRow[]).map((m, index) => ({
             ign: m.profile?.ign || m.ign || 'Unknown',
             mlbb_id: m.profile?.mlbb_id || m.mlbb_id || '',
-            role: index < 5 ? 'main' : 'substitute',
+            role: index < 5 ? 'main' as const : 'substitute' as const,
             position: index + 1,
             user_id: m.user_id,
           })),
@@ -92,12 +99,12 @@ export function InvitationBadge() {
       });
 
       toast.success(
-        response === 'accepted' 
-          ? `${inv.squads?.name} registered for ${inv.tournaments?.name}!` 
+        response === 'accepted'
+          ? `${inv.squads?.name} registered for ${inv.tournaments?.name}!`
           : 'Tournament invitation declined'
       );
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to respond');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to respond');
     } finally {
       setProcessingId(null);
     }
@@ -228,7 +235,7 @@ export function InvitationSection() {
 
   if (count === 0) return null;
 
-  const handleRespond = async (inv: any, response: 'accepted' | 'rejected') => {
+  const handleRespond = async (inv: SquadInvitation, response: 'accepted' | 'rejected') => {
     try {
       await respond.mutateAsync({
         invitationId: inv.id,
@@ -238,8 +245,8 @@ export function InvitationSection() {
         userId: inv.invited_user_id,
       });
       toast.success(response === 'accepted' ? `Joined ${inv.squad?.name}!` : 'Invitation declined');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to respond');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to respond');
     }
   };
 

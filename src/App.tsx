@@ -29,7 +29,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 // Expose queryClient for auth signOut cache clearing
-(window as any).__queryClient = queryClient;
+(window as unknown as Record<string, unknown>).__queryClient = queryClient;
 
 function PageLoader() {
   return (

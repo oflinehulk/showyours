@@ -316,4 +316,20 @@ export interface GroupDrawEntry {
   squad_name: string;
   group_label: string;
   draw_order: number;
+  pot_number?: number;
 }
+
+// ========== Pot-Based Draw Types ==========
+
+export interface PotAssignment {
+  squad_id: string;
+  squad_name: string;
+  pot_number: number; // 1-based
+}
+
+export const POT_LABELS: Record<number, string> = {
+  1: 'Pot 1 — Top Seeds',
+  2: 'Pot 2 — High Seeds',
+  3: 'Pot 3 — Mid Seeds',
+  4: 'Pot 4 — Lower Seeds',
+};

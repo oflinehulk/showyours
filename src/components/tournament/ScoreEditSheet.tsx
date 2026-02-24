@@ -48,7 +48,7 @@ export function ScoreEditSheet({
       setSquadBScore(match.squad_b_score.toString());
       setScreenshotUrl(match.result_screenshot);
     }
-  }, [match?.id]);
+  }, [match]);
 
   if (!match) return null;
 
@@ -79,8 +79,8 @@ export function ScoreEditSheet({
       });
       toast.success('Match result updated');
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error('Failed to update result', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to update result', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 

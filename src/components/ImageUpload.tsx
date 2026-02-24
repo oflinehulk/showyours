@@ -73,8 +73,8 @@ export function ImageUpload({
 
       onUpload(publicUrl);
       toast.success('Image uploaded successfully!');
-    } catch (error: any) {
-      toast.error('Failed to upload image', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to upload image', { description: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -195,8 +195,8 @@ export function MultiImageUpload({
 
       onUpload(publicUrl);
       toast.success('Screenshot uploaded!');
-    } catch (error: any) {
-      toast.error('Failed to upload', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Failed to upload', { description: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {

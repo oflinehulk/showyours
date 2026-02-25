@@ -142,6 +142,24 @@ export function useAdminDeleteSquad() {
   });
 }
 
+export function useAdminUserEmails() {
+  const { data: isAdmin } = useIsAdmin();
+
+  return useQuery({
+    queryKey: ['adminUserEmails'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('admin_get_user_emails');
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((row: { user_id: string; email: string }) => {
+        map[row.user_id] = row.email;
+      });
+      return map;
+    },
+    enabled: isAdmin === true,
+  });
+}
+
 export function useAdminStats() {
   const { data: isAdmin } = useIsAdmin();
 

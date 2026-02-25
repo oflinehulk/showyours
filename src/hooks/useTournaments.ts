@@ -564,6 +564,7 @@ export function useUpdateMatchResult() {
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -1191,6 +1192,14 @@ export function useResetBracket() {
 
       if (deleteError) throw new Error(deleteError.message);
 
+      // Reset all stage statuses back to pending (for multi-stage tournaments)
+      const { error: stageError } = await supabase
+        .from('tournament_stages')
+        .update({ status: 'pending' })
+        .eq('tournament_id', tournamentId);
+
+      if (stageError) throw new Error(stageError.message);
+
       // Reset tournament status and format
       const { error: updateError } = await supabase
         .from('tournaments')
@@ -1206,6 +1215,7 @@ export function useResetBracket() {
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournaments'] });
     },
   });
@@ -1594,6 +1604,7 @@ export function useUpdateMatchCheckIn() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -1646,6 +1657,7 @@ export function useForfeitMatch() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -1685,6 +1697,7 @@ export function useRaiseDispute() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -1751,6 +1764,7 @@ export function useResolveDispute() {
     },
     onSuccess: (tournamentId) => {
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -2125,6 +2139,10 @@ export function useGenerateStageBracket() {
           const matches = generateRoundRobinBracket(tournamentId, teamIds, groupOpts);
           allMatches.push(...matches);
         }
+
+        // Re-number match_number sequentially across all groups to avoid
+        // duplicate key on idx_matches_multi_stage_unique (stage_id, round, match_number, bracket_type)
+        allMatches.forEach((m, i) => { m.match_number = i + 1; });
 
         if (allMatches.length > 0) {
           // Delete any existing matches for this stage as a safety net

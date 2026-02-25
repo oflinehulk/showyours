@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -271,10 +271,21 @@ function MultiStageBracket({
 }) {
   const { data: stages } = useTournamentStages(tournament.id);
   const [activeStageIndex, setActiveStageIndex] = useState<number>(0);
+  const hasAutoSelected = useRef(false);
   const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
   const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
   const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
   const [tossMatch, setTossMatch] = useState<TournamentMatch | null>(null);
+
+  // Auto-select the latest active stage when stages first load
+  useEffect(() => {
+    if (!stages || stages.length === 0 || hasAutoSelected.current) return;
+    hasAutoSelected.current = true;
+    const ongoingIdx = stages.findIndex(s => s.status === 'ongoing');
+    if (ongoingIdx !== -1) { setActiveStageIndex(ongoingIdx); return; }
+    const nonCompletedIdx = stages.findIndex(s => s.status !== 'completed');
+    if (nonCompletedIdx !== -1) { setActiveStageIndex(nonCompletedIdx); return; }
+  }, [stages]);
 
   if (!stages || stages.length === 0) {
     return (
@@ -287,11 +298,6 @@ function MultiStageBracket({
       </GlowCard>
     );
   }
-
-  // Auto-select the latest active stage
-  const defaultStageIndex = stages.findIndex(s => s.status === 'ongoing')
-    ?? stages.findIndex(s => s.status !== 'completed')
-    ?? 0;
 
   const currentStage = stages[activeStageIndex] || stages[0];
   const stageMatches = allMatches.filter(m => m.stage_id === currentStage.id);

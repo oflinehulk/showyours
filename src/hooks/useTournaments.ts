@@ -1925,7 +1925,7 @@ export function useCreateStages() {
         name: s.name,
         format: s.format,
         best_of: s.best_of,
-        finals_best_of: s.finals_best_of ?? undefined,
+        finals_best_of: s.finals_best_of ?? s.best_of,
         group_count: s.group_count,
         advance_per_group: s.advance_per_group,
         advance_best_remaining: s.advance_best_remaining,

@@ -1158,6 +1158,10 @@ export type Database = {
         Args: { p_change_id: string }
         Returns: undefined
       }
+      rpc_host_add_squad: {
+        Args: { p_squad_id: string; p_tournament_id: string }
+        Returns: string
+      }
       rpc_register_for_tournament: {
         Args: {
           p_existing_squad_id: string

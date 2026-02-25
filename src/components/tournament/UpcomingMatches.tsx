@@ -21,36 +21,27 @@ interface UpcomingMatchesProps {
 }
 
 export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProps) {
+  // Only show matches that have a scheduled time — TBA matches are already visible in the Bracket tab
   const upcoming = matches
-    .filter(m => m.status === 'pending' || m.status === 'ongoing')
-    .sort((a, b) => {
-      // Scheduled first, then unscheduled
-      if (a.scheduled_time && !b.scheduled_time) return -1;
-      if (!a.scheduled_time && b.scheduled_time) return 1;
-      if (a.scheduled_time && b.scheduled_time) {
-        return new Date(a.scheduled_time).getTime() - new Date(b.scheduled_time).getTime();
-      }
-      return a.match_number - b.match_number;
-    });
+    .filter(m => (m.status === 'pending' || m.status === 'ongoing') && m.scheduled_time)
+    .sort((a, b) => new Date(a.scheduled_time!).getTime() - new Date(b.scheduled_time!).getTime());
 
   if (upcoming.length === 0) {
     return (
       <GlowCard className="p-8 text-center">
         <CalendarDays className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-        <h3 className="text-lg font-display font-semibold text-foreground mb-1">No upcoming matches</h3>
+        <h3 className="text-lg font-display font-semibold text-foreground mb-1">No scheduled matches</h3>
         <p className="text-muted-foreground text-sm">
-          Matches will appear here once they are scheduled.
+          Matches will appear here once the host assigns times.
         </p>
       </GlowCard>
     );
   }
 
   // Group by date
-  const scheduled = upcoming.filter(m => m.scheduled_time);
-  const unscheduled = upcoming.filter(m => !m.scheduled_time);
 
   const groups = new Map<string, TournamentMatch[]>();
-  for (const match of scheduled) {
+  for (const match of upcoming) {
     const date = new Date(match.scheduled_time!);
     let label: string;
     if (isToday(date)) {
@@ -85,23 +76,6 @@ export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProp
         </div>
       ))}
 
-      {unscheduled.length > 0 && (
-        <div>
-          <h3 className="text-xs font-display font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5" />
-            Unscheduled
-          </h3>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {unscheduled.map((match) => (
-              <UpcomingMatchCard
-                key={match.id}
-                match={match}
-                tournamentName={tournamentName}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

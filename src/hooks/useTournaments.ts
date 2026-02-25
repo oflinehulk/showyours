@@ -1138,10 +1138,11 @@ export function useGenerateBracket() {
       }
 
       // Insert matches (delete any existing first as a safety net)
-      await supabase
+      const { error: delErr } = await supabase
         .from('tournament_matches')
         .delete()
         .eq('tournament_id', tournamentId);
+      if (delErr) throw new Error(`Failed to clear old matches: ${delErr.message}`);
 
       const { error: matchError } = await supabase
         .from('tournament_matches')
@@ -2127,11 +2128,12 @@ export function useGenerateStageBracket() {
 
         if (allMatches.length > 0) {
           // Delete any existing matches for this stage as a safety net
-          await supabase
+          const { error: delErr } = await supabase
             .from('tournament_matches')
             .delete()
             .eq('tournament_id', tournamentId)
             .eq('stage_id', stageId);
+          if (delErr) throw new Error(`Failed to clear old matches: ${delErr.message}`);
 
           const { error: insertErr } = await supabase
             .from('tournament_matches')
@@ -2171,11 +2173,12 @@ export function useGenerateStageBracket() {
         }
 
         // Delete any existing matches for this stage as a safety net
-        await supabase
+        const { error: delErr } = await supabase
           .from('tournament_matches')
           .delete()
           .eq('tournament_id', tournamentId)
           .eq('stage_id', stageId);
+        if (delErr) throw new Error(`Failed to clear old matches: ${delErr.message}`);
 
         const { error: insertErr } = await supabase
           .from('tournament_matches')

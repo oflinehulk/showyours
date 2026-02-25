@@ -116,6 +116,13 @@ export default function AuthPage() {
           toast.success('Account created! Please check your email to verify.');
         }
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      if (message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('fetch')) {
+        toast.error('Network error — please check your internet connection and try again.');
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }

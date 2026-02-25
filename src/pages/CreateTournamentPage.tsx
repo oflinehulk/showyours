@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { TiptapEditor } from '@/components/TiptapEditor';
 import {
   Select,
@@ -18,9 +17,8 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateTournament } from '@/hooks/useTournaments';
-import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, IndianRupee, Plus, Trash2, Medal, Layers } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, Wallet, Loader2, AlertCircle, Swords, Globe, MessageCircle, Ticket, IndianRupee, Plus, Trash2, Medal } from 'lucide-react';
 import { toast } from 'sonner';
-import { MAX_SQUAD_SIZES } from '@/lib/tournament-types';
 import type { PrizeTier } from '@/lib/tournament-types';
 
 export default function CreateTournamentPage() {
@@ -43,7 +41,6 @@ export default function CreateTournamentPage() {
   const [entryFee, setEntryFee] = useState('');
   const [region, setRegion] = useState('');
   const [contactInfo, setContactInfo] = useState('');
-  const [isMultiStage, setIsMultiStage] = useState(false);
   const [prizeTiers, setPrizeTiers] = useState<PrizeTier[]>([
     { place: 1, label: '1st Place', prize: '', distributed: false },
     { place: 2, label: '2nd Place', prize: '', distributed: false },
@@ -79,7 +76,7 @@ export default function CreateTournamentPage() {
         region: region || null,
         contact_info: contactInfo.trim() || null,
         prize_tiers: prizeTiers.some(t => t.prize.trim()) ? prizeTiers.filter(t => t.prize.trim()) : null,
-        is_multi_stage: isMultiStage,
+        is_multi_stage: false,
       });
 
       toast.success('Tournament created!', {
@@ -242,64 +239,20 @@ export default function CreateTournamentPage() {
                     <Swords className="w-4 h-4 inline mr-1" />
                     Max Squads *
                   </Label>
-                  {isMultiStage ? (
-                    <Input
-                      id="maxSquads"
-                      type="number"
-                      min={4}
-                      value={maxSquads}
-                      onChange={(e) => setMaxSquads(e.target.value)}
-                      placeholder="e.g. 42"
-                      className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-                    />
-                  ) : (
-                    <Select value={maxSquads} onValueChange={setMaxSquads}>
-                      <SelectTrigger className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20">
-                        <SelectValue placeholder="Select max squads" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MAX_SQUAD_SIZES.map((size) => (
-                          <SelectItem key={size} value={size.toString()}>
-                            {size} squads
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    id="maxSquads"
+                    type="number"
+                    min={2}
+                    value={maxSquads}
+                    onChange={(e) => setMaxSquads(e.target.value)}
+                    placeholder="e.g. 16"
+                    className="mt-1.5 bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+                  />
                 </div>
-              </div>
-
-              {/* Multi-Stage Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF4500]/10 flex items-center justify-center">
-                    <Layers className="w-4 h-4 text-[#FF4500]" />
-                  </div>
-                  <div>
-                    <Label htmlFor="multiStage" className="text-sm font-medium text-foreground cursor-pointer">
-                      Multi-Stage Tournament
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Group stage + knockout. Configure stages after closing registration.
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="multiStage"
-                  checked={isMultiStage}
-                  onCheckedChange={(checked) => {
-                    setIsMultiStage(checked);
-                    if (checked && parseInt(maxSquads) < 4) {
-                      setMaxSquads('16');
-                    }
-                  }}
-                />
               </div>
 
               <p className="text-xs text-muted-foreground/60 italic">
-                {isMultiStage
-                  ? 'Stages and format are configured after registration closes.'
-                  : 'Tournament format (Single Elimination, Double Elimination, Round Robin) is chosen after registration closes.'}
+                Tournament format (Single Elimination, Double Elimination, Round Robin, or Multi-Stage) is chosen after registration closes.
               </p>
             </div>
           </GlowCard>

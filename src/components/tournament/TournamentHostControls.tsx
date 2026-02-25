@@ -89,7 +89,8 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const autoSeed = useAutoSeedByRegistrationOrder();
   const withdrawSquad = useWithdrawSquad();
 
-  const [selectedFormat, setSelectedFormat] = useState<TournamentFormat>('single_elimination');
+  type ExtendedFormat = TournamentFormat | 'multi_stage';
+  const [selectedFormat, setSelectedFormat] = useState<ExtendedFormat>('single_elimination');
 
   const approvedRegistrations = registrations.filter(r => r.status === 'approved');
   const approvedCount = approvedRegistrations.length;
@@ -383,7 +384,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
               <div className="flex gap-2">
                 <Select
                   value={selectedFormat}
-                  onValueChange={(v) => setSelectedFormat(v as TournamentFormat)}
+                  onValueChange={(v) => setSelectedFormat(v as ExtendedFormat)}
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select format" />
@@ -394,20 +395,52 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                         {label}
                       </SelectItem>
                     ))}
+                    <SelectItem value="multi_stage">
+                      Multi-Stage (Group + Knockout)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
-                  onClick={handleGenerateBracket}
-                  disabled={!canGenerateBracket || generateBracket.isPending}
-                  className="btn-gaming"
-                >
-                  {generateBracket.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Shuffle className="w-4 h-4 mr-2" />
-                  )}
-                  Generate Bracket
-                </Button>
+                {selectedFormat === 'multi_stage' ? (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await updateTournament.mutateAsync({
+                          id: tournament.id,
+                          is_multi_stage: true,
+                        });
+                        toast.success('Switched to Multi-Stage mode', {
+                          description: 'Configure your stages below.',
+                        });
+                      } catch (error: unknown) {
+                        toast.error('Failed to switch format', {
+                          description: error instanceof Error ? error.message : 'Unknown error',
+                        });
+                      }
+                    }}
+                    disabled={updateTournament.isPending}
+                    className="btn-gaming"
+                  >
+                    {updateTournament.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Layers className="w-4 h-4 mr-2" />
+                    )}
+                    Configure Multi-Stage
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleGenerateBracket}
+                    disabled={!canGenerateBracket || generateBracket.isPending}
+                    className="btn-gaming"
+                  >
+                    {generateBracket.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Shuffle className="w-4 h-4 mr-2" />
+                    )}
+                    Generate Bracket
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -594,6 +627,7 @@ function MultiStageSetup({
 }) {
   const { data: stages } = useTournamentStages(tournament.id);
   const updateTournament = useUpdateTournament();
+  const deleteStages = useDeleteStages();
   const autoSeed = useAutoSeedByRegistrationOrder();
   const updateSeed = useUpdateRegistrationSeed();
   const generateStageBracket = useGenerateStageBracket();
@@ -671,8 +705,36 @@ function MultiStageSetup({
 
   return (
     <div className="space-y-4">
-      {/* Reopen button */}
-      <div className="flex justify-end">
+      {/* Reopen / Switch to Single-Stage buttons */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            try {
+              if (stages && stages.length > 0) {
+                await deleteStages.mutateAsync(tournament.id);
+              }
+              await updateTournament.mutateAsync({
+                id: tournament.id,
+                is_multi_stage: false,
+              });
+              toast.success('Switched to single-stage mode');
+            } catch (error: unknown) {
+              toast.error('Failed to switch', {
+                description: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          }}
+          disabled={reopenPending || deleteStages.isPending || updateTournament.isPending}
+        >
+          {deleteStages.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+          ) : (
+            <RotateCcw className="w-3 h-3 mr-1" />
+          )}
+          Switch to Single-Stage
+        </Button>
         <Button
           variant="outline"
           size="sm"

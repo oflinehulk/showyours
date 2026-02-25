@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
   DialogContent,
@@ -700,6 +701,43 @@ function BracketView({
   onToss?: (m: TournamentMatch) => void;
 }) {
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
+  const isMobile = useIsMobile();
+
+  const matchCardProps = (match: TournamentMatch) => ({
+    key: match.id,
+    match,
+    onClick: () => onMatchClick(match),
+    onDispute: () => onDispute(match),
+    onResolve: () => onResolve(match),
+    onToss: onToss ? () => onToss(match) : undefined,
+    isHost,
+    tournamentId,
+    tournamentName,
+    tournamentStatus,
+    userSquadIds,
+  });
+
+  if (isMobile) {
+    return (
+      <div className="space-y-6">
+        {rounds.map((round) => (
+          <div key={round}>
+            <h4 className="text-xs font-display font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              Round {round}
+            </h4>
+            <div className="grid gap-3 grid-cols-1">
+              {matches
+                .filter(m => m.round === round)
+                .sort((a, b) => a.match_number - b.match_number)
+                .map((match) => (
+                  <MatchCard {...matchCardProps(match)} />
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">
@@ -714,19 +752,7 @@ function BracketView({
                 .filter(m => m.round === round)
                 .sort((a, b) => a.match_number - b.match_number)
                 .map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    onClick={() => onMatchClick(match)}
-                    onDispute={() => onDispute(match)}
-                    onResolve={() => onResolve(match)}
-                    onToss={onToss ? () => onToss(match) : undefined}
-                    isHost={isHost}
-                    tournamentId={tournamentId}
-                    tournamentName={tournamentName}
-                    tournamentStatus={tournamentStatus}
-                    userSquadIds={userSquadIds}
-                  />
+                  <MatchCard {...matchCardProps(match)} />
                 ))}
             </div>
             {roundIndex < rounds.length - 1 && (

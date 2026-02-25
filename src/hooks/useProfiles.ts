@@ -39,7 +39,7 @@ export function useProfiles() {
         .eq('looking_for_squad', true)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       // Exclude players already in a squad
       return (data as Profile[]).filter(p => !inSquadUserIds.has(p.user_id));
     },
@@ -56,7 +56,7 @@ export function useProfile(id: string) {
         .eq('id', id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Profile | null;
     },
     enabled: !!id,
@@ -77,7 +77,7 @@ export function useMyProfile() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Profile | null;
     },
     enabled: !!user,
@@ -105,7 +105,7 @@ export function useCreateProfile() {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Profile;
     },
     onSuccess: () => {
@@ -136,7 +136,7 @@ export function useUpdateProfile() {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Profile;
     },
     onSuccess: (_, variables) => {
@@ -168,20 +168,20 @@ export function useDeleteProfile() {
         .from('squad_applications')
         .delete()
         .eq('applicant_id', id);
-      if (appsErr) throw appsErr;
+      if (appsErr) throw new Error(appsErr.message);
 
       const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('invited_profile_id', id);
-      if (invErr) throw invErr;
+      if (invErr) throw new Error(invErr.message);
 
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });

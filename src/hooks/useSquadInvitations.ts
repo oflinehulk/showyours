@@ -30,7 +30,7 @@ export function useMyInvitations() {
         .eq('invited_user_id', user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return (data || []) as SquadInvitation[];
     },
     enabled: !!user,
@@ -49,7 +49,7 @@ export function useSquadSentInvitations(squadId: string | undefined) {
         .eq('squad_id', squadId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return (data || []) as SquadInvitation[];
     },
     enabled: !!squadId,
@@ -90,7 +90,7 @@ export function useSendInvitation() {
         .single();
       if (error) {
         if (error.code === '23505') throw new Error('Invitation already sent to this player');
-        throw error;
+        throw new Error(error.message);
       }
       return data;
     },
@@ -141,7 +141,7 @@ export function useRespondToInvitation() {
             role: 'member',
             position: nextPosition,
           });
-        if (memberError) throw memberError;
+        if (memberError) throw new Error(memberError.message);
 
         // Update looking_for_squad
         await supabase
@@ -155,7 +155,7 @@ export function useRespondToInvitation() {
         .from('squad_invitations')
         .update({ status: response })
         .eq('id', invitationId);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-invitations'] });
@@ -177,7 +177,7 @@ export function useCancelInvitation() {
         .from('squad_invitations')
         .delete()
         .eq('id', invitationId);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['squad-invitations'] });

@@ -120,7 +120,7 @@ export function useSquadMembers(squadId: string | undefined) {
         .eq('squad_id', squadId)
         .order('position', { ascending: true });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as SquadMember[];
     },
     enabled: !!squadId,
@@ -145,7 +145,7 @@ export function useMySquadMembership() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
@@ -176,7 +176,7 @@ export function useSearchProfiles(
           add_to_squad: addToSquad,
         });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as SearchedProfile[];
     },
     enabled: searchTerm.length >= 2,
@@ -249,7 +249,7 @@ export function useAddSquadMember() {
         if (error.message?.includes('unique_squad_member')) {
           throw new Error('This player is already in a squad. A player can only be in one squad at a time.');
         }
-        throw error;
+        throw new Error(error.message);
       }
 
       // Auto-hide player from recruitment listings when they join a squad
@@ -355,7 +355,7 @@ export function useAddManualSquadMember() {
         if (error.message?.includes('unique_squad_member_mlbb_id')) {
           throw new Error('A player with this MLBB ID is already in a squad. Each player can only be in one squad at a time.');
         }
-        throw error;
+        throw new Error(error.message);
       }
       return { ...data, ignWarning };
     },
@@ -386,7 +386,7 @@ export function useUpdateSquadMemberRole() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -417,7 +417,7 @@ export function useTransferLeadership() {
         .update({ role: 'leader' })
         .eq('id', newLeaderMemberId);
 
-      if (promoteError) throw promoteError;
+      if (promoteError) throw new Error(promoteError.message);
 
       // Update squad owner_id to the new leader's user_id
       const { data: newLeaderData } = await supabase
@@ -439,7 +439,7 @@ export function useTransferLeadership() {
         .update({ role: oldLeaderNewRole })
         .eq('id', oldLeaderMemberId);
 
-      if (demoteError) throw demoteError;
+      if (demoteError) throw new Error(demoteError.message);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-members', variables.squadId] });
@@ -469,7 +469,7 @@ export function useRemoveSquadMember() {
         .delete()
         .eq('id', memberId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       // Re-enable recruitment visibility for kicked members (same as leave)
       if (profileId) {
@@ -510,7 +510,7 @@ export function useLeaveSquad() {
         .eq('squad_id', squadId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       // Re-enable recruitment visibility after leaving
       if (membership?.profile_id) {

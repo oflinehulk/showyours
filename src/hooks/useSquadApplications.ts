@@ -49,7 +49,7 @@ export function useSquadApplications(squadId: string | undefined) {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as SquadApplication[];
     },
     enabled: !!squadId,
@@ -76,7 +76,7 @@ export function useMyApplications() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as SquadApplication[];
     },
     enabled: !!user,
@@ -100,7 +100,7 @@ export function useHasPendingApplication(squadId: string | undefined) {
         .eq('status', 'pending')
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return !!data;
     },
     enabled: !!user && !!squadId,
@@ -146,7 +146,7 @@ export function useApplyToSquad() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -168,7 +168,7 @@ export function useWithdrawApplication() {
         .delete()
         .eq('id', applicationId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-applications'] });
@@ -225,7 +225,7 @@ export function useApproveApplication() {
           position: nextPosition,
         });
 
-      if (memberError) throw memberError;
+      if (memberError) throw new Error(memberError.message);
 
       // Auto-hide player from recruitment listings
       await supabase
@@ -239,7 +239,7 @@ export function useApproveApplication() {
         .update({ status: 'approved' })
         .eq('id', applicationId);
 
-      if (updateError) throw updateError;
+      if (updateError) throw new Error(updateError.message);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-applications', variables.squadId] });
@@ -268,7 +268,7 @@ export function useRejectApplication() {
         .update({ status: 'rejected' })
         .eq('id', applicationId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['squad-applications', variables.squadId] });

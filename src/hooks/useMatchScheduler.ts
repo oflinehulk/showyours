@@ -20,7 +20,7 @@ export function useUpdateMatchSchedule() {
         .update({ scheduled_time: scheduledTime })
         .eq('id', matchId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return tournamentId;
     },
     onSuccess: (tournamentId) => {
@@ -48,7 +48,7 @@ export function useBulkUpdateMatchSchedule() {
           .update({ scheduled_time: scheduledTime })
           .eq('id', matchId);
 
-        if (error) throw error;
+        if (error) throw new Error(error.message);
       }
       return tournamentId;
     },

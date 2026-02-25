@@ -20,7 +20,7 @@ export function useHeroes() {
         .eq('is_active', true)
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Hero[];
     },
   });
@@ -35,7 +35,7 @@ export function useAllHeroes() {
         .select('*')
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Hero[];
     },
   });
@@ -52,7 +52,7 @@ export function useHeroesByClass(heroClass: string) {
         .eq('is_active', true)
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Hero[];
     },
     enabled: !!heroClass,
@@ -70,7 +70,7 @@ export function useAddHero() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Hero;
     },
     onSuccess: () => {
@@ -97,7 +97,7 @@ export function useUpdateHero() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Hero;
     },
     onSuccess: () => {
@@ -117,7 +117,7 @@ export function useDeleteHero() {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['heroes'] });

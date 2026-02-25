@@ -18,7 +18,7 @@ export function useNotifications() {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return (data || []) as Notification[];
     },
     enabled: !!user,
@@ -40,7 +40,7 @@ export function useUnreadNotificationCount() {
         .eq('user_id', user.id)
         .eq('read', false);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return count ?? 0;
     },
     enabled: !!user,
@@ -58,7 +58,7 @@ export function useMarkNotificationRead() {
         .update({ read: true })
         .eq('id', notificationId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -81,7 +81,7 @@ export function useMarkAllNotificationsRead() {
         .eq('user_id', user.id)
         .eq('read', false);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

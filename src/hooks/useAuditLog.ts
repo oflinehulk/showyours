@@ -15,7 +15,7 @@ export function useAuditLog(tournamentId: string | undefined) {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return (data || []) as AuditLogEntry[];
     },
     enabled: !!tournamentId,

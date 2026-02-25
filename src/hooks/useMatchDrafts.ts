@@ -26,7 +26,7 @@ export function useMatchDraft(matchId: string | undefined) {
         .eq('match_id', matchId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as MatchDraft | null;
     },
     enabled: !!matchId,
@@ -44,7 +44,7 @@ export function useTournamentDrafts(tournamentId: string | undefined) {
         .select('*')
         .eq('tournament_id', tournamentId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as MatchDraft[];
     },
     enabled: !!tournamentId,
@@ -94,7 +94,7 @@ export function useSaveMatchDraft() {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         return { data, tournamentId, matchId };
       } else {
         const { data, error } = await supabase
@@ -111,7 +111,7 @@ export function useSaveMatchDraft() {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         return { data, tournamentId, matchId };
       }
     },

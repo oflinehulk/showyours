@@ -11,7 +11,7 @@ export function useCompleteOnboarding() {
         .update({ has_completed_onboarding: true })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });

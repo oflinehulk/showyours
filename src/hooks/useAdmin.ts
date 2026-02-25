@@ -35,7 +35,7 @@ export function useAllProfiles() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: isAdmin === true,
@@ -53,7 +53,7 @@ export function useAllSquads() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: isAdmin === true,
@@ -70,28 +70,28 @@ export function useAdminDeleteProfile() {
         .from('squad_members')
         .delete()
         .eq('profile_id', profileId);
-      if (membersErr) throw membersErr;
+      if (membersErr) throw new Error(membersErr.message);
 
       // Clean up squad applications
       const { error: appsErr } = await supabase
         .from('squad_applications')
         .delete()
         .eq('applicant_id', profileId);
-      if (appsErr) throw appsErr;
+      if (appsErr) throw new Error(appsErr.message);
 
       // Clean up squad invitations
       const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('invited_profile_id', profileId);
-      if (invErr) throw invErr;
+      if (invErr) throw new Error(invErr.message);
 
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', profileId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allProfiles'] });
@@ -112,26 +112,26 @@ export function useAdminDeleteSquad() {
         .from('squad_applications')
         .delete()
         .eq('squad_id', squadId);
-      if (appsErr) throw appsErr;
+      if (appsErr) throw new Error(appsErr.message);
 
       const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('squad_id', squadId);
-      if (invErr) throw invErr;
+      if (invErr) throw new Error(invErr.message);
 
       const { error: membersErr } = await supabase
         .from('squad_members')
         .delete()
         .eq('squad_id', squadId);
-      if (membersErr) throw membersErr;
+      if (membersErr) throw new Error(membersErr.message);
 
       const { error } = await supabase
         .from('squads')
         .delete()
         .eq('id', squadId);
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allSquads'] });
@@ -149,7 +149,7 @@ export function useAdminUserEmails() {
     queryKey: ['adminUserEmails'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('admin_get_user_emails');
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       const map: Record<string, string> = {};
       (data || []).forEach((row: { user_id: string; email: string }) => {
         map[row.user_id] = row.email;

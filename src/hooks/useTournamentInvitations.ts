@@ -38,7 +38,7 @@ export function useTournamentInvitations(tournamentId: string | undefined) {
         .select('*, squads(id, name, logo_url, owner_id)')
         .eq('tournament_id', tournamentId)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as TournamentInvitation[];
     },
     enabled: !!tournamentId,
@@ -80,7 +80,7 @@ export function useMyTournamentInvitations() {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as TournamentInvitation[];
     },
     enabled: !!user,
@@ -117,7 +117,7 @@ export function useSendTournamentInvitation() {
 
       if (error) {
         if (error.code === '23505') throw new Error('This squad has already been invited');
-        throw error;
+        throw new Error(error.message);
       }
       return data;
     },
@@ -146,7 +146,7 @@ export function useRespondToTournamentInvitation() {
         .select('*, tournaments(id, name), squads(id, name, logo_url, owner_id)')
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as TournamentInvitation;
     },
     onSuccess: () => {
@@ -173,7 +173,7 @@ export function useCancelTournamentInvitation() {
         .from('tournament_invitations')
         .delete()
         .eq('id', invitationId);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return tournamentId;
     },
     onSuccess: (tournamentId) => {

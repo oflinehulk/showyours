@@ -27,7 +27,7 @@ export function useSquads() {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       // Get member counts for all squads
       const squadIds = squads.map(s => s.id);
@@ -36,7 +36,7 @@ export function useSquads() {
         .select('squad_id')
         .in('squad_id', squadIds);
 
-      if (countError) throw countError;
+      if (countError) throw new Error(countError.message);
 
       // Count members per squad
       const countMap: Record<string, number> = {};
@@ -63,7 +63,7 @@ export function useSquad(id: string) {
         .eq('id', id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Squad | null;
     },
     enabled: !!id,
@@ -84,7 +84,7 @@ export function useMySquads() {
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Squad[];
     },
     enabled: !!user,
@@ -145,15 +145,15 @@ export function useCreateSquad() {
           description: squad.description || null,
           min_rank: squad.min_rank,
           needed_roles: squad.needed_roles || [],
-          member_count: squad.member_count || 1,
-          max_members: squad.max_members || 10,
+          member_count: squad.member_count ?? 1,
+          max_members: squad.max_members ?? 10,
           contacts: squad.contacts || [],
           is_recruiting: squad.is_recruiting ?? true,
         })
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       // Add creator as leader in squad_members
       const { error: memberError } = await supabase
@@ -169,7 +169,7 @@ export function useCreateSquad() {
       if (memberError) {
         // If member creation fails, delete the squad
         await supabase.from('squads').delete().eq('id', squadData.id);
-        throw memberError;
+        throw new Error(memberError.message);
       }
 
       return squadData as Squad;
@@ -191,13 +191,13 @@ export function useUpdateSquad() {
         .from('squads')
         .update({
           ...squad,
-          contacts: squad.contacts || undefined,
+          contacts: squad.contacts ?? undefined,
         })
         .eq('id', id)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data as Squad;
     },
     onSuccess: (_, variables) => {
@@ -218,14 +218,14 @@ export function useDeleteSquad() {
         .from('squad_applications')
         .delete()
         .eq('squad_id', id);
-      if (appsErr) throw appsErr;
+      if (appsErr) throw new Error(appsErr.message);
 
       // Clean up invitations
       const { error: invErr } = await supabase
         .from('squad_invitations')
         .delete()
         .eq('squad_id', id);
-      if (invErr) throw invErr;
+      if (invErr) throw new Error(invErr.message);
 
       // Re-enable recruitment for all registered members
       const { data: members } = await supabase
@@ -240,7 +240,7 @@ export function useDeleteSquad() {
         .delete()
         .eq('squad_id', id);
       
-      if (membersError) throw membersError;
+      if (membersError) throw new Error(membersError.message);
 
       // Re-enable looking_for_squad for all former members
       if (members && members.length > 0) {
@@ -259,7 +259,7 @@ export function useDeleteSquad() {
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['squads'] });

@@ -128,7 +128,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
     try {
       await generateBracket.mutateAsync({
         tournamentId: tournament.id,
-        format: selectedFormat,
+        format: selectedFormat as TournamentFormat,
       });
       toast.success('Bracket generated!', {
         description: 'Matches have been created. You can now start the tournament.',

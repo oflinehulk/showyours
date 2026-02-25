@@ -41,6 +41,7 @@ import {
 import { StageConfigurator } from '@/components/tournament/StageConfigurator';
 import { GroupAssignment } from '@/components/tournament/GroupAssignment';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
+import { HostAddSquad } from '@/components/tournament/HostAddSquad';
 import { computeGroupStandings, determineAdvancingTeams, determineSplitAdvancingTeams } from '@/lib/bracket-utils';
 import {
   Settings,
@@ -384,6 +385,9 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                 </Button>
               </div>
             </div>
+
+            {/* Host Add Squad */}
+            <HostAddSquad tournament={tournament} />
           </div>
         )}
 
@@ -747,6 +751,9 @@ function MultiStageSetup({
           </Button>
         </div>
       )}
+
+      {/* Host Add Squad (multi-stage) */}
+      <HostAddSquad tournament={tournament} />
     </div>
   );
 }

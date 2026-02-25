@@ -201,6 +201,13 @@ export default function DocsPage() {
                 Review each registration and approve or reject it. You can view the squad's roster before approving.
               </p>
 
+              <h4>Adding Squads After Registration Closes</h4>
+              <p>
+                After closing registration, you can still directly add squads to the tournament using the <strong>Add Squad</strong>
+                panel in Host Controls. Search for any squad by name and add them with one click — they are auto-approved
+                without needing the squad leader to register. Squads must have at least 5 members to be eligible.
+              </p>
+
               <h4>Host Controls</h4>
               <p>
                 The Host Controls panel shows a <strong>step progress indicator</strong> guiding you through each stage.

@@ -382,6 +382,34 @@ export function useRegisterForTournament() {
   });
 }
 
+// Host directly adds a squad to tournament (registration_closed status, auto-approved)
+export function useHostAddSquad() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      squadId,
+    }: {
+      tournamentId: string;
+      squadId: string;
+    }) => {
+      const { data, error } = await supabase.rpc('rpc_host_add_squad', {
+        p_tournament_id: tournamentId,
+        p_squad_id: squadId,
+      });
+
+      if (error) throw error;
+      return { squadId: data as string, tournamentId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      queryClient.invalidateQueries({ queryKey: ['all-squads-for-host-add'] });
+    },
+  });
+}
+
 // Update registration status (host only)
 export function useUpdateRegistrationStatus() {
   const queryClient = useQueryClient();

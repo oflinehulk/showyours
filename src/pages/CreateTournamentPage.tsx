@@ -388,7 +388,7 @@ export default function CreateTournamentPage() {
 
               <div className="space-y-3">
                 {prizeTiers.map((tier, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
                     <div className="w-8 h-8 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
                       <Medal className="w-4 h-4 text-yellow-500" />
                     </div>

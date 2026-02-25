@@ -101,7 +101,7 @@ export function DraftPickPanel({ match, tournamentId, isHost, open, onClose }: D
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Swords className="w-5 h-5 text-primary" />
@@ -293,7 +293,7 @@ function HeroBanSelector({
                 <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
+            <PopoverContent className="w-[calc(100vw-3rem)] sm:w-[250px] p-0" align="start">
               <Command>
                 <CommandInput placeholder="Search heroes..." />
                 <CommandList>
@@ -325,7 +325,7 @@ function HeroBanSelector({
               value={customHero}
               onChange={(e) => setCustomHero(e.target.value)}
               placeholder="Or type hero name"
-              className="h-9 text-sm w-[150px]"
+              className="h-9 text-sm flex-1"
               onKeyDown={(e) => e.key === 'Enter' && addCustomHero()}
             />
             {customHero.trim() && (

@@ -355,7 +355,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                           max={approvedCount}
                           value={reg.seed ?? ''}
                           onChange={(e) => handleSeedChange(reg.id, e.target.value)}
-                          className="w-12 h-7 text-center text-xs"
+                          className="w-14 h-9 text-center text-sm"
                           placeholder="#"
                         />
                         <Avatar className="h-5 w-5 shrink-0">

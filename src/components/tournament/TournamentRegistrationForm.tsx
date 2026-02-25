@@ -337,7 +337,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
               {/* All members */}
               <div>
                 <p className="text-xs text-muted-foreground mb-2">All Members</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {squadMembers.map((member, index) => (
                     <div key={member.id} className="flex items-center gap-2 p-2 bg-muted rounded">
                       <span className="text-xs text-muted-foreground w-4">{index + 1}</span>

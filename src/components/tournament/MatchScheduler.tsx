@@ -206,10 +206,10 @@ function MatchTimingRow({
 
       {/* Timing display / edit */}
       {isEditing ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn('w-[140px] justify-start text-left font-normal', !date && 'text-muted-foreground')}>
+              <Button variant="outline" size="sm" className={cn('w-full sm:w-[140px] justify-start text-left font-normal', !date && 'text-muted-foreground')}>
                 <CalendarIcon className="w-3 h-3 mr-2" />
                 {date ? format(date, 'MMM d') : 'Date'}
               </Button>
@@ -228,7 +228,7 @@ function MatchTimingRow({
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="w-[100px] h-9 text-sm"
+            className="w-full sm:w-[100px] h-9 text-sm"
           />
           <Button size="sm" onClick={handleSave} disabled={updateSchedule.isPending}>
             {updateSchedule.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
@@ -328,7 +328,7 @@ function AutoSchedulerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-sm sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />

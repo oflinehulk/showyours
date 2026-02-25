@@ -270,7 +270,7 @@ export function StageConfigurator({
                     value={stage.name}
                     onChange={(e) => updateStage(index, { name: e.target.value })}
                     placeholder="Stage name"
-                    className="h-8 w-40 text-sm bg-transparent border-none shadow-none focus-visible:ring-0 px-1 font-semibold"
+                    className="h-8 flex-1 sm:w-40 text-sm bg-transparent border-none shadow-none focus-visible:ring-0 px-1 font-semibold"
                   />
                 </div>
                 {stages.length > 1 && (
@@ -285,7 +285,7 @@ export function StageConfigurator({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {/* Format */}
                 <div>
                   <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Format</label>
@@ -344,7 +344,7 @@ export function StageConfigurator({
 
               {/* Group stage settings */}
               {stage.format === 'round_robin' && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Groups</label>
                     <Input

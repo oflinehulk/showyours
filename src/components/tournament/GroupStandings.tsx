@@ -27,7 +27,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
               <th className="text-center px-2 py-1.5 font-medium">P</th>
               <th className="text-center px-2 py-1.5 font-medium">W</th>
               <th className="text-center px-2 py-1.5 font-medium">L</th>
-              <th className="text-center px-2 py-1.5 font-medium">+/-</th>
+              <th className="text-center px-2 py-1.5 font-medium hidden sm:table-cell">+/-</th>
               <th className="text-center px-2 py-1.5 font-medium">Pts</th>
             </tr>
           </thead>
@@ -46,7 +46,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
                 >
                   <td className="px-3 py-2">
                     <span className={cn(
-                      'inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold',
+                      'inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold',
                       isAdvancing
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                         : isLowerBracket
@@ -67,7 +67,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
                         </AvatarFallback>
                       </Avatar>
                       <span className={cn(
-                        'font-medium truncate max-w-[120px]',
+                        'font-medium truncate',
                         isAdvancing ? 'text-green-400' : isLowerBracket ? 'text-orange-400' : 'text-foreground'
                       )}>
                         {s.squad.name}
@@ -77,7 +77,7 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
                   <td className="text-center px-2 py-2 text-muted-foreground">{s.played}</td>
                   <td className="text-center px-2 py-2 text-foreground font-medium">{s.wins}</td>
                   <td className="text-center px-2 py-2 text-muted-foreground">{s.losses}</td>
-                  <td className="text-center px-2 py-2">
+                  <td className="text-center px-2 py-2 hidden sm:table-cell">
                     <span className={cn(
                       s.score_for - s.score_against > 0 && 'text-green-400',
                       s.score_for - s.score_against < 0 && 'text-red-400',

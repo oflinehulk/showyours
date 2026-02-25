@@ -111,7 +111,7 @@ export function ScoreEditSheet({
               <p className="text-xs text-muted-foreground text-center">
                 Winner needs {Math.ceil(match.best_of / 2)} win{Math.ceil(match.best_of / 2) > 1 ? 's' : ''}
               </p>
-              <div className="grid grid-cols-3 gap-4 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
                 <div>
                   <Label className="text-xs text-muted-foreground">{match.squad_a?.name}</Label>
                   <Input
@@ -156,7 +156,7 @@ export function ScoreEditSheet({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4 items-center text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center text-center">
               <div>
                 <p className="text-sm text-muted-foreground">{match.squad_a?.name || 'TBD'}</p>
                 <p className="text-2xl font-display font-bold">{match.squad_a_score}</p>

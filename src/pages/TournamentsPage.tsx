@@ -92,7 +92,7 @@ export default function TournamentsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <div className="bg-[#111111]/90 border border-[#FF4500]/20 p-1 inline-flex rounded-xl">
+          <div className="bg-[#111111]/90 border border-[#FF4500]/20 p-1 inline-flex rounded-xl overflow-x-auto max-w-full">
             <TabsList className="bg-transparent gap-1">
               <TabsTrigger value="upcoming" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider flex items-center gap-2">
                 <Calendar className="w-4 h-4" />

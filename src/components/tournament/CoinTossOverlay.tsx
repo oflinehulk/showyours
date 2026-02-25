@@ -322,7 +322,7 @@ function SideCard({ color, label, squad }: { color: 'blue' | 'red'; label: strin
   const isBlue = color === 'blue';
   return (
     <div className={cn(
-      'flex flex-col items-center gap-1.5 p-3 rounded-lg border min-w-[110px]',
+      'flex flex-col items-center gap-1.5 p-3 rounded-lg border min-w-[90px] sm:min-w-[110px]',
       isBlue
         ? 'bg-[#3B82F6]/10 border-[#3B82F6]/30'
         : 'bg-[#EF4444]/10 border-[#EF4444]/30',

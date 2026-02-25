@@ -16,6 +16,7 @@ import { POT_LABELS } from '@/lib/tournament-types';
 type Phase = 'setup' | 'drawing' | 'result';
 
 const POT_COLORS: Record<number, string> = {
+  0: '#F97316', // orange (overflow)
   1: '#EAB308', // yellow
   2: '#3B82F6', // blue
   3: '#22C55E', // green
@@ -35,6 +36,7 @@ interface GroupDrawBowlProps {
 /**
  * Generate a pot-constrained draw sequence.
  * For each group slot, draw 1 team from each pot so no group gets 2 from the same pot.
+ * Overflow teams (pot_number 0) are shuffled and placed into random groups after.
  */
 function generatePotConstrainedSequence(
   squads: TournamentSquad[],
@@ -42,9 +44,20 @@ function generatePotConstrainedSequence(
   groupCount: number,
   groupLabels: string[],
 ): GroupDrawEntry[] {
+  // Separate overflow (pot 0) from regular pots
+  const overflowAssignments: PotAssignment[] = [];
+  const regularAssignments: PotAssignment[] = [];
+  for (const pa of potAssignments) {
+    if (pa.pot_number === 0) {
+      overflowAssignments.push(pa);
+    } else {
+      regularAssignments.push(pa);
+    }
+  }
+
   // Build pot pools: pot number -> shuffled squad ids
   const potMap = new Map<number, string[]>();
-  for (const pa of potAssignments) {
+  for (const pa of regularAssignments) {
     if (!potMap.has(pa.pot_number)) potMap.set(pa.pot_number, []);
     potMap.get(pa.pot_number)!.push(pa.squad_id);
   }
@@ -60,6 +73,9 @@ function generatePotConstrainedSequence(
   const entries: GroupDrawEntry[] = [];
   let drawOrder = 0;
 
+  // Track how many teams each group has (for overflow placement)
+  const groupSizes = new Array(groupCount).fill(0);
+
   // For each pot, assign one team to each group in order
   for (const potNum of potNumbers) {
     const pool = potMap.get(potNum)!;
@@ -74,6 +90,34 @@ function generatePotConstrainedSequence(
         draw_order: drawOrder,
         pot_number: potNum,
       });
+      groupSizes[g]++;
+      drawOrder++;
+    }
+  }
+
+  // Place overflow teams into groups with fewest teams (random among ties)
+  if (overflowAssignments.length > 0) {
+    const shuffledOverflow = secureShuffleArray(
+      overflowAssignments.map(pa => squads.find(s => s.id === pa.squad_id)!)
+    ).filter(Boolean);
+
+    for (const squad of shuffledOverflow) {
+      // Find the smallest group size
+      const minSize = Math.min(...groupSizes);
+      // Get all groups with that size, pick a random one
+      const candidates = groupSizes
+        .map((size, idx) => ({ size, idx }))
+        .filter(g => g.size === minSize);
+      const picked = candidates[Math.floor(Math.random() * candidates.length)];
+
+      entries.push({
+        squad_id: squad.id,
+        squad_name: squad.name,
+        group_label: groupLabels[picked.idx],
+        draw_order: drawOrder,
+        pot_number: 0,
+      });
+      groupSizes[picked.idx]++;
       drawOrder++;
     }
   }
@@ -341,7 +385,7 @@ export function GroupDrawBowl({
                     transition={{ type: 'spring', damping: 12 }}
                   >
                     <span className="text-xs font-bold">
-                      Now drawing from {POT_LABELS[activePotNum] ?? `Pot ${activePotNum}`}
+                      Now drawing from {activePotNum === 0 ? 'Overflow' : (POT_LABELS[activePotNum] ?? `Pot ${activePotNum}`)}
                     </span>
                   </motion.div>
                 )}
@@ -382,7 +426,7 @@ export function GroupDrawBowl({
                       </Avatar>
                       <span className="text-sm font-medium text-white">{sequence[revealIndex]?.squad_name}</span>
                       <span className="text-xs font-bold text-[#FF4500]">→ Group {sequence[revealIndex]?.group_label}</span>
-                      {hasPots && sequence[revealIndex]?.pot_number && (
+                      {hasPots && sequence[revealIndex]?.pot_number != null && (
                         <span
                           className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                           style={{
@@ -390,7 +434,7 @@ export function GroupDrawBowl({
                             color: POT_COLORS[sequence[revealIndex].pot_number!] ?? '#FF4500',
                           }}
                         >
-                          P{sequence[revealIndex].pot_number}
+                          {sequence[revealIndex].pot_number === 0 ? 'OV' : `P${sequence[revealIndex].pot_number}`}
                         </span>
                       )}
                     </motion.div>
@@ -505,7 +549,7 @@ export function GroupDrawBowl({
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-[10px] text-white/80 font-medium truncate">{squad.name}</span>
-                        {hasPots && potNumber && (
+                        {hasPots && potNumber != null && (
                           <span
                             className="text-[8px] font-bold px-1 rounded ml-auto shrink-0"
                             style={{
@@ -513,7 +557,7 @@ export function GroupDrawBowl({
                               color: POT_COLORS[potNumber] ?? '#FF4500',
                             }}
                           >
-                            P{potNumber}
+                            {potNumber === 0 ? 'OV' : `P${potNumber}`}
                           </span>
                         )}
                       </motion.div>

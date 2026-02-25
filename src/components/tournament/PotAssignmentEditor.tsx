@@ -31,13 +31,19 @@ export function PotAssignmentEditor({
   onBack,
   saving,
 }: PotAssignmentEditorProps) {
-  const teamsPerPot = Math.ceil(squads.length / potCount);
+  const maxPerPot = groupCount; // each pot can have at most 1 team per group
+  const potCapacity = potCount * maxPerPot;
+  const overflowCount = Math.max(0, squads.length - potCapacity);
 
-  // Initialize: distribute evenly by default order
+  // Initialize: distribute evenly, overflow teams (beyond pot capacity) go to pot 0
   const [assignments, setAssignments] = useState<Map<string, number>>(() => {
     const map = new Map<string, number>();
     squads.forEach((s, i) => {
-      map.set(s.id, (Math.floor(i / teamsPerPot) % potCount) + 1);
+      if (i < potCapacity) {
+        map.set(s.id, Math.floor(i / maxPerPot) + 1);
+      } else {
+        map.set(s.id, 0); // overflow
+      }
     });
     return map;
   });
@@ -76,7 +82,11 @@ export function PotAssignmentEditor({
     const shuffled = [...squads].sort(() => Math.random() - 0.5);
     const map = new Map<string, number>();
     shuffled.forEach((s, i) => {
-      map.set(s.id, (Math.floor(i / teamsPerPot) % potCount) + 1);
+      if (i < potCapacity) {
+        map.set(s.id, Math.floor(i / maxPerPot) + 1);
+      } else {
+        map.set(s.id, 0); // overflow
+      }
     });
     setAssignments(map);
     toast.success('Teams redistributed randomly');
@@ -87,8 +97,6 @@ export function PotAssignmentEditor({
       const count = getPotSquads(p).length;
       if (count === 0) return `Pot ${p} is empty`;
     }
-    // Check: no group can have two teams from the same pot
-    // This means each pot must have at least groupCount teams (or fewer if total teams < potCount * groupCount)
     for (let p = 1; p <= potCount; p++) {
       const count = getPotSquads(p).length;
       if (count > groupCount) {
@@ -144,7 +152,10 @@ export function PotAssignmentEditor({
 
       <div className="flex items-start gap-1.5 p-2 rounded bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400">
         <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-        <span>Drag teams between pots. Each pot can have at most {groupCount} teams (one per group). The draw will pick exactly 1 team from each pot per group.</span>
+        <span>
+          Drag teams between pots. Each pot can have at most {groupCount} teams (one per group).
+          {overflowCount > 0 && <> {overflowCount} overflow team{overflowCount > 1 ? 's' : ''} will be placed into random groups after the pot draw.</>}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -209,6 +220,61 @@ export function PotAssignmentEditor({
           );
         })}
       </div>
+
+      {/* Overflow section — teams that don't fit into pots */}
+      {(() => {
+        const overflowSquads = getPotSquads(0);
+        if (overflowSquads.length === 0) return null;
+        return (
+          <div
+            className={cn(
+              'p-3 rounded-lg border transition-all min-h-[80px]',
+              'bg-orange-500/10 border-orange-500/30',
+              dragSource && 'ring-1 ring-white/10',
+            )}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop(0)}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-500/20 text-orange-500">
+                  Overflow
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  Placed into random groups after pot draw
+                </span>
+              </div>
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {overflowSquads.length}
+              </span>
+            </div>
+            <div className="space-y-1">
+              {overflowSquads.map(squad => (
+                <div
+                  key={squad.id}
+                  draggable
+                  onDragStart={() => handleDragStart(squad.id, 0)}
+                  onDragEnd={() => setDragSource(null)}
+                  className={cn(
+                    'flex items-center gap-1.5 p-1.5 rounded bg-black/20 cursor-grab active:cursor-grabbing',
+                    'hover:bg-black/30 transition-colors',
+                    dragSource?.squadId === squad.id && 'opacity-40',
+                  )}
+                >
+                  <GripVertical className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <Avatar className="h-5 w-5 shrink-0">
+                    {squad.logo_url ? <AvatarImage src={squad.logo_url} alt={squad.name} /> : null}
+                    <AvatarFallback className="text-[8px] bg-[#1a1a1a] text-white/70">
+                      {squad.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[11px] font-medium text-foreground truncate">{squad.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

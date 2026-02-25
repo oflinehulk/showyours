@@ -836,12 +836,12 @@ function MatchCard({
         </span>
       </div>
 
-      {match.scheduled_time && (
-        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {format(new Date(match.scheduled_time), 'MMM d, h:mm a')}
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+        <Clock className="w-3 h-3" />
+        {match.scheduled_time
+          ? format(new Date(match.scheduled_time), 'MMM d, h:mm a')
+          : 'TBA'}
+      </p>
 
       <div className="space-y-2">
         <MatchTeamRow

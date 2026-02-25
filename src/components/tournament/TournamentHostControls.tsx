@@ -268,7 +268,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       </div>
 
       {/* Step Progress Indicator */}
-      <StepIndicator status={tournament.status} />
+      <StepIndicator status={tournament.status} isMultiStage={isMultiStage} />
 
       {/* Stage-specific primary action */}
       <div className="mt-5 space-y-4">
@@ -690,10 +690,10 @@ function MultiStageSetup({
         squadIds,
       });
 
-      // Transition tournament to bracket_generated
+      // Multi-stage: skip bracket_generated, go directly to ongoing
       await updateTournament.mutateAsync({
         id: tournament.id,
-        status: 'bracket_generated',
+        status: 'ongoing',
         format: firstStage.format,
       });
 
@@ -1072,6 +1072,7 @@ function CurrentStageActions({
       await resetStageBracket.mutateAsync({
         tournamentId: tournament.id,
         stageId: currentStage.id,
+        stageNumber: currentStage.stage_number,
       });
       toast.success('Stage bracket reset', { description: 'You can now reconfigure groups and regenerate the bracket.' });
     } catch (error: unknown) {
@@ -1121,40 +1122,40 @@ function CurrentStageActions({
         </>
       )}
 
-      {/* Reset Stage Bracket */}
-      <div className="mt-3 pt-3 border-t border-border">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={resetStageBracket.isPending}
-              className="text-xs"
-            >
-              {resetStageBracket.isPending ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : (
-                <RotateCcw className="w-3 h-3 mr-1" />
-              )}
-              Reset Stage Bracket
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Reset {currentStage.name}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {hasResults
-                  ? 'Some matches have results. This will delete ALL matches for this stage, including completed results. Group assignments are preserved.'
-                  : 'This will delete all matches for this stage and return to the group/bracket setup step. Group assignments are preserved.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleResetStage}>Reset Stage</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      {/* Reset Stage Bracket — only for first stage with no results */}
+      {currentStage.stage_number === 1 && !hasResults && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={resetStageBracket.isPending}
+                className="text-xs"
+              >
+                {resetStageBracket.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                )}
+                Reset Stage Bracket
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset {currentStage.name}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete all matches for this stage and return to the group/bracket setup step. Group assignments are preserved.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetStage}>Reset Stage</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
     </div>
   );
 }
@@ -1235,7 +1236,14 @@ const STEPS = [
   { key: 'completed', label: 'Completed' },
 ] as const;
 
-function StepIndicator({ status }: { status: string }) {
+const MULTI_STAGE_STEPS = [
+  { key: 'registration_open', label: 'Registration' },
+  { key: 'registration_closed', label: 'Setup' },
+  { key: 'ongoing', label: 'Ongoing' },
+  { key: 'completed', label: 'Completed' },
+] as const;
+
+function StepIndicator({ status, isMultiStage }: { status: string; isMultiStage?: boolean }) {
   if (status === 'cancelled') {
     return (
       <div className="flex items-center gap-2 text-sm text-destructive">
@@ -1245,11 +1253,12 @@ function StepIndicator({ status }: { status: string }) {
     );
   }
 
-  const currentIndex = STEPS.findIndex(s => s.key === status);
+  const steps = isMultiStage ? MULTI_STAGE_STEPS : STEPS;
+  const currentIndex = steps.findIndex(s => s.key === status);
 
   return (
     <div className="flex items-center gap-0 overflow-x-auto">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const isCompleted = i < currentIndex;
         const isCurrent = i === currentIndex;
         return (

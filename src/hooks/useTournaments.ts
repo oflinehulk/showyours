@@ -1228,9 +1228,11 @@ export function useResetStageBracket() {
     mutationFn: async ({
       tournamentId,
       stageId,
+      stageNumber,
     }: {
       tournamentId: string;
       stageId: string;
+      stageNumber: number;
     }) => {
       // Delete all matches for this stage
       const { error: deleteError } = await supabase
@@ -1248,12 +1250,29 @@ export function useResetStageBracket() {
         .eq('id', stageId);
 
       if (updateError) throw new Error(updateError.message);
+
+      // If resetting stage 1, revert tournament to setup state
+      // so the host returns to MultiStageSetup and can re-generate
+      if (stageNumber === 1) {
+        const { error: tournErr } = await supabase
+          .from('tournaments')
+          .update({
+            status: 'registration_closed' as TournamentStatus,
+            format: null,
+          })
+          .eq('id', tournamentId);
+
+        if (tournErr) throw new Error(tournErr.message);
+      }
+
       return { tournamentId, stageId };
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournament-stages', tournamentId] });
       queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
     },
   });
 }

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsAdmin, useAllProfiles, useAllSquads, useAdminDeleteProfile, useAdminDeleteSquad, useAdminStats } from '@/hooks/useAdmin';
+import { useIsAdmin, useAllProfiles, useAllSquads, useAdminDeleteProfile, useAdminDeleteSquad, useAdminStats, useAdminUserEmails } from '@/hooks/useAdmin';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ const AdminPage = () => {
   const deleteSquad = useAdminDeleteSquad();
   const { toast } = useToast();
   const [playerSearch, setPlayerSearch] = useState('');
+  const { data: userEmails } = useAdminUserEmails();
 
   // Fetch all squad members to map profiles to squads
   const { data: allSquadMembers } = useQuery({
@@ -64,6 +65,7 @@ const AdminPage = () => {
       const whatsapp = getContactValue(p.contacts, 'whatsapp') || '';
       const mlbbId = p.mlbb_id || '';
       const squadName = profileSquadMap[p.id] || '';
+      const email = (userEmails?.[p.user_id] || '').toLowerCase();
       return (
         p.ign.toLowerCase().includes(q) ||
         mlbbId.toLowerCase().includes(q) ||
@@ -72,10 +74,11 @@ const AdminPage = () => {
         (p.main_role || '').toLowerCase().includes(q) ||
         (p.state || '').toLowerCase().includes(q) ||
         (p.favorite_heroes || []).some((h: string) => h.toLowerCase().includes(q)) ||
-        squadName.toLowerCase().includes(q)
+        squadName.toLowerCase().includes(q) ||
+        email.includes(q)
       );
     });
-  }, [profiles, playerSearch, profileSquadMap]);
+  }, [profiles, playerSearch, profileSquadMap, userEmails]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -245,6 +248,7 @@ const AdminPage = () => {
                       <TableHeader>
                         <TableRow className="border-b border-[#FF4500]/10 hover:bg-transparent">
                           <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">IGN</TableHead>
+                          <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Email</TableHead>
                           <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Rank</TableHead>
                           <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Role</TableHead>
                           <TableHead className="text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">State</TableHead>
@@ -257,6 +261,7 @@ const AdminPage = () => {
                         {filteredProfiles.map((profile) => (
                           <TableRow key={profile.id} className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5">
                             <TableCell className="font-medium">{profile.ign}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{userEmails?.[profile.user_id] || '—'}</TableCell>
                             <TableCell className="capitalize">{profile.rank}</TableCell>
                             <TableCell className="capitalize">{profile.main_role}</TableCell>
                             <TableCell className="capitalize">{profile.state || 'N/A'}</TableCell>

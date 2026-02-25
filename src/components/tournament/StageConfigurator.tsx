@@ -359,7 +359,7 @@ export function StageConfigurator({
                   {index < stages.length - 1 && stage.group_count > 0 && (
                     <>
                       <div>
-                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Adv/Group</label>
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider" title="Minimum teams advancing to Upper Bracket per group. Larger groups automatically send more.">Adv/Group</label>
                         <Input
                           type="number"
                           min={1}
@@ -371,7 +371,7 @@ export function StageConfigurator({
                       </div>
                       {stages[index + 1]?.format === 'double_elimination' && (
                         <div>
-                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider">To LB/Group</label>
+                          <label className="text-[10px] text-muted-foreground uppercase tracking-wider" title="Bottom N teams per group go to Lower Bracket. Remaining go to Upper Bracket.">To LB/Group</label>
                           <Input
                             type="number"
                             min={0}
@@ -399,16 +399,30 @@ export function StageConfigurator({
               )}
 
               {/* Preview */}
-              {stage.format === 'round_robin' && stage.group_count > 0 && approvedCount > 0 && (
-                <p className="text-[10px] text-muted-foreground">
-                  ~{Math.ceil(approvedCount / stage.group_count)} teams per group
-                  {index < stages.length - 1 && stage.advance_per_group > 0 && (
-                    stage.advance_to_lower_per_group > 0
-                      ? <> &rarr; {stage.advance_per_group * stage.group_count} UB + {stage.advance_to_lower_per_group * stage.group_count + stage.advance_best_remaining} LB</>
-                      : <> &rarr; {stage.advance_per_group * stage.group_count + stage.advance_best_remaining} advancing</>
-                  )}
-                </p>
-              )}
+              {stage.format === 'round_robin' && stage.group_count > 0 && approvedCount > 0 && (() => {
+                const baseSize = Math.floor(approvedCount / stage.group_count);
+                const extraGroups = approvedCount % stage.group_count;
+                const hasUnevenGroups = extraGroups > 0;
+                // Variable advancement: larger groups send more to UB, bottom N always go to LB
+                const ubTotal = hasUnevenGroups && stage.advance_to_lower_per_group > 0
+                  ? (stage.group_count - extraGroups) * stage.advance_per_group
+                    + extraGroups * Math.max(stage.advance_per_group, (baseSize + 1) - stage.advance_to_lower_per_group)
+                  : stage.advance_per_group * stage.group_count;
+                const lbTotal = stage.advance_to_lower_per_group * stage.group_count + stage.advance_best_remaining;
+                return (
+                  <p className="text-[10px] text-muted-foreground">
+                    {hasUnevenGroups
+                      ? <>{stage.group_count - extraGroups} groups of {baseSize}, {extraGroups} groups of {baseSize + 1}</>
+                      : <>~{baseSize} teams per group</>
+                    }
+                    {index < stages.length - 1 && stage.advance_per_group > 0 && (
+                      stage.advance_to_lower_per_group > 0
+                        ? <> &rarr; {ubTotal} UB + {lbTotal} LB{hasUnevenGroups && ' (larger groups send more to UB)'}</>
+                        : <> &rarr; {stage.advance_per_group * stage.group_count + stage.advance_best_remaining} advancing</>
+                    )}
+                  </p>
+                );
+              })()}
             </div>
           </div>
         ))}

@@ -579,8 +579,15 @@ export interface SplitAdvancementResult {
 
 /**
  * Split group standings into separate UB and LB pools.
- * Top `advancePerGroup` -> UB, next `advanceToLowerPerGroup` -> LB,
+ * Bottom `advanceToLowerPerGroup` from each group -> LB.
+ * Everyone above them -> UB (variable per group size).
  * `advanceBestRemaining` from remaining -> LB.
+ *
+ * `advancePerGroup` is used as the *minimum* UB count (for groups at the
+ * expected size).  For larger groups the UB count grows automatically:
+ *   upperCount = max(advancePerGroup, groupSize - advanceToLowerPerGroup)
+ * This means groups of 4 send 2 to UB and groups of 5 send 3 to UB when
+ * advancePerGroup=2 and advanceToLowerPerGroup=2.
  */
 export function determineSplitAdvancingTeams(
   groups: GroupData[],
@@ -595,6 +602,11 @@ export function determineSplitAdvancingTeams(
   for (const group of groups) {
     const standings = computeGroupStandings(group.matches, group.squadMap);
 
+    // Variable advancement: bottom N always go to LB, everyone else to UB.
+    // For equal-sized groups this matches the configured advancePerGroup.
+    // For larger groups (e.g. 5 instead of 4), extra teams go to UB.
+    const upperCount = Math.max(advancePerGroup, standings.length - advanceToLowerPerGroup);
+
     for (let i = 0; i < standings.length; i++) {
       const team: AdvancingTeam = {
         squadId: standings[i].squad_id,
@@ -605,9 +617,9 @@ export function determineSplitAdvancingTeams(
         suggestedSeed: 0,
       };
 
-      if (i < advancePerGroup) {
+      if (i < upperCount) {
         ub.push(team);
-      } else if (i < advancePerGroup + advanceToLowerPerGroup) {
+      } else if (i < upperCount + advanceToLowerPerGroup) {
         lb.push(team);
       } else if (advanceBestRemaining > 0) {
         remainingCandidates.push({ ...standings[i], groupLabel: group.label });

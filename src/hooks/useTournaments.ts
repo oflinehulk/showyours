@@ -1929,6 +1929,8 @@ export function useCreateStages() {
         group_count: s.group_count,
         advance_per_group: s.advance_per_group,
         advance_best_remaining: s.advance_best_remaining,
+        advance_to_lower_per_group: s.advance_to_lower_per_group ?? 0,
+        lb_initial_rounds: s.lb_initial_rounds ?? 0,
         status: 'pending' as StageStatus,
       }));
 
@@ -1937,7 +1939,7 @@ export function useCreateStages() {
         .insert(inserts)
         .select();
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Failed to create stages');
       return { data: (data || []) as TournamentStage[], tournamentId };
     },
     onSuccess: ({ tournamentId }) => {

@@ -26,11 +26,12 @@ import { TournamentHostControls } from '@/components/tournament/TournamentHostCo
 import { TournamentRosterManagement } from '@/components/tournament/TournamentRosterManagement';
 import { TournamentInviteSquads } from '@/components/tournament/TournamentInviteSquads';
 import { MatchScheduler } from '@/components/tournament/MatchScheduler';
-import { 
-  useTournament, 
+import {
+  useTournament,
   useTournamentRegistrations,
   useTournamentMatches,
   useUpdateTournament,
+  useWithdrawFromTournament,
 } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -59,6 +60,7 @@ import {
   CheckCircle,
   ScrollText,
   Layers,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
@@ -74,6 +76,7 @@ export default function TournamentDetailPage() {
   const { data: registrations } = useTournamentRegistrations(id);
   const { data: matches } = useTournamentMatches(id);
   const updateTournament = useUpdateTournament();
+  const withdrawFromTournament = useWithdrawFromTournament();
   const [activeTab, setActiveTab] = useState('overview');
 
   // Editing states
@@ -94,6 +97,28 @@ export default function TournamentDetailPage() {
   const registrationCount = registrations?.filter(r => r.status === 'approved').length || 0;
   const spotsLeft = Math.max(0, (tournament?.max_squads || 0) - registrationCount);
   const canRegister = tournament?.status === 'registration_open' && spotsLeft > 0;
+
+  // Find the current user's registration (as squad leader)
+  const myRegistration = user && !isHost
+    ? (registrations || []).find(
+        r => r.tournament_squads?.leader_id === user.id && ['pending', 'approved'].includes(r.status)
+      )
+    : null;
+  const canWithdraw = myRegistration && tournament
+    && ['registration_open', 'registration_closed', 'bracket_generated'].includes(tournament.status);
+
+  const handleWithdraw = async () => {
+    if (!myRegistration || !tournament) return;
+    try {
+      await withdrawFromTournament.mutateAsync({
+        registrationId: myRegistration.id,
+        tournamentId: tournament.id,
+      });
+      toast.success('Squad withdrawn from tournament');
+    } catch (error: unknown) {
+      toast.error('Failed to withdraw', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
 
   // Compute user's squad IDs in this tournament for dispute eligibility
   const userSquadIds = (registrations || [])
@@ -340,6 +365,21 @@ export default function TournamentDetailPage() {
                 >
                   <Trophy className="w-5 h-5 mr-2" />
                   Register Now
+                </Button>
+              )}
+              {canWithdraw && (
+                <Button
+                  variant="outline"
+                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={handleWithdraw}
+                  disabled={withdrawFromTournament.isPending}
+                >
+                  {withdrawFromTournament.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogOut className="w-4 h-4 mr-2" />
+                  )}
+                  Withdraw Squad
                 </Button>
               )}
             </div>

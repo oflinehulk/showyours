@@ -203,6 +203,18 @@ export function StageConfigurator({
           toast.error(`Stage ${i + 1}: Set how many teams advance per group`);
           return;
         }
+
+        // Validate total advancing teams for next knockout stage
+        const nextStage = stages[i + 1];
+        if (nextStage && nextStage.format !== 'round_robin') {
+          const totalAdvancing = s.advance_per_group * s.group_count
+            + (s.advance_to_lower_per_group || 0) * s.group_count
+            + (s.advance_best_remaining || 0);
+          if (totalAdvancing < 2) {
+            toast.error(`Stage ${i + 1}: At least 2 teams must advance to the next stage`);
+            return;
+          }
+        }
       }
     }
 

@@ -649,6 +649,105 @@ async function fetchStageK(stageId: string | null | undefined): Promise<number> 
   return (data as { lb_initial_rounds?: number }).lb_initial_rounds ?? 0;
 }
 
+// Revert a previously advanced winner from the next match slot (for dispute resolution)
+async function revertWinnerAdvancement(
+  tournamentId: string,
+  completedMatch: TournamentMatch
+) {
+  const { bracket_type, round, match_number, winner_id, stage_id } = completedMatch;
+  if (!winner_id) return;
+
+  if (bracket_type === 'winners') {
+    const nextRound = round + 1;
+    const nextMatchNumber = Math.ceil(match_number / 2);
+    const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+
+    const nextMatch = await findNextMatch(
+      tournamentId, nextRound, nextMatchNumber, ['winners', 'finals'], stage_id
+    );
+
+    if (nextMatch && (nextMatch as Record<string, unknown>)[slot] === winner_id) {
+      await supabase
+        .from('tournament_matches')
+        .update({ [slot]: null })
+        .eq('id', nextMatch.id);
+    }
+  }
+
+  if (bracket_type === 'semi_finals') {
+    const gfMatch = await findGrandFinals(tournamentId, stage_id);
+    if (gfMatch && gfMatch.squad_b_id === winner_id) {
+      await supabase
+        .from('tournament_matches')
+        .update({ squad_b_id: null })
+        .eq('id', gfMatch.id);
+    }
+  }
+
+  if (bracket_type === 'losers') {
+    const k = await fetchStageK(stage_id);
+
+    // Find where the old winner was placed and clear it
+    if (k > 0) {
+      const offset = round - k;
+      if (round < k) {
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+        const nextMatch = await findNextMatch(tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id);
+        if (nextMatch && (nextMatch as Record<string, unknown>)[slot] === winner_id) {
+          await supabase.from('tournament_matches').update({ [slot]: null }).eq('id', nextMatch.id);
+        }
+      } else if (round === k || offset % 2 === 1) {
+        const nextMatch = await findNextMatch(tournamentId, round + 1, match_number, ['losers'], stage_id);
+        if (nextMatch && nextMatch.squad_a_id === winner_id) {
+          await supabase.from('tournament_matches').update({ squad_a_id: null }).eq('id', nextMatch.id);
+        }
+      } else {
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+        const nextMatch = await findNextMatch(tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id);
+        if (nextMatch && (nextMatch as Record<string, unknown>)[slot] === winner_id) {
+          await supabase.from('tournament_matches').update({ [slot]: null }).eq('id', nextMatch.id);
+        } else {
+          // LB champion → SF or GF
+          const sfMatch = await findSemiFinals(tournamentId, stage_id);
+          if (sfMatch && sfMatch.squad_b_id === winner_id) {
+            await supabase.from('tournament_matches').update({ squad_b_id: null }).eq('id', sfMatch.id);
+          } else {
+            const gfMatch = await findGrandFinals(tournamentId, stage_id);
+            if (gfMatch && gfMatch.squad_b_id === winner_id) {
+              await supabase.from('tournament_matches').update({ squad_b_id: null }).eq('id', gfMatch.id);
+            }
+          }
+        }
+      }
+    } else {
+      const isOddRound = round % 2 === 1;
+      if (isOddRound) {
+        const nextMatch = await findNextMatch(tournamentId, round + 1, match_number, ['losers'], stage_id);
+        if (nextMatch && nextMatch.squad_a_id === winner_id) {
+          await supabase.from('tournament_matches').update({ squad_a_id: null }).eq('id', nextMatch.id);
+        }
+      } else {
+        const nextRound = round + 1;
+        const nextMatchNumber = Math.ceil(match_number / 2);
+        const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+        const nextMatch = await findNextMatch(tournamentId, nextRound, nextMatchNumber, ['losers'], stage_id);
+        if (nextMatch && (nextMatch as Record<string, unknown>)[slot] === winner_id) {
+          await supabase.from('tournament_matches').update({ [slot]: null }).eq('id', nextMatch.id);
+        } else {
+          const gfMatch = await findGrandFinals(tournamentId, stage_id);
+          if (gfMatch && gfMatch.squad_b_id === winner_id) {
+            await supabase.from('tournament_matches').update({ squad_b_id: null }).eq('id', gfMatch.id);
+          }
+        }
+      }
+    }
+  }
+}
+
 // Advance the winner of a completed match to the next round
 async function advanceWinnerToNextRound(
   tournamentId: string,
@@ -1261,6 +1360,30 @@ export function useMakeRosterChange() {
         throw new Error('Maximum roster changes (2) reached for this tournament');
       }
 
+      // Check MLBB ID uniqueness across all squads in this tournament
+      if (playerInMlbbId) {
+        const { data: allRegs } = await supabase
+          .from('tournament_registrations')
+          .select('tournament_squad_id')
+          .eq('tournament_id', tournamentId)
+          .in('status', ['approved', 'pending']);
+
+        if (allRegs && allRegs.length > 0) {
+          const allSquadIds = allRegs.map(r => r.tournament_squad_id);
+          const { data: existingMembers } = await supabase
+            .from('tournament_squad_members')
+            .select('id, tournament_squad_id, mlbb_id')
+            .in('tournament_squad_id', allSquadIds)
+            .eq('mlbb_id', playerInMlbbId)
+            .eq('member_status', 'active');
+
+          const conflicting = existingMembers?.filter(m => m.tournament_squad_id !== squadId);
+          if (conflicting && conflicting.length > 0) {
+            throw new Error('This MLBB ID is already registered in another squad in this tournament');
+          }
+        }
+      }
+
       const { data, error } = await supabase
         .from('roster_changes')
         .insert({
@@ -1587,6 +1710,15 @@ export function useResolveDispute() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
+      // Fetch the original match to get old winner_id before updating
+      const { data: oldMatch, error: fetchError } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const updates: Record<string, unknown> = {
         status: 'completed' as MatchStatus,
         dispute_resolved_by: user.id,
@@ -1606,8 +1738,11 @@ export function useResolveDispute() {
 
       if (error) throw error;
 
-      // Re-advance winner if result changed
-      if (newWinnerId) {
+      // If winner changed, revert old advancement then advance new winner
+      if (newWinnerId && oldMatch.winner_id && newWinnerId !== oldMatch.winner_id) {
+        await revertWinnerAdvancement(tournamentId, oldMatch as unknown as TournamentMatch);
+        await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
+      } else if (newWinnerId) {
         await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
       }
 

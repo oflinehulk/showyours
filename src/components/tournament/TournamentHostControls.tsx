@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
@@ -138,6 +139,18 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
 
   const handleStartTournament = async () => {
     try {
+      // Verify bracket exists before starting
+      const { count, error: countError } = await supabase
+        .from('tournament_matches')
+        .select('id', { count: 'exact', head: true })
+        .eq('tournament_id', tournament.id);
+
+      if (countError) throw countError;
+      if (!count || count === 0) {
+        toast.error('Cannot start tournament', { description: 'No bracket has been generated. Generate a bracket first.' });
+        return;
+      }
+
       await updateTournament.mutateAsync({
         id: tournament.id,
         status: 'ongoing',
@@ -203,6 +216,18 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const handleSeedChange = async (registrationId: string, value: string) => {
     const seed = value === '' ? null : parseInt(value);
     if (value !== '' && (isNaN(seed!) || seed! < 1)) return;
+
+    // Validate seed uniqueness across approved registrations
+    if (seed !== null) {
+      const duplicate = approvedRegistrations.find(
+        r => r.id !== registrationId && r.seed === seed
+      );
+      if (duplicate) {
+        toast.error('Duplicate seed', { description: `Seed ${seed} is already assigned to another squad.` });
+        return;
+      }
+    }
+
     try {
       await updateSeed.mutateAsync({
         registrationId,
@@ -593,6 +618,18 @@ function MultiStageSetup({
   const handleSeedChange = async (registrationId: string, value: string) => {
     const seed = value === '' ? null : parseInt(value);
     if (value !== '' && (isNaN(seed!) || seed! < 1)) return;
+
+    // Validate seed uniqueness across approved registrations
+    if (seed !== null) {
+      const duplicate = approvedRegistrations.find(
+        r => r.id !== registrationId && r.seed === seed
+      );
+      if (duplicate) {
+        toast.error('Duplicate seed', { description: `Seed ${seed} is already assigned to another squad.` });
+        return;
+      }
+    }
+
     try {
       await updateSeed.mutateAsync({
         registrationId,

@@ -26,10 +26,10 @@ function baseMatch(tournamentId: string, opts?: StageOptions): Partial<MatchInse
 
 export function generateSingleEliminationBracket(
   tournamentId: string,
-  squadIds: string[],
+  squadIds: (string | null)[],
   opts?: StageOptions
 ): MatchInsert[] {
-  if (squadIds.length < 2) {
+  if (squadIds.filter(Boolean).length < 2) {
     throw new Error('Need at least 2 teams to generate a bracket');
   }
   const matches: MatchInsert[] = [];
@@ -84,10 +84,10 @@ export function generateSingleEliminationBracket(
 
 export function generateDoubleEliminationBracket(
   tournamentId: string,
-  squadIds: string[],
+  squadIds: (string | null)[],
   opts?: StageOptions
 ): MatchInsert[] {
-  if (squadIds.length < 2) {
+  if (squadIds.filter(Boolean).length < 2) {
     throw new Error('Need at least 2 teams to generate a bracket');
   }
   const totalRounds = Math.ceil(Math.log2(squadIds.length));

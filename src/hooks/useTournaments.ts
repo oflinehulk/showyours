@@ -1113,7 +1113,7 @@ export function useGenerateBracket() {
 
       // Sort by seed if seeds exist, otherwise random shuffle
       const hasSeeds = registrations.some((r) => r.seed != null);
-      let orderedSquadIds: string[];
+      let orderedSquadIds: (string | null)[];
 
       if (hasSeeds) {
         const sorted = [...registrations].sort((a, b) => {
@@ -1364,6 +1364,7 @@ export function useMakeRosterChange() {
       squadId,
       tournamentId,
       playerOutIgn,
+      playerOutId,
       playerInIgn,
       playerInMlbbId,
       reason,
@@ -1371,6 +1372,7 @@ export function useMakeRosterChange() {
       squadId: string;
       tournamentId: string;
       playerOutIgn: string;
+      playerOutId?: string;
       playerInIgn: string;
       playerInMlbbId: string;
       reason?: string;
@@ -1420,6 +1422,7 @@ export function useMakeRosterChange() {
           tournament_squad_id: squadId,
           tournament_id: tournamentId,
           player_out_ign: playerOutIgn,
+          player_out_id: playerOutId || null,
           player_in_ign: playerInIgn,
           player_in_mlbb_id: playerInMlbbId,
           reason: reason || null,
@@ -1511,17 +1514,14 @@ export function useUpdateRosterChangeStatus() {
 // ========== Seeding ==========
 
 // Standard bracket seeding placement (1v16, 8v9, 4v13, 5v12, etc.)
-function applyStandardSeeding(seededIds: string[]): string[] {
+// Returns full bracket-sized array with nulls in correct bye positions so the
+// bracket generator places byes next to top seeds, not at the end.
+function applyStandardSeeding(seededIds: string[]): (string | null)[] {
   const n = seededIds.length;
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
 
-  // Generate standard seeding order and map to squad IDs
   const seedOrder = generateSeedOrder(bracketSize);
-  const result: string[] = [];
-  for (const seedIndex of seedOrder) {
-    result.push(seedIndex < n ? seededIds[seedIndex] : '');
-  }
-  return result.filter(Boolean);
+  return seedOrder.map(seedIndex => seedIndex < n ? seededIds[seedIndex] : null);
 }
 
 // Generate standard tournament seed order for bracket placement
@@ -1803,14 +1803,6 @@ export function useWithdrawSquad() {
       squadId: string;
       tournamentId: string;
     }) => {
-      // Set registration to withdrawn
-      const { error: regError } = await supabase
-        .from('tournament_registrations')
-        .update({ status: 'withdrawn' })
-        .eq('id', registrationId);
-
-      if (regError) throw new Error(regError.message);
-
       // Get all pending/ongoing matches for this squad
       const { data: matches, error: matchError } = await supabase
         .from('tournament_matches')
@@ -1821,7 +1813,7 @@ export function useWithdrawSquad() {
 
       if (matchError) throw new Error(matchError.message);
 
-      // Forfeit each match
+      // Forfeit each match first — if any fails, registration stays approved
       for (const match of matches || []) {
         const opponentId = match.squad_a_id === squadId ? match.squad_b_id : match.squad_a_id;
         if (!opponentId) continue; // Skip if no opponent (TBD match)
@@ -1846,6 +1838,14 @@ export function useWithdrawSquad() {
         // Advance opponent
         await advanceWinnerToNextRound(tournamentId, updated as unknown as TournamentMatch);
       }
+
+      // Set registration to withdrawn only after all forfeits succeeded
+      const { error: regError } = await supabase
+        .from('tournament_registrations')
+        .update({ status: 'withdrawn' })
+        .eq('id', registrationId);
+
+      if (regError) throw new Error(regError.message);
 
       return tournamentId;
     },

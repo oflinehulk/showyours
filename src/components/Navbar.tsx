@@ -129,24 +129,14 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile: just show key actions inline */}
+          {/* Mobile: essential actions only */}
           <div className="flex md:hidden items-center gap-1">
             {user ? (
               <>
-                {hasSquad && (
-                  <Button variant="ghost" size="icon" className="w-9 h-9 text-[#FF4500] hover:text-[#FF6B35]" asChild title="Manage Squad">
-                    <Link to={`/squad/${mySquads[0].id}`}><Shield className="w-4 h-4" /></Link>
-                  </Button>
-                )}
                 {hasProfile && <InvitationBadge />}
                 {hasProfile && <NotificationBell />}
-                {isAdmin && (
-                  <Button variant="ghost" size="icon" className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]" asChild>
-                    <Link to="/admin"><ShieldCheck className="w-4 h-4" /></Link>
-                  </Button>
-                )}
-                <Button variant="ghost" size="icon" onClick={handleSignOut} className="w-9 h-9 text-muted-foreground hover:text-[#FF4500]">
-                  <LogOut className="w-4 h-4" />
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="w-10 h-10 text-muted-foreground hover:text-[#FF4500]" aria-label="Sign out">
+                  <LogOut className="w-5 h-5" />
                 </Button>
               </>
             ) : (

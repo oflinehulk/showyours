@@ -253,7 +253,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
         {/* Squad Selection */}
         <div>
           <Select value={selectedSquadId} onValueChange={setSelectedSquadId}>
-            <SelectTrigger>
+            <SelectTrigger className="min-h-[48px] text-base">
               <SelectValue placeholder="Select your squad" />
             </SelectTrigger>
             <SelectContent>
@@ -278,12 +278,12 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
             <CardContent>
               {/* Validation errors */}
               {!squadValidation.valid && (
-                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-destructive mt-0.5" />
+                <div className="mb-4 p-4 bg-destructive/10 border-l-4 border-destructive rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
                     <div className="text-sm">
-                      <p className="font-medium text-destructive">Cannot register:</p>
-                      <ul className="list-disc list-inside mt-1 text-muted-foreground">
+                      <p className="font-semibold text-destructive mb-1">Cannot register:</p>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                         {squadValidation.errors.map((err, i) => (
                           <li key={i}>{err}</li>
                         ))}
@@ -360,7 +360,7 @@ export function TournamentRegistrationForm({ tournament, onSuccess }: Tournament
         <Button
           onClick={handleRegister}
           disabled={!selectedSquadId || !squadValidation.valid || isSubmitting}
-          className="w-full btn-gaming"
+          className="w-full btn-gaming min-h-[48px] text-base"
         >
           {isSubmitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />

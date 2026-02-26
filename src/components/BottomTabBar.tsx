@@ -31,7 +31,7 @@ export function BottomTabBar() {
   const allTabs = [...tabs, profileTab];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-[#FF4500]/10">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-[#FF4500]/10 safe-bottom">
       <div className="flex items-center justify-around h-16 px-1">
         {allTabs.map((tab) => {
           const isActive =
@@ -43,8 +43,9 @@ export function BottomTabBar() {
             <Link
               key={tab.label}
               to={tab.to}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] transition-colors duration-200',
+                'flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] min-h-[44px] transition-colors duration-200',
                 isActive ? 'text-[#FF4500]' : 'text-muted-foreground'
               )}
             >
@@ -55,7 +56,7 @@ export function BottomTabBar() {
                 )}
               </div>
               <span className={cn(
-                'text-[10px] font-medium',
+                'text-[11px] font-medium leading-tight',
                 isActive && 'font-bold'
               )}>
                 {tab.label}

@@ -199,53 +199,54 @@ export function TournamentRosterManagement({ tournament, isHost }: TournamentRos
               <div className="grid gap-3">
                 {pendingChanges.map((change) => (
                   <Card key={change.id} className="border-secondary/30 bg-secondary/5">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={change.tournament_squads?.logo_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {change.tournament_squads?.name?.charAt(0) || 'T'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 text-destructive">
-                              <UserMinus className="w-4 h-4" />
-                              <span className="text-sm">{change.player_out_ign}</span>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                            <div className="flex items-center gap-1 text-primary">
-                              <UserPlus className="w-4 h-4" />
-                              <span className="text-sm">{change.player_in_ign}</span>
-                              <span className="text-xs text-muted-foreground">#{change.player_in_mlbb_id}</span>
-                            </div>
-                          </div>
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={change.tournament_squads?.logo_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {change.tournament_squads?.name?.charAt(0) || 'T'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-semibold truncate">{change.tournament_squads?.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 pl-10">
+                        <div className="flex items-center gap-1 text-destructive">
+                          <UserMinus className="w-4 h-4 shrink-0" />
+                          <span className="text-sm truncate">{change.player_out_ign}</span>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(change.id)}
-                            disabled={updateStatus.isPending}
-                            className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(change.id)}
-                            disabled={updateStatus.isPending}
-                            className="bg-primary hover:bg-primary/80"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <div className="flex items-center gap-1 text-primary">
+                          <UserPlus className="w-4 h-4 shrink-0" />
+                          <span className="text-sm truncate">{change.player_in_ign}</span>
+                          <span className="text-xs text-muted-foreground">#{change.player_in_mlbb_id}</span>
                         </div>
                       </div>
                       {change.reason && (
-                        <p className="text-xs text-muted-foreground mt-2 ml-12">
+                        <p className="text-xs text-muted-foreground pl-10">
                           Reason: {change.reason}
                         </p>
                       )}
+                      <div className="flex gap-2 pl-10">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReject(change.id)}
+                          disabled={updateStatus.isPending}
+                          className="flex-1 border-destructive/50 text-destructive hover:bg-destructive/10 min-h-[44px]"
+                        >
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(change.id)}
+                          disabled={updateStatus.isPending}
+                          className="flex-1 bg-primary hover:bg-primary/80 min-h-[44px]"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Approve
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

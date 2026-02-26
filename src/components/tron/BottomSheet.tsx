@@ -34,7 +34,7 @@ export function BottomSheet({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-[#111111] border-t border-[#FF4500]/20 max-h-[90vh]">
+        <DrawerContent className="bg-[#111111] border-t border-[#FF4500]/20 max-h-[90vh] safe-bottom">
           <DrawerHeader>
             <DrawerTitle className="font-display text-foreground">{title}</DrawerTitle>
             {description && (

@@ -28,7 +28,10 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
               <th className="text-center px-2 py-1.5 font-medium">W</th>
               <th className="text-center px-2 py-1.5 font-medium">L</th>
               <th className="text-center px-2 py-1.5 font-medium hidden sm:table-cell">+/-</th>
-              <th className="text-center px-2 py-1.5 font-medium">Pts</th>
+              <th className="text-center px-2 py-1.5 font-medium">
+                <span className="hidden sm:inline">Pts</span>
+                <span className="sm:hidden">Pts/+</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -87,12 +90,22 @@ export function GroupStandings({ standings, groupLabel, advanceCount = 0, advanc
                     </span>
                   </td>
                   <td className="text-center px-2 py-2">
-                    <span className={cn(
-                      'font-bold',
-                      isAdvancing ? 'text-green-400' : isLowerBracket ? 'text-orange-400' : 'text-[#FF4500]'
-                    )}>
-                      {s.points}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className={cn(
+                        'font-bold',
+                        isAdvancing ? 'text-green-400' : isLowerBracket ? 'text-orange-400' : 'text-[#FF4500]'
+                      )}>
+                        {s.points}
+                      </span>
+                      <span className={cn(
+                        'text-[10px] sm:hidden',
+                        s.score_for - s.score_against > 0 && 'text-green-400',
+                        s.score_for - s.score_against < 0 && 'text-red-400',
+                        s.score_for - s.score_against === 0 && 'text-muted-foreground',
+                      )}>
+                        {s.score_for - s.score_against > 0 ? '+' : ''}{s.score_for - s.score_against}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               );

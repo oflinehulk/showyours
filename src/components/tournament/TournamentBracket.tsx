@@ -321,7 +321,7 @@ function MultiStageBracket({
             key={stage.id}
             onClick={() => setActiveStageIndex(i)}
             className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all',
+              'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px]',
               i === activeStageIndex
                 ? 'bg-[#FF4500]/10 border-[#FF4500]/50 text-[#FF4500] shadow-[0_0_8px_rgba(255,69,0,0.15)]'
                 : 'border-border/50 text-muted-foreground hover:border-[#FF4500]/30 hover:text-foreground',
@@ -719,22 +719,29 @@ function BracketView({
 
   if (isMobile) {
     return (
-      <div className="space-y-6">
-        {rounds.map((round) => (
-          <div key={round}>
-            <h4 className="text-xs font-display font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              Round {round}
-            </h4>
-            <div className="grid gap-3 grid-cols-1">
-              {matches
-                .filter(m => m.round === round)
-                .sort((a, b) => a.match_number - b.match_number)
-                .map((match) => (
-                  <MatchCard {...matchCardProps(match)} />
-                ))}
+      <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+        <div className="flex gap-3 min-w-max py-2">
+          {rounds.map((round, roundIndex) => (
+            <div key={round} className="flex items-stretch">
+              <div className="flex flex-col gap-3 min-w-[200px]">
+                <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
+                  {roundIndex === rounds.length - 1 ? 'Final' : `R${round}`}
+                </h4>
+                {matches
+                  .filter(m => m.round === round)
+                  .sort((a, b) => a.match_number - b.match_number)
+                  .map((match) => (
+                    <MatchCard {...matchCardProps(match)} />
+                  ))}
+              </div>
+              {roundIndex < rounds.length - 1 && (
+                <div className="flex items-center px-1">
+                  <div className="w-4 h-px bg-[#FF4500]/30" />
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
@@ -841,6 +848,7 @@ function MatchCard({
       className={cn(
         'w-full p-3 rounded-lg border bg-[#111111] transition-all text-left cursor-pointer',
         'border-[#FF4500]/20 hover:border-[#FF4500]/50 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)]',
+        'active:scale-[0.98]',
         match.status === 'ongoing' && 'border-yellow-400/40',
         match.status === 'completed' && 'border-green-500/20',
         match.status === 'disputed' && 'border-destructive/40',
@@ -1051,7 +1059,7 @@ function MatchTeamRow({
         </span>
         {sideBadge && (
           <span className={cn(
-            'text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0',
+            'text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0',
             sideBadge === 'blue'
               ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
               : 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30',

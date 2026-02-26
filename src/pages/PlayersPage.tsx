@@ -300,12 +300,12 @@ export default function PlayersPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#FF4500]/10">
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">#</th>
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Player</th>
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Rank</th>
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Win Rate</th>
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Role</th>
-                    <th className="text-left p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">State</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">#</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Player</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Rank</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider">Win Rate</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider hidden sm:table-cell">Role</th>
+                    <th className="text-left p-3 md:p-4 text-[#FF4500]/70 font-display text-xs uppercase tracking-wider hidden md:table-cell">State</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -323,28 +323,28 @@ export default function PlayersPage() {
                         key={player.id}
                         className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5 transition-colors"
                       >
-                        <td className="p-4 text-muted-foreground font-display">{index + 1}</td>
-                        <td className="p-4">
+                        <td className="p-3 md:p-4 text-muted-foreground font-display">{index + 1}</td>
+                        <td className="p-3 md:p-4">
                           <div className="flex items-center gap-3">
                             <img
                               src={player.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${player.ign}`}
                               alt={player.ign}
                               loading="lazy"
-                              className="w-10 h-10 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
+                              className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-muted object-cover border border-[#FF4500]/10"
                             />
                             <span className="font-semibold text-foreground">{player.ign}</span>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-3 md:p-4">
                           <RankBadge rank={player.rank} size="sm" />
                         </td>
-                        <td className="p-4">
+                        <td className="p-3 md:p-4">
                           <span className="text-[#FF4500] font-display font-semibold">{player.win_rate != null ? `${player.win_rate}%` : '—'}</span>
                         </td>
-                        <td className="p-4 text-muted-foreground">
+                        <td className="p-3 md:p-4 text-muted-foreground hidden sm:table-cell">
                           {roleDisplay}
                         </td>
-                        <td className="p-4 text-muted-foreground text-sm">
+                        <td className="p-3 md:p-4 text-muted-foreground text-sm hidden md:table-cell">
                           {state?.name || 'India'}
                         </td>
                       </tr>

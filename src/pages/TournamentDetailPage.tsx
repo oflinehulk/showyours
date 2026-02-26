@@ -255,7 +255,7 @@ export default function TournamentDetailPage() {
 
   return (
     <Layout>
-      <div className={cn("container mx-auto px-4 py-6 max-w-6xl", isMobile && "pb-36")}>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back navigation */}
         <Button variant="ghost" size="sm" asChild className="mb-4 btn-interactive text-muted-foreground hover:text-foreground">
           <Link to="/tournaments">
@@ -267,7 +267,7 @@ export default function TournamentDetailPage() {
         {/* Hero Section */}
         <div className="relative rounded-2xl overflow-hidden mb-8">
           {/* Banner Image / Gradient Fallback */}
-          <div className="relative h-56 md:h-72">
+          <div className="relative h-40 md:h-72">
             {tournament.banner_url ? (
               <img
                 src={tournament.banner_url}
@@ -290,7 +290,7 @@ export default function TournamentDetailPage() {
           </div>
 
           {/* Floating content over banner */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div className="flex-1 min-w-0">
                 {/* Status badges */}
@@ -323,7 +323,7 @@ export default function TournamentDetailPage() {
                 </div>
 
                 {/* Tournament name */}
-                <h1 className="text-3xl md:text-5xl font-display font-black text-foreground tracking-tight leading-none mb-2">
+                <h1 className="text-2xl md:text-5xl font-display font-black text-foreground tracking-tight leading-none mb-1">
                   {tournament.name}
                 </h1>
 
@@ -434,116 +434,64 @@ export default function TournamentDetailPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* Desktop tab bar */}
-          <div className={cn("bg-[#111111]/90 border border-[#FF4500]/20 p-1 mb-6 rounded-xl", isMobile ? "hidden" : "inline-flex")}>
-            <TabsList className="bg-transparent gap-1">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                <FileText className="w-4 h-4 mr-2" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="teams" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                <Users className="w-4 h-4 mr-2" />
-                Teams ({registrations?.filter(r => r.status === 'approved').length || 0})
-              </TabsTrigger>
-              {(tournament.status === 'bracket_generated' ||
-                tournament.status === 'ongoing' ||
-                tournament.status === 'completed') && (
-                <>
-                  <TabsTrigger value="bracket" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                    <Swords className="w-4 h-4 mr-2" />
-                    Bracket
-                  </TabsTrigger>
-                  <TabsTrigger value="upcoming" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                    <CalendarDays className="w-4 h-4 mr-2" />
-                    Upcoming
-                  </TabsTrigger>
-                </>
-              )}
-              {isHost && tournament.status !== 'registration_open' && (
-                <TabsTrigger value="rosters" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Rosters
+          {/* Responsive tab bar: sticky scrollable on mobile, inline on desktop */}
+          <div className={cn(
+            "sticky top-14 z-30 -mx-4 px-4 py-2 mb-4 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[#FF4500]/10",
+            "md:static md:mx-0 md:px-0 md:py-0 md:mb-6 md:border-0 md:bg-transparent md:backdrop-blur-none md:inline-flex"
+          )}>
+            <div className={cn(
+              "md:bg-[#111111]/90 md:border md:border-[#FF4500]/20 md:p-1 md:rounded-xl md:inline-flex"
+            )}>
+              <TabsList className="bg-transparent flex items-center gap-1 overflow-x-auto scrollbar-hide w-full md:w-auto">
+                <TabsTrigger value="overview" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Overview
                 </TabsTrigger>
-              )}
-              {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
-                <TabsTrigger value="schedule" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                  <CalendarClock className="w-4 h-4 mr-2" />
-                  Schedule
-                </TabsTrigger>
-              )}
-              {canRegister && user && (
-                <TabsTrigger value="register" className="data-[state=active]:bg-[#FF6B35]/10 data-[state=active]:text-[#FF6B35] data-[state=active]:border-b-2 data-[state=active]:border-[#FF6B35] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Register
-                </TabsTrigger>
-              )}
-              {isHost && (
-                <TabsTrigger value="activity" className="data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-5 font-display text-xs uppercase tracking-wider">
-                  <ScrollText className="w-4 h-4 mr-2" />
-                  Activity
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
-
-          {/* Mobile bottom nav */}
-          {isMobile && (
-            <div className="fixed bottom-16 left-0 right-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-[#FF4500]/10">
-              <TabsList className="bg-transparent flex items-center justify-around h-14 px-1 w-full">
-                <TabsTrigger value="overview" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF4500] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                  <div className="relative">
-                    <FileText className="w-5 h-5" />
-                    {activeTab === 'overview' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF4500] shadow-[0_0_6px_rgba(255,69,0,0.8)]" />}
-                  </div>
-                  <span className={cn("text-[10px]", activeTab === 'overview' ? 'font-bold' : 'font-medium')}>Info</span>
-                </TabsTrigger>
-                <TabsTrigger value="teams" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF4500] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                  <div className="relative">
-                    <Users className="w-5 h-5" />
-                    {activeTab === 'teams' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF4500] shadow-[0_0_6px_rgba(255,69,0,0.8)]" />}
-                  </div>
-                  <span className={cn("text-[10px]", activeTab === 'teams' ? 'font-bold' : 'font-medium')}>Teams</span>
+                <TabsTrigger value="teams" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Teams ({registrations?.filter(r => r.status === 'approved').length || 0})
                 </TabsTrigger>
                 {(tournament.status === 'bracket_generated' ||
                   tournament.status === 'ongoing' ||
                   tournament.status === 'completed') && (
                   <>
-                    <TabsTrigger value="bracket" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF4500] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                      <div className="relative">
-                        <Swords className="w-5 h-5" />
-                        {activeTab === 'bracket' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF4500] shadow-[0_0_6px_rgba(255,69,0,0.8)]" />}
-                      </div>
-                      <span className={cn("text-[10px]", activeTab === 'bracket' ? 'font-bold' : 'font-medium')}>Bracket</span>
+                    <TabsTrigger value="bracket" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                      <Swords className="w-4 h-4 mr-1.5" />
+                      Bracket
                     </TabsTrigger>
-                    <TabsTrigger value="upcoming" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF4500] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                      <div className="relative">
-                        <CalendarDays className="w-5 h-5" />
-                        {activeTab === 'upcoming' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF4500] shadow-[0_0_6px_rgba(255,69,0,0.8)]" />}
-                      </div>
-                      <span className={cn("text-[10px]", activeTab === 'upcoming' ? 'font-bold' : 'font-medium')}>Upcoming</span>
+                    <TabsTrigger value="upcoming" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                      <CalendarDays className="w-4 h-4 mr-1.5" />
+                      Upcoming
                     </TabsTrigger>
                   </>
                 )}
-                {canRegister && user ? (
-                  <TabsTrigger value="register" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF6B35] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                    <div className="relative">
-                      <Trophy className="w-5 h-5" />
-                      {activeTab === 'register' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF6B35] shadow-[0_0_6px_rgba(255,107,53,0.8)]" />}
-                    </div>
-                    <span className={cn("text-[10px]", activeTab === 'register' ? 'font-bold' : 'font-medium')}>Register</span>
+                {isHost && tournament.status !== 'registration_open' && (
+                  <TabsTrigger value="rosters" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                    <Shield className="w-4 h-4 mr-1.5" />
+                    Rosters
                   </TabsTrigger>
-                ) : isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') ? (
-                  <TabsTrigger value="schedule" className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] data-[state=active]:bg-transparent data-[state=active]:text-[#FF4500] text-muted-foreground data-[state=active]:shadow-none border-0 rounded-none p-0">
-                    <div className="relative">
-                      <CalendarClock className="w-5 h-5" />
-                      {activeTab === 'schedule' && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF4500] shadow-[0_0_6px_rgba(255,69,0,0.8)]" />}
-                    </div>
-                    <span className={cn("text-[10px]", activeTab === 'schedule' ? 'font-bold' : 'font-medium')}>Schedule</span>
+                )}
+                {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
+                  <TabsTrigger value="schedule" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                    <CalendarClock className="w-4 h-4 mr-1.5" />
+                    Schedule
                   </TabsTrigger>
-                ) : null}
+                )}
+                {canRegister && user && (
+                  <TabsTrigger value="register" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF6B35]/10 data-[state=active]:text-[#FF6B35] data-[state=active]:border-b-2 data-[state=active]:border-[#FF6B35] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                    <Trophy className="w-4 h-4 mr-1.5" />
+                    Register
+                  </TabsTrigger>
+                )}
+                {isHost && (
+                  <TabsTrigger value="activity" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
+                    <ScrollText className="w-4 h-4 mr-1.5" />
+                    Activity
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
-          )}
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">

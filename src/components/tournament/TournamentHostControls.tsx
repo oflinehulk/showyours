@@ -38,6 +38,7 @@ import {
   useResetBracket,
   useResetStageBracket,
   useDeleteStages,
+  useRecaptureRosterSnapshots,
 } from '@/hooks/useTournaments';
 import { StageConfigurator } from '@/components/tournament/StageConfigurator';
 import { GroupAssignment } from '@/components/tournament/GroupAssignment';
@@ -61,6 +62,7 @@ import {
   ArrowRight,
   Trophy,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -88,6 +90,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   const updateSeed = useUpdateRegistrationSeed();
   const autoSeed = useAutoSeedByRegistrationOrder();
   const withdrawSquad = useWithdrawSquad();
+  const recaptureSnapshots = useRecaptureRosterSnapshots();
 
   type ExtendedFormat = TournamentFormat | 'multi_stage';
   const [selectedFormat, setSelectedFormat] = useState<ExtendedFormat>('single_elimination');
@@ -121,6 +124,17 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       toast.success('Registration reopened');
     } catch (error: unknown) {
       toast.error('Failed to reopen registration', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  const handleRecaptureSnapshots = async () => {
+    try {
+      await recaptureSnapshots.mutateAsync(tournament.id);
+      toast.success('Roster snapshots recaptured', {
+        description: 'All approved squad rosters have been re-locked with current members.',
+      });
+    } catch (error: unknown) {
+      toast.error('Failed to recapture snapshots', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
@@ -302,6 +316,8 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
             approvedCount={approvedCount}
             onReopenRegistration={handleReopenRegistration}
             reopenPending={updateTournament.isPending}
+            onRecaptureSnapshots={handleRecaptureSnapshots}
+            recapturePending={recaptureSnapshots.isPending}
           />
         )}
 
@@ -316,7 +332,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                     <ListOrdered className="w-4 h-4 text-secondary" />
                     <h4 className="text-sm font-semibold text-foreground">Seeding</h4>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -329,6 +345,19 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                         <ListOrdered className="w-3 h-3 mr-1" />
                       )}
                       Auto-seed
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRecaptureSnapshots}
+                      disabled={recaptureSnapshots.isPending}
+                    >
+                      {recaptureSnapshots.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : (
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                      )}
+                      Recapture Rosters
                     </Button>
                     <Button
                       variant="outline"
@@ -617,6 +646,8 @@ function MultiStageSetup({
   approvedCount,
   onReopenRegistration,
   reopenPending,
+  onRecaptureSnapshots,
+  recapturePending,
 }: {
   tournament: Tournament;
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
@@ -624,6 +655,8 @@ function MultiStageSetup({
   approvedCount: number;
   onReopenRegistration: () => void;
   reopenPending: boolean;
+  onRecaptureSnapshots: () => void;
+  recapturePending: boolean;
 }) {
   const { data: stages } = useTournamentStages(tournament.id);
   const updateTournament = useUpdateTournament();
@@ -705,8 +738,8 @@ function MultiStageSetup({
 
   return (
     <div className="space-y-4">
-      {/* Reopen / Switch to Single-Stage buttons */}
-      <div className="flex justify-end gap-2">
+      {/* Reopen / Recapture / Switch to Single-Stage buttons */}
+      <div className="flex flex-wrap justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -734,6 +767,19 @@ function MultiStageSetup({
             <RotateCcw className="w-3 h-3 mr-1" />
           )}
           Switch to Single-Stage
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRecaptureSnapshots}
+          disabled={recapturePending}
+        >
+          {recapturePending ? (
+            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+          ) : (
+            <RefreshCw className="w-3 h-3 mr-1" />
+          )}
+          Recapture Rosters
         </Button>
         <Button
           variant="outline"

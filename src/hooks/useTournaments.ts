@@ -2432,3 +2432,22 @@ export function useSaveGroupDraw() {
     },
   });
 }
+
+// Host recaptures roster snapshots for all approved registrations
+export function useRecaptureRosterSnapshots() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tournamentId: string) => {
+      const { error } = await supabase.rpc('rpc_recapture_roster_snapshots', {
+        p_tournament_id: tournamentId,
+      });
+
+      if (error) throw new Error(error.message);
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+    },
+  });
+}

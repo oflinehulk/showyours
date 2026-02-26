@@ -209,15 +209,20 @@ BEGIN
     -- Re-copy ALL members from the original squad with fresh profile data
     v_position := 0;
     FOR v_member IN
-      SELECT sm.*, p.ign AS profile_ign, p.mlbb_id AS profile_mlbb_id
+      SELECT
+        sm.user_id AS sm_user_id,
+        sm.ign AS sm_ign,
+        sm.mlbb_id AS sm_mlbb_id,
+        p.ign AS p_ign,
+        p.mlbb_id AS p_mlbb_id
       FROM squad_members sm
       LEFT JOIN profiles p ON p.id = sm.profile_id
       WHERE sm.squad_id = v_original_squad_id
       ORDER BY sm.position ASC
     LOOP
       v_position := v_position + 1;
-      v_ign := COALESCE(v_member.profile_ign, v_member.ign, 'Unknown');
-      v_mlbb := COALESCE(v_member.profile_mlbb_id, v_member.mlbb_id, '');
+      v_ign := COALESCE(v_member.p_ign, v_member.sm_ign, 'Unknown');
+      v_mlbb := COALESCE(v_member.p_mlbb_id, v_member.sm_mlbb_id, '');
 
       INSERT INTO tournament_squad_members (
         tournament_squad_id, ign, mlbb_id, role, position, user_id, member_status
@@ -227,7 +232,7 @@ BEGIN
         v_mlbb,
         CASE WHEN v_position <= 5 THEN 'main'::squad_member_role ELSE 'substitute'::squad_member_role END,
         v_position,
-        v_member.user_id,
+        v_member.sm_user_id,
         'active'
       );
     END LOOP;

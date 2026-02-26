@@ -2439,7 +2439,7 @@ export function useRecaptureRosterSnapshots() {
 
   return useMutation({
     mutationFn: async (tournamentId: string) => {
-      const { error } = await supabase.rpc('rpc_recapture_roster_snapshots', {
+      const { error } = await (supabase.rpc as any)('rpc_recapture_roster_snapshots', {
         p_tournament_id: tournamentId,
       });
 

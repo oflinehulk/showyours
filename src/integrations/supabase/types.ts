@@ -1162,6 +1162,10 @@ export type Database = {
         Args: { p_squad_id: string; p_tournament_id: string }
         Returns: string
       }
+      rpc_recapture_roster_snapshots: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
+      }
       rpc_register_for_tournament: {
         Args: {
           p_existing_squad_id: string

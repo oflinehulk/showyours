@@ -261,6 +261,7 @@ export type Database = {
           id: string
           player_in_ign: string
           player_in_mlbb_id: string
+          player_out_id: string | null
           player_out_ign: string
           reason: string | null
           stage_id: string | null
@@ -275,6 +276,7 @@ export type Database = {
           id?: string
           player_in_ign: string
           player_in_mlbb_id: string
+          player_out_id?: string | null
           player_out_ign: string
           reason?: string | null
           stage_id?: string | null
@@ -289,6 +291,7 @@ export type Database = {
           id?: string
           player_in_ign?: string
           player_in_mlbb_id?: string
+          player_out_id?: string | null
           player_out_ign?: string
           reason?: string | null
           stage_id?: string | null
@@ -297,6 +300,13 @@ export type Database = {
           tournament_squad_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "roster_changes_player_out_id_fkey"
+            columns: ["player_out_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squad_members"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "roster_changes_stage_id_fkey"
             columns: ["stage_id"]

@@ -171,6 +171,8 @@ DECLARE
   v_original_squad_id UUID;
   v_member RECORD;
   v_position INTEGER;
+  v_ign TEXT;
+  v_mlbb TEXT;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
@@ -214,13 +216,15 @@ BEGIN
       ORDER BY sm.position ASC
     LOOP
       v_position := v_position + 1;
+      v_ign := COALESCE(v_member.profile_ign, v_member.ign, 'Unknown');
+      v_mlbb := COALESCE(v_member.profile_mlbb_id, v_member.mlbb_id, '');
 
       INSERT INTO tournament_squad_members (
         tournament_squad_id, ign, mlbb_id, role, position, user_id, member_status
       ) VALUES (
         v_reg.tournament_squad_id,
-        COALESCE(v_member.profile_ign, v_member.ign, 'Unknown'),
-        COALESCE(v_member.profile_mlbb_id, v_member.mlbb_id, ''),
+        v_ign,
+        v_mlbb,
         CASE WHEN v_position <= 5 THEN 'main'::squad_member_role ELSE 'substitute'::squad_member_role END,
         v_position,
         v_member.user_id,

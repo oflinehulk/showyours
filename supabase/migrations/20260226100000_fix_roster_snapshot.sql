@@ -156,6 +156,8 @@ END;
 $$;
 
 -- 3. RPC for host to manually recapture roster snapshots
+-- Re-syncs tournament_squad_members from the ORIGINAL squad_members table,
+-- pulling fresh IGN/MLBB_ID from profiles, then rebuilds the snapshot.
 CREATE OR REPLACE FUNCTION public.rpc_recapture_roster_snapshots(p_tournament_id UUID)
 RETURNS void
 LANGUAGE plpgsql
@@ -165,6 +167,10 @@ AS $$
 DECLARE
   v_user_id UUID;
   v_host_id UUID;
+  v_reg RECORD;
+  v_original_squad_id UUID;
+  v_member RECORD;
+  v_position INTEGER;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
@@ -183,26 +189,65 @@ BEGIN
     RAISE EXCEPTION 'Only the tournament host can recapture roster snapshots';
   END IF;
 
-  -- Recapture snapshots for all approved registrations
-  UPDATE tournament_registrations tr
-  SET
-    roster_locked = true,
-    roster_locked_at = now(),
-    roster_snapshot = (
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id', tsm.id,
-          'ign', tsm.ign,
-          'mlbb_id', tsm.mlbb_id,
-          'role', tsm.role,
-          'position', tsm.position
+  -- For each approved registration, re-sync members from original squad
+  FOR v_reg IN
+    SELECT tr.id AS reg_id, tr.tournament_squad_id, ts.existing_squad_id
+    FROM tournament_registrations tr
+    JOIN tournament_squads ts ON ts.id = tr.tournament_squad_id
+    WHERE tr.tournament_id = p_tournament_id
+      AND tr.status = 'approved'
+      AND ts.existing_squad_id IS NOT NULL
+  LOOP
+    v_original_squad_id := v_reg.existing_squad_id;
+
+    -- Delete existing tournament_squad_members for this tournament squad
+    DELETE FROM tournament_squad_members
+    WHERE tournament_squad_id = v_reg.tournament_squad_id;
+
+    -- Re-copy ALL members from the original squad with fresh profile data
+    v_position := 0;
+    FOR v_member IN
+      SELECT sm.*, p.ign AS profile_ign, p.mlbb_id AS profile_mlbb_id
+      FROM squad_members sm
+      LEFT JOIN profiles p ON p.id = sm.profile_id
+      WHERE sm.squad_id = v_original_squad_id
+      ORDER BY sm.position ASC
+    LOOP
+      v_position := v_position + 1;
+
+      INSERT INTO tournament_squad_members (
+        tournament_squad_id, ign, mlbb_id, role, position, user_id, member_status
+      ) VALUES (
+        v_reg.tournament_squad_id,
+        COALESCE(v_member.profile_ign, v_member.ign, 'Unknown'),
+        COALESCE(v_member.profile_mlbb_id, v_member.mlbb_id, ''),
+        CASE WHEN v_position <= 5 THEN 'main'::squad_member_role ELSE 'substitute'::squad_member_role END,
+        v_position,
+        v_member.user_id,
+        'active'
+      );
+    END LOOP;
+
+    -- Now build the snapshot from the freshly inserted members
+    UPDATE tournament_registrations
+    SET
+      roster_locked = true,
+      roster_locked_at = now(),
+      roster_snapshot = (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', tsm.id,
+            'ign', tsm.ign,
+            'mlbb_id', tsm.mlbb_id,
+            'role', tsm.role,
+            'position', tsm.position
+          )
         )
+        FROM tournament_squad_members tsm
+        WHERE tsm.tournament_squad_id = v_reg.tournament_squad_id
+          AND tsm.member_status = 'active'
       )
-      FROM tournament_squad_members tsm
-      WHERE tsm.tournament_squad_id = tr.tournament_squad_id
-        AND tsm.member_status = 'active'
-    )
-  WHERE tr.tournament_id = p_tournament_id
-    AND tr.status = 'approved';
+    WHERE id = v_reg.reg_id;
+  END LOOP;
 END;
 $$;

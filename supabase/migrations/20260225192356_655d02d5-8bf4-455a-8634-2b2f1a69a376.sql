@@ -25,21 +25,23 @@ BEGIN
 
     WHEN 'registration_closed' THEN
       IF NEW.is_multi_stage THEN
-        IF NEW.status NOT IN ('bracket_generated', 'ongoing') THEN
+        IF NEW.status NOT IN ('registration_open', 'bracket_generated', 'ongoing') THEN
           RAISE EXCEPTION 'Cannot transition from registration_closed to %', NEW.status;
         END IF;
       ELSE
-        IF NEW.status NOT IN ('bracket_generated') THEN
+        IF NEW.status NOT IN ('registration_open', 'bracket_generated') THEN
           RAISE EXCEPTION 'Cannot transition from registration_closed to %', NEW.status;
         END IF;
       END IF;
 
-      SELECT COUNT(*) INTO v_approved_count
-      FROM tournament_registrations
-      WHERE tournament_id = NEW.id AND status = 'approved';
+      IF NEW.status <> 'registration_open' THEN
+        SELECT COUNT(*) INTO v_approved_count
+        FROM tournament_registrations
+        WHERE tournament_id = NEW.id AND status = 'approved';
 
-      IF v_approved_count < 2 THEN
-        RAISE EXCEPTION 'Need at least 2 approved squads to generate bracket (currently %)', v_approved_count;
+        IF v_approved_count < 2 THEN
+          RAISE EXCEPTION 'Need at least 2 approved squads to generate bracket (currently %)', v_approved_count;
+        END IF;
       END IF;
 
     WHEN 'bracket_generated' THEN

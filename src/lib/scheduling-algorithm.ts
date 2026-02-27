@@ -90,7 +90,24 @@ export function autoScheduleMatches(
   // Track occupied slots per squad
   const occupiedSlots = new Map<string, Set<string>>();
 
-  // Sort matches: round ASC, match_number ASC
+  // Seed occupied slots from already-scheduled matches (manual or previous auto-schedule)
+  for (const m of matches) {
+    if (!m.scheduled_time || !m.squad_a_id || !m.squad_b_id) continue;
+    const dt = new Date(m.scheduled_time);
+    const date = dt.toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const hours = dt.getHours().toString().padStart(2, '0');
+    const mins = dt.getMinutes().toString().padStart(2, '0');
+    const time = `${hours}:${mins}`;
+    const blocked = getBlockedSlots(date, time, gapMinutes);
+    for (const squadId of [m.squad_a_id, m.squad_b_id]) {
+      if (!occupiedSlots.has(squadId)) occupiedSlots.set(squadId, new Set());
+      for (const b of blocked) {
+        occupiedSlots.get(squadId)!.add(b);
+      }
+    }
+  }
+
+  // Sort unscheduled matches: round ASC, match_number ASC
   const sortedMatches = [...matches]
     .filter(m => m.squad_a_id && m.squad_b_id && !m.scheduled_time)
     .sort((a, b) => a.round - b.round || a.match_number - b.match_number);

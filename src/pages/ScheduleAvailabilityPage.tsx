@@ -1,14 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { CircuitBackground } from '@/components/tron/CircuitBackground';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { Button } from '@/components/ui/button';
-import { Loader2, Check, ChevronLeft, ChevronRight, Swords } from 'lucide-react';
-import { useSchedulingContext, useSubmitAvailability } from '@/hooks/useScheduling';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Check, ChevronLeft, ChevronRight, Swords, CalendarCheck, Clock } from 'lucide-react';
+import { useSchedulingContext, useSubmitAvailability, type MatchSchedulingInfo } from '@/hooks/useScheduling';
 import { toast } from 'sonner';
 
 const TIME_SLOTS = ['21:00', '21:30', '22:00', '22:30', '23:00', '23:30'];
-const SLOT_LABELS = ['9:00 PM', '9:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM'];
+const SLOT_LABELS = ['9 PM', '9:30', '10 PM', '10:30', '11 PM', '11:30'];
 
 function getNextDays(count: number): string[] {
   const days: string[] = [];
@@ -30,8 +31,130 @@ function formatDate(dateStr: string): { day: string; date: string; month: string
   };
 }
 
+function formatScheduledTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+}
+
 function slotKey(date: string, time: string): string {
   return `${date}|${time}`;
+}
+
+// Per-match slot grid
+function MatchSlotPicker({
+  match,
+  days,
+  selectedSlots,
+  onToggleSlot,
+}: {
+  match: MatchSchedulingInfo;
+  days: string[];
+  selectedSlots: Set<string>;
+  onToggleSlot: (matchId: string, date: string, time: string) => void;
+}) {
+  const [visibleStart, setVisibleStart] = useState(0);
+  const visibleDays = days.slice(visibleStart, visibleStart + 5);
+
+  const opponentSlotSet = useMemo(
+    () => new Set(match.opponent_slots.map((s) => slotKey(s.date, s.time))),
+    [match.opponent_slots]
+  );
+
+  const hasOpponentPicked = match.opponent_slots.length > 0;
+
+  return (
+    <div>
+      {/* Day navigation */}
+      <div className="flex items-center gap-1 mb-3">
+        <Button
+          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+          disabled={visibleStart === 0}
+          onClick={() => setVisibleStart((v) => Math.max(0, v - 3))}
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </Button>
+
+        <div className="flex gap-1.5 flex-1 overflow-hidden">
+          {visibleDays.map((day) => {
+            const f = formatDate(day);
+            return (
+              <div key={day} className="flex-1 min-w-0 text-center">
+                <div className="text-[10px] text-muted-foreground">{f.day}</div>
+                <div className="text-sm font-bold">{f.date}</div>
+                <div className="text-[10px] text-muted-foreground">{f.month}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <Button
+          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+          disabled={visibleStart + 5 >= days.length}
+          onClick={() => setVisibleStart((v) => Math.min(days.length - 5, v + 3))}
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+
+      {/* Legend */}
+      {hasOpponentPicked && (
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2 px-1">
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-primary/30 border border-primary/50" />
+            Your pick
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-blue-500/30 border border-blue-500/50" />
+            Opponent
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-green-500/30 border border-green-500/50" />
+            Both
+          </span>
+        </div>
+      )}
+
+      {/* Slot grid */}
+      <div className="space-y-1.5">
+        {TIME_SLOTS.map((time, i) => (
+          <div key={time} className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground w-10 shrink-0 text-right">
+              {SLOT_LABELS[i]}
+            </span>
+            <div className="flex gap-1.5 flex-1">
+              {visibleDays.map((day) => {
+                const key = slotKey(day, time);
+                const isMine = selectedSlots.has(key);
+                const isOpponent = opponentSlotSet.has(key);
+                const isBoth = isMine && isOpponent;
+
+                let cellClass = 'border-border bg-muted/10 text-muted-foreground hover:border-muted-foreground/40';
+                if (isBoth) {
+                  cellClass = 'border-green-500 bg-green-500/20 text-green-500 shadow-[0_0_6px_rgba(34,197,94,0.3)]';
+                } else if (isMine) {
+                  cellClass = 'border-primary bg-primary/20 text-primary shadow-[0_0_6px_rgba(255,69,0,0.3)]';
+                } else if (isOpponent) {
+                  cellClass = 'border-blue-500/50 bg-blue-500/10 text-blue-400';
+                }
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => onToggleSlot(match.id, day, time)}
+                    className={`flex-1 h-9 rounded transition-all border text-xs font-medium ${cellClass}`}
+                  >
+                    {isMine ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ScheduleAvailabilityPage() {
@@ -40,59 +163,62 @@ export default function ScheduleAvailabilityPage() {
   const submitMutation = useSubmitAvailability();
 
   const days = useMemo(() => getNextDays(14), []);
-  const [visibleStart, setVisibleStart] = useState(0);
-  const visibleDays = days.slice(visibleStart, visibleStart + 5);
 
-  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set());
+  // State: Map<matchId, Set<slotKey>>
+  const [matchSelections, setMatchSelections] = useState<Map<string, Set<string>>>(new Map());
   const [initialized, setInitialized] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   // Pre-fill from existing data
   if (context && !initialized) {
-    if (context.existing_slots.length > 0) {
-      const existing = new Set(context.existing_slots.map((s) => slotKey(s.date, s.time)));
-      setSelectedSlots(existing);
+    const initial = new Map<string, Set<string>>();
+    for (const match of context.matches) {
+      if (match.my_slots.length > 0) {
+        initial.set(match.id, new Set(match.my_slots.map((s) => slotKey(s.date, s.time))));
+      }
     }
+    setMatchSelections(initial);
     setInitialized(true);
   }
 
-  const toggleSlot = (date: string, time: string) => {
+  const toggleSlot = useCallback((matchId: string, date: string, time: string) => {
     const key = slotKey(date, time);
-    setSelectedSlots((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+    setMatchSelections((prev) => {
+      const next = new Map(prev);
+      const matchSet = new Set(next.get(matchId) || []);
+      if (matchSet.has(key)) matchSet.delete(key);
+      else matchSet.add(key);
+      next.set(matchId, matchSet);
       return next;
     });
-  };
+  }, []);
 
-  const toggleDay = (date: string) => {
-    const dayKeys = TIME_SLOTS.map((t) => slotKey(date, t));
-    const allSelected = dayKeys.every((k) => selectedSlots.has(k));
-    setSelectedSlots((prev) => {
-      const next = new Set(prev);
-      dayKeys.forEach((k) => {
-        if (allSelected) next.delete(k);
-        else next.add(k);
-      });
-      return next;
-    });
-  };
+  const totalSelected = useMemo(() => {
+    let count = 0;
+    for (const slots of matchSelections.values()) count += slots.size;
+    return count;
+  }, [matchSelections]);
 
   const handleSubmit = async () => {
     if (!token) return;
-    const slots = [...selectedSlots].map((key) => {
-      const [date, time] = key.split('|');
-      return { date, time };
-    });
 
-    if (slots.length === 0) {
-      toast.error('Please select at least one available time slot');
+    const matchSlots = [...matchSelections.entries()]
+      .filter(([, slots]) => slots.size > 0)
+      .map(([matchId, slots]) => ({
+        match_id: matchId,
+        slots: [...slots].map((key) => {
+          const [date, time] = key.split('|');
+          return { date, time };
+        }),
+      }));
+
+    if (matchSlots.length === 0) {
+      toast.error('Please select at least one time slot for a match');
       return;
     }
 
     try {
-      await submitMutation.mutateAsync({ token, slots });
+      await submitMutation.mutateAsync({ token, matchSlots });
       setSubmitted(true);
       toast.success('Availability submitted!');
     } catch (err) {
@@ -100,7 +226,7 @@ export default function ScheduleAvailabilityPage() {
     }
   };
 
-  // Loading state
+  // Loading
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -110,7 +236,7 @@ export default function ScheduleAvailabilityPage() {
     );
   }
 
-  // Error state
+  // Error
   if (error || !context) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -125,7 +251,7 @@ export default function ScheduleAvailabilityPage() {
     );
   }
 
-  // Success state
+  // Success
   if (submitted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -141,11 +267,7 @@ export default function ScheduleAvailabilityPage() {
           <p className="text-muted-foreground text-sm">
             Your schedule will be confirmed soon. You can close this page.
           </p>
-          <Button
-            className="mt-6"
-            variant="outline"
-            onClick={() => setSubmitted(false)}
-          >
+          <Button className="mt-6" variant="outline" onClick={() => setSubmitted(false)}>
             Update Availability
           </Button>
         </GlowCard>
@@ -153,8 +275,9 @@ export default function ScheduleAvailabilityPage() {
     );
   }
 
-  // Main form
-  const pendingMatches = context.matches.filter((m) => m.status === 'pending');
+  // Separate scheduled and unscheduled matches
+  const scheduledMatches = context.matches.filter((m) => m.scheduled_time);
+  const unscheduledMatches = context.matches.filter((m) => !m.scheduled_time && m.status !== 'completed');
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,140 +290,120 @@ export default function ScheduleAvailabilityPage() {
             {context.tournament_name}
           </p>
           <h1 className="text-2xl font-display font-bold">{context.squad_name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Select all time slots your team can play
-          </p>
           {context.submitted_at && (
-            <p className="text-xs text-primary mt-2">
-              Previously submitted &mdash; update and resubmit if needed
+            <p className="text-xs text-primary mt-1">
+              Previously submitted &mdash; update if needed
             </p>
           )}
         </div>
 
-        {/* Upcoming matches */}
-        {pendingMatches.length > 0 && (
-          <GlowCard className="p-4 mb-6">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Your Matches ({pendingMatches.length})
+        {/* Summary */}
+        <div className="flex gap-3 mb-6">
+          <div className="flex-1 rounded-lg bg-muted/20 border border-border p-3 text-center">
+            <p className="text-2xl font-bold">{unscheduledMatches.length}</p>
+            <p className="text-xs text-muted-foreground">Need scheduling</p>
+          </div>
+          <div className="flex-1 rounded-lg bg-green-500/10 border border-green-500/20 p-3 text-center">
+            <p className="text-2xl font-bold text-green-500">{scheduledMatches.length}</p>
+            <p className="text-xs text-muted-foreground">Confirmed</p>
+          </div>
+        </div>
+
+        {/* Scheduled matches */}
+        {scheduledMatches.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Confirmed Matches
             </h2>
             <div className="space-y-2">
-              {pendingMatches.map((m) => (
-                <div
-                  key={m.id}
-                  className="flex items-center gap-2 text-sm p-2 rounded bg-muted/20"
-                >
-                  <Swords className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-foreground font-medium">
-                    vs {m.opponent_name || 'TBD'}
-                  </span>
-                  {m.scheduled_time && (
-                    <span className="text-xs text-green-500 ml-auto">Scheduled</span>
-                  )}
+              {scheduledMatches.map((m) => (
+                <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                  <CalendarCheck className="w-4 h-4 text-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">vs {m.opponent_name || 'TBD'}</p>
+                    <p className="text-xs text-green-500">{formatScheduledTime(m.scheduled_time!)}</p>
+                  </div>
                 </div>
               ))}
             </div>
-          </GlowCard>
+          </div>
         )}
 
-        {/* Day navigation */}
-        <div className="flex items-center gap-2 mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            disabled={visibleStart === 0}
-            onClick={() => setVisibleStart((v) => Math.max(0, v - 3))}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+        {/* Unscheduled matches - per-match slot picker */}
+        {unscheduledMatches.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Pick your available slots
+            </h2>
 
-          <div className="flex gap-2 flex-1 overflow-hidden">
-            {visibleDays.map((day) => {
-              const f = formatDate(day);
-              const daySlots = TIME_SLOTS.map((t) => slotKey(day, t));
-              const selectedCount = daySlots.filter((k) => selectedSlots.has(k)).length;
+            {unscheduledMatches.map((match) => {
+              const myCount = matchSelections.get(match.id)?.size || 0;
+              const opponentPicked = match.opponent_slots.length > 0;
+
               return (
-                <button
-                  key={day}
-                  onClick={() => toggleDay(day)}
-                  className={`flex-1 min-w-0 rounded-lg p-2 text-center transition-all border ${
-                    selectedCount === TIME_SLOTS.length
-                      ? 'border-primary/60 bg-primary/10'
-                      : selectedCount > 0
-                      ? 'border-primary/30 bg-primary/5'
-                      : 'border-border bg-muted/20'
-                  }`}
-                >
-                  <div className="text-xs text-muted-foreground">{f.day}</div>
-                  <div className="text-lg font-bold">{f.date}</div>
-                  <div className="text-xs text-muted-foreground">{f.month}</div>
-                </button>
+                <GlowCard key={match.id} className="p-4">
+                  {/* Match header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Swords className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-sm font-medium flex-1">
+                      vs {match.opponent_name || 'TBD'}
+                    </span>
+                    {opponentPicked && (
+                      <Badge variant="outline" className="border-blue-500/40 text-blue-500 text-xs gap-1">
+                        <Clock className="w-3 h-3" />
+                        Opponent picked
+                      </Badge>
+                    )}
+                    {myCount > 0 && (
+                      <Badge variant="outline" className="border-primary/40 text-primary text-xs">
+                        {myCount} selected
+                      </Badge>
+                    )}
+                  </div>
+
+                  {opponentPicked && (
+                    <p className="text-xs text-blue-400 mb-3">
+                      Blue slots = opponent&apos;s preferred times. Pick overlapping ones for faster scheduling.
+                    </p>
+                  )}
+
+                  <MatchSlotPicker
+                    match={match}
+                    days={days}
+                    selectedSlots={matchSelections.get(match.id) || new Set()}
+                    onToggleSlot={toggleSlot}
+                  />
+                </GlowCard>
               );
             })}
           </div>
+        )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            disabled={visibleStart + 5 >= days.length}
-            onClick={() => setVisibleStart((v) => Math.min(days.length - 5, v + 3))}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Time slot grid */}
-        <div className="space-y-2">
-          {TIME_SLOTS.map((time, i) => (
-            <div key={time} className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground w-16 shrink-0 text-right">
-                {SLOT_LABELS[i]}
-              </span>
-              <div className="flex gap-2 flex-1">
-                {visibleDays.map((day) => {
-                  const key = slotKey(day, time);
-                  const isSelected = selectedSlots.has(key);
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => toggleSlot(day, time)}
-                      className={`flex-1 h-11 rounded-lg transition-all border font-medium text-sm ${
-                        isSelected
-                          ? 'border-primary bg-primary/20 text-primary shadow-[0_0_8px_rgba(255,69,0,0.3)]'
-                          : 'border-border bg-muted/10 text-muted-foreground hover:border-muted-foreground/40'
-                      }`}
-                    >
-                      {isSelected ? <Check className="w-4 h-4 mx-auto" /> : ''}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Selected count */}
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          {selectedSlots.size} slot{selectedSlots.size !== 1 ? 's' : ''} selected
-        </p>
+        {/* Nothing to schedule */}
+        {unscheduledMatches.length === 0 && scheduledMatches.length > 0 && (
+          <GlowCard className="p-6 text-center">
+            <CalendarCheck className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">All your matches are scheduled!</p>
+          </GlowCard>
+        )}
       </div>
 
       {/* Sticky submit bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-md border-t border-border p-4">
-        <div className="max-w-lg mx-auto">
-          <Button
-            className="w-full h-12 text-base font-semibold"
-            disabled={selectedSlots.size === 0 || submitMutation.isPending}
-            onClick={handleSubmit}
-          >
-            {submitMutation.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : null}
-            {context.submitted_at ? 'Update Availability' : 'Submit Availability'}
-          </Button>
+      {unscheduledMatches.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 bg-background/80 backdrop-blur-md border-t border-border p-4">
+          <div className="max-w-lg mx-auto">
+            <Button
+              className="w-full h-12 text-base font-semibold"
+              disabled={totalSelected === 0 || submitMutation.isPending}
+              onClick={handleSubmit}
+            >
+              {submitMutation.isPending && <Loader2 className="w-5 h-5 animate-spin mr-2" />}
+              {context.submitted_at ? 'Update Availability' : 'Submit Availability'}
+              {totalSelected > 0 && ` (${totalSelected} slots)`}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

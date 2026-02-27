@@ -1,10 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBulkUpdateMatchSchedule } from './useMatchScheduler';
-import { autoScheduleMatches, type AvailabilitySlot, type MatchToSchedule } from '@/lib/scheduling-algorithm';
+import { autoScheduleMatches, type MatchToSchedule } from '@/lib/scheduling-algorithm';
 import type { TournamentMatch } from '@/lib/tournament-types';
 
 // ---------- Public page hooks (token-based, no auth) ----------
+
+export interface MatchSchedulingInfo {
+  id: string;
+  round: number;
+  match_number: number;
+  group_id: string | null;
+  scheduled_time: string | null;
+  status: string;
+  opponent_name: string | null;
+  opponent_id: string | null;
+  my_slots: { date: string; time: string }[];
+  opponent_slots: { date: string; time: string }[];
+}
 
 export interface SchedulingContext {
   tournament_id: string;
@@ -12,16 +25,7 @@ export interface SchedulingContext {
   squad_id: string;
   squad_name: string;
   squad_logo: string | null;
-  existing_slots: { date: string; time: string }[];
-  matches: {
-    id: string;
-    round: number;
-    match_number: number;
-    group_id: string | null;
-    scheduled_time: string | null;
-    status: string;
-    opponent_name: string | null;
-  }[];
+  matches: MatchSchedulingInfo[];
   submitted_at: string | null;
 }
 
@@ -49,14 +53,14 @@ export function useSubmitAvailability() {
   return useMutation({
     mutationFn: async ({
       token,
-      slots,
+      matchSlots,
     }: {
       token: string;
-      slots: { date: string; time: string }[];
+      matchSlots: { match_id: string; slots: { date: string; time: string }[] }[];
     }) => {
       const { data, error } = await supabase.rpc('rpc_submit_availability', {
         p_token: token,
-        p_slots: slots as unknown as Record<string, unknown>,
+        p_match_slots: matchSlots as unknown as Record<string, unknown>,
       });
 
       if (error) throw new Error(error.message);
@@ -134,7 +138,6 @@ export function useGenerateSchedulingTokens() {
       tournamentId: string;
       squadIds: string[];
     }) => {
-      // Insert tokens for all squads (ignore conflicts from existing ones)
       // expires_at: 30 days from now
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const rows = squadIds.map((squadId) => ({
@@ -173,6 +176,7 @@ export function useSquadAvailability(tournamentId: string | undefined) {
         id: string;
         tournament_id: string;
         tournament_squad_id: string;
+        match_id: string;
         available_date: string;
         slot_time: string;
       }[];
@@ -195,19 +199,21 @@ export function useAutoScheduleMatches() {
       matches: TournamentMatch[];
       availabilityData: {
         tournament_squad_id: string;
+        match_id: string;
         available_date: string;
         slot_time: string;
       }[];
       gapMinutes: number;
     }) => {
-      // Build availability map
-      const availMap = new Map<string, AvailabilitySlot[]>();
+      // Build per-match availability: Map<matchId, Map<squadId, slots[]>>
+      const perMatchAvail = new Map<string, Map<string, { date: string; time: string }[]>>();
       for (const row of availabilityData) {
-        const squadId = row.tournament_squad_id;
-        if (!availMap.has(squadId)) availMap.set(squadId, []);
-        availMap.get(squadId)!.push({
+        if (!perMatchAvail.has(row.match_id)) perMatchAvail.set(row.match_id, new Map());
+        const matchMap = perMatchAvail.get(row.match_id)!;
+        if (!matchMap.has(row.tournament_squad_id)) matchMap.set(row.tournament_squad_id, []);
+        matchMap.get(row.tournament_squad_id)!.push({
           date: row.available_date,
-          time: row.slot_time.slice(0, 5), // "HH:MM:SS" -> "HH:MM"
+          time: row.slot_time.slice(0, 5),
         });
       }
 
@@ -221,8 +227,8 @@ export function useAutoScheduleMatches() {
         scheduled_time: m.scheduled_time,
       }));
 
-      // Run algorithm
-      const result = autoScheduleMatches(matchInputs, availMap, gapMinutes);
+      // Run algorithm with per-match availability
+      const result = autoScheduleMatches(matchInputs, perMatchAvail, gapMinutes);
 
       // Persist scheduled matches
       if (result.scheduled.length > 0) {

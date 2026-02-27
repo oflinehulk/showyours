@@ -70,6 +70,7 @@ import { cn } from '@/lib/utils';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
 import type { PrizeTier } from '@/lib/tournament-types';
 import { TournamentAuditLog } from '@/components/tournament/TournamentAuditLog';
+import { RosterChangeRequestForm } from '@/components/tournament/RosterChangeRequestForm';
 import { toast } from 'sonner';
 
 export default function TournamentDetailPage() {
@@ -807,6 +808,16 @@ export default function TournamentDetailPage() {
               registrations={registrations || []}
               isHost={isHost}
             />
+            {/* Roster change request form for squad leaders (non-hosts) */}
+            {myRegistration && tournament.status !== 'registration_open' && (
+              <div className="mt-6">
+                <RosterChangeRequestForm
+                  tournamentId={tournament.id}
+                  tournamentSquadId={myRegistration.tournament_squad_id}
+                  squadName={myRegistration.tournament_squads?.name || 'Your Squad'}
+                />
+              </div>
+            )}
           </TabsContent>
 
           {/* Bracket Tab */}

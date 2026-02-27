@@ -19,6 +19,7 @@ import {
   Zap,
   Send,
   AlertCircle,
+  Swords,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -68,82 +69,66 @@ function useLeaderInfo(existingSquadId: string | null) {
   }, [members]);
 }
 
-// Individual squad row using its own hook call
-function SquadRow({
-  reg,
+// Single team cell within a match row
+function TeamCell({
+  squadName,
+  existingSquadId,
   token,
   submission,
   tournamentName,
 }: {
-  reg: TournamentRegistration & { tournament_squads: TournamentSquad };
+  squadName: string;
+  existingSquadId: string | null;
   token: SchedulingToken | undefined;
   submission: SchedulingSubmission | undefined;
   tournamentName: string;
 }) {
-  const { ign, whatsapp } = useLeaderInfo(reg.tournament_squads.existing_squad_id);
+  const { ign, whatsapp } = useLeaderInfo(existingSquadId);
   const schedulingLink = token ? getSchedulingLink(token.token) : null;
 
   const handleCopyLink = () => {
     if (schedulingLink) {
       navigator.clipboard.writeText(schedulingLink);
-      toast.success('Scheduling link copied!');
+      toast.success(`Link copied for ${squadName}`);
     }
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-border">
-      {/* Squad info */}
+    <div className="flex items-center gap-2 min-w-0">
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground text-sm truncate">
-          {reg.tournament_squads.name}
-        </p>
-        {ign && (
-          <p className="text-xs text-muted-foreground truncate">
-            Leader: {ign}
-          </p>
-        )}
+        <p className="font-medium text-foreground text-sm truncate">{squadName}</p>
+        {ign && <p className="text-xs text-muted-foreground truncate">{ign}</p>}
       </div>
 
-      {/* Status */}
+      {/* Status badge */}
       <div className="shrink-0">
         {submission ? (
-          <Badge variant="outline" className="border-green-500/40 text-green-500 text-xs gap-1">
+          <Badge variant="outline" className="border-green-500/40 text-green-500 text-xs gap-1 px-1.5">
             <CheckCircle2 className="w-3 h-3" />
-            Submitted
           </Badge>
         ) : token ? (
-          <Badge variant="outline" className="border-yellow-500/40 text-yellow-500 text-xs gap-1">
+          <Badge variant="outline" className="border-yellow-500/40 text-yellow-500 text-xs gap-1 px-1.5">
             <Clock className="w-3 h-3" />
-            Pending
           </Badge>
-        ) : (
-          <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground text-xs">
-            No link
-          </Badge>
-        )}
+        ) : null}
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center shrink-0">
         {schedulingLink && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copy scheduling link">
-            <Copy className="w-4 h-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyLink} title="Copy link">
+            <Copy className="w-3.5 h-3.5" />
           </Button>
         )}
         {whatsapp && schedulingLink && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
             <a
-              href={buildSchedulingWhatsAppUrl(
-                whatsapp,
-                reg.tournament_squads.name,
-                tournamentName,
-                schedulingLink
-              )}
+              href={buildSchedulingWhatsAppUrl(whatsapp, squadName, tournamentName, schedulingLink)}
               target="_blank"
               rel="noopener noreferrer"
               title={`Message ${ign} on WhatsApp`}
             >
-              <Phone className="w-4 h-4 text-green-500" />
+              <Phone className="w-3.5 h-3.5 text-green-500" />
             </a>
           </Button>
         )}
@@ -152,84 +137,106 @@ function SquadRow({
   );
 }
 
-// Notification row for a scheduled match
-function MatchNotifyRow({
+// Match row combining both teams + match info
+function MatchRow({
   match,
   registrations,
+  tokenMap,
+  submissionMap,
   tournamentName,
 }: {
   match: TournamentMatch;
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  tokenMap: Map<string, SchedulingToken>;
+  submissionMap: Map<string, SchedulingSubmission>;
   tournamentName: string;
 }) {
-  const regA = registrations.find(
-    (r) => r.tournament_squad_id === match.squad_a_id
-  );
-  const regB = registrations.find(
-    (r) => r.tournament_squad_id === match.squad_b_id
-  );
+  const regA = registrations.find((r) => r.tournament_squad_id === match.squad_a_id);
+  const regB = registrations.find((r) => r.tournament_squad_id === match.squad_b_id);
+
+  const squadAName = regA?.tournament_squads.name || 'TBD';
+  const squadBName = regB?.tournament_squads.name || 'TBD';
 
   const leaderA = useLeaderInfo(regA?.tournament_squads.existing_squad_id ?? null);
   const leaderB = useLeaderInfo(regB?.tournament_squads.existing_squad_id ?? null);
 
-  const squadAName = (match as TournamentMatch & { squad_a?: TournamentSquad }).squad_a?.name
-    || regA?.tournament_squads.name || 'Team A';
-  const squadBName = (match as TournamentMatch & { squad_b?: TournamentSquad }).squad_b?.name
-    || regB?.tournament_squads.name || 'Team B';
-
-  const time = new Date(match.scheduled_time!).toLocaleString('en-IN', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const isScheduled = !!match.scheduled_time;
+  const time = isScheduled
+    ? new Date(match.scheduled_time!).toLocaleString('en-IN', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      })
+    : null;
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-border">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {squadAName} vs {squadBName}
-        </p>
-        <p className="text-xs text-muted-foreground">{time}</p>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        {leaderA.whatsapp && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <a
-              href={buildConfirmationWhatsAppUrl(
-                leaderA.whatsapp,
-                squadAName,
-                squadBName,
-                match.scheduled_time!,
-                tournamentName
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={`Notify ${squadAName} leader`}
-            >
-              <Send className="w-4 h-4 text-green-500" />
-            </a>
-          </Button>
+    <div className={`p-3 rounded-lg border ${isScheduled ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/10 border-border'}`}>
+      {/* Match header */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs text-muted-foreground font-mono">
+          R{match.round} M{match.match_number}
+        </span>
+        {isScheduled ? (
+          <Badge variant="outline" className="border-green-500/40 text-green-500 text-xs gap-1 ml-auto">
+            <CheckCircle2 className="w-3 h-3" />
+            {time}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground text-xs ml-auto">
+            Unscheduled
+          </Badge>
         )}
-        {leaderB.whatsapp && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <a
-              href={buildConfirmationWhatsAppUrl(
-                leaderB.whatsapp,
-                squadBName,
-                squadAName,
-                match.scheduled_time!,
-                tournamentName
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={`Notify ${squadBName} leader`}
-            >
-              <Send className="w-4 h-4 text-green-500" />
-            </a>
-          </Button>
+        {/* Notify buttons for scheduled matches */}
+        {isScheduled && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            {leaderA.whatsapp && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                <a
+                  href={buildConfirmationWhatsAppUrl(leaderA.whatsapp, squadAName, squadBName, match.scheduled_time!, tournamentName)}
+                  target="_blank" rel="noopener noreferrer"
+                  title={`Notify ${squadAName}`}
+                >
+                  <Send className="w-3.5 h-3.5 text-green-500" />
+                </a>
+              </Button>
+            )}
+            {leaderB.whatsapp && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                <a
+                  href={buildConfirmationWhatsAppUrl(leaderB.whatsapp, squadBName, squadAName, match.scheduled_time!, tournamentName)}
+                  target="_blank" rel="noopener noreferrer"
+                  title={`Notify ${squadBName}`}
+                >
+                  <Send className="w-3.5 h-3.5 text-green-500" />
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Two teams */}
+      <div className="space-y-1.5">
+        {regA && (
+          <TeamCell
+            squadName={squadAName}
+            existingSquadId={regA.tournament_squads.existing_squad_id}
+            token={tokenMap.get(match.squad_a_id!)}
+            submission={submissionMap.get(match.squad_a_id!)}
+            tournamentName={tournamentName}
+          />
+        )}
+        <div className="flex items-center gap-2 px-1">
+          <Swords className="w-3 h-3 text-muted-foreground" />
+          <div className="flex-1 border-t border-dashed border-border/50" />
+        </div>
+        {regB && (
+          <TeamCell
+            squadName={squadBName}
+            existingSquadId={regB.tournament_squads.existing_squad_id}
+            token={tokenMap.get(match.squad_b_id!)}
+            submission={submissionMap.get(match.squad_b_id!)}
+            tournamentName={tournamentName}
+          />
         )}
       </div>
     </div>
@@ -272,13 +279,20 @@ export default function SchedulingDashboard({
   const totalSquads = approvedRegs.length;
   const hasTokens = (tokens?.length || 0) > 0;
 
-  const pendingMatches = useMemo(
-    () => matches.filter((m) => m.status === 'pending' && m.squad_a_id && m.squad_b_id),
+  const activeMatches = useMemo(
+    () => matches
+      .filter((m) => m.squad_a_id && m.squad_b_id && m.status !== 'completed')
+      .sort((a, b) => {
+        // Unscheduled first, then by round/match_number
+        if (a.scheduled_time && !b.scheduled_time) return 1;
+        if (!a.scheduled_time && b.scheduled_time) return -1;
+        return a.round - b.round || a.match_number - b.match_number;
+      }),
     [matches]
   );
 
-  const scheduledMatches = useMemo(
-    () => matches.filter((m) => m.scheduled_time && m.status !== 'completed'),
+  const pendingMatches = useMemo(
+    () => matches.filter((m) => m.status === 'pending' && m.squad_a_id && m.squad_b_id),
     [matches]
   );
 
@@ -326,20 +340,16 @@ export default function SchedulingDashboard({
         </p>
       </div>
 
-      {/* Section A: Generate Links */}
-      <GlowCard className="p-4">
+      {/* Generate Links + Auto-Schedule controls */}
+      <GlowCard className="p-4 space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-sm">Scheduling Links</h3>
-            {hasTokens ? (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Links generated for {tokens?.length} squads
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Generate unique links for each squad leader
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {hasTokens
+                ? `${submittedCount} of ${totalSquads} squads submitted availability`
+                : 'Generate unique links for each squad leader'}
+            </p>
           </div>
           <Button
             size="sm"
@@ -351,104 +361,76 @@ export default function SchedulingDashboard({
             {hasTokens ? 'Regenerate' : 'Generate Links'}
           </Button>
         </div>
+
+        {/* Auto-Schedule controls (show when links exist and some teams submitted) */}
+        {hasTokens && submittedCount > 0 && (
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center gap-3 mb-3">
+              <label className="text-xs text-muted-foreground shrink-0">Gap between matches:</label>
+              <Select value={gapMinutes} onValueChange={setGapMinutes}>
+                <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 min</SelectItem>
+                  <SelectItem value="60">60 min</SelectItem>
+                  <SelectItem value="90">90 min</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                onClick={handleAutoSchedule}
+                disabled={autoSchedule.isPending || pendingMatches.length === 0}
+                className="ml-auto"
+              >
+                {autoSchedule.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Auto-Schedule
+              </Button>
+            </div>
+
+            {scheduleResult && (
+              <div className="space-y-1">
+                {scheduleResult.scheduled.length > 0 && (
+                  <p className="flex items-center gap-2 text-xs text-green-500">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {scheduleResult.scheduled.length} match(es) scheduled
+                  </p>
+                )}
+                {scheduleResult.unschedulable.length > 0 && (
+                  <p className="flex items-center gap-2 text-xs text-yellow-500">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {scheduleResult.unschedulable.length} could not be auto-scheduled
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </GlowCard>
 
-      {/* Section B: Squad List */}
-      {hasTokens && (
+      {/* Match list -- the main section */}
+      {hasTokens && activeMatches.length > 0 && (
         <GlowCard className="p-4">
-          <h3 className="font-semibold text-sm mb-1">Squad Leaders</h3>
+          <h3 className="font-semibold text-sm mb-1">Matches</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            {submittedCount} of {totalSquads} submitted &mdash; click the green phone icon to message on WhatsApp
+            <CheckCircle2 className="w-3 h-3 inline text-green-500" /> = availability submitted
+            &nbsp;&middot;&nbsp;
+            <Clock className="w-3 h-3 inline text-yellow-500" /> = link sent, waiting
+            &nbsp;&middot;&nbsp;
+            <Send className="w-3 h-3 inline text-green-500" /> = notify confirmed time
           </p>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {approvedRegs.map((reg) => (
-              <SquadRow
-                key={reg.id}
-                reg={reg}
-                token={tokenMap.get(reg.tournament_squad_id)}
-                submission={submissionMap.get(reg.tournament_squad_id)}
-                tournamentName={tournamentName}
-              />
-            ))}
-          </div>
-        </GlowCard>
-      )}
-
-      {/* Section C: Auto-Schedule */}
-      {hasTokens && submittedCount > 0 && (
-        <GlowCard className="p-4">
-          <h3 className="font-semibold text-sm mb-1">Auto-Schedule Matches</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            {pendingMatches.length} unscheduled match(es) &mdash; finds overlapping availability and assigns slots
-          </p>
-
-          <div className="flex items-center gap-3 mb-4">
-            <label className="text-xs text-muted-foreground shrink-0">Gap between matches:</label>
-            <Select value={gapMinutes} onValueChange={setGapMinutes}>
-              <SelectTrigger className="w-32 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 min</SelectItem>
-                <SelectItem value="60">60 min</SelectItem>
-                <SelectItem value="90">90 min</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            onClick={handleAutoSchedule}
-            disabled={autoSchedule.isPending || pendingMatches.length === 0}
-            className="w-full"
-          >
-            {autoSchedule.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Zap className="w-4 h-4 mr-2" />
-            )}
-            Auto-Schedule Matches
-          </Button>
-
-          {/* Result summary */}
-          {scheduleResult && (
-            <div className="mt-3 space-y-2">
-              {scheduleResult.scheduled.length > 0 && (
-                <div className="flex items-center gap-2 text-sm text-green-500">
-                  <CheckCircle2 className="w-4 h-4" />
-                  {scheduleResult.scheduled.length} match(es) scheduled
-                </div>
-              )}
-              {scheduleResult.unschedulable.length > 0 && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-yellow-500">
-                    <AlertCircle className="w-4 h-4" />
-                    {scheduleResult.unschedulable.length} match(es) could not be auto-scheduled:
-                  </div>
-                  {scheduleResult.unschedulable.map((u) => (
-                    <p key={u.matchId} className="text-xs text-muted-foreground ml-6">
-                      &bull; {u.reason}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </GlowCard>
-      )}
-
-      {/* Section D: Notify teams of scheduled matches */}
-      {scheduledMatches.length > 0 && (
-        <GlowCard className="p-4">
-          <h3 className="font-semibold text-sm mb-1">Notify Teams</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Send confirmed match times to team leaders via WhatsApp
-          </p>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {scheduledMatches.map((match) => (
-              <MatchNotifyRow
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {activeMatches.map((match) => (
+              <MatchRow
                 key={match.id}
                 match={match}
                 registrations={approvedRegs}
+                tokenMap={tokenMap}
+                submissionMap={submissionMap}
                 tournamentName={tournamentName}
               />
             ))}

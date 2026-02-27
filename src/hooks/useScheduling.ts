@@ -138,6 +138,7 @@ export function useGenerateSchedulingTokens() {
       const rows = squadIds.map((squadId) => ({
         tournament_id: tournamentId,
         tournament_squad_id: squadId,
+        token: crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 16),
       }));
 
       const { error } = await supabase

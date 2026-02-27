@@ -1135,7 +1135,7 @@ export function useGenerateBracket() {
       } else if (format === 'double_elimination') {
         matches = generateDoubleEliminationBracket(tournamentId, orderedSquadIds);
       } else {
-        matches = generateRoundRobinBracket(tournamentId, orderedSquadIds);
+        matches = generateRoundRobinBracket(tournamentId, orderedSquadIds.filter((id): id is string => id !== null));
       }
 
       // Insert matches (delete any existing first as a safety net)

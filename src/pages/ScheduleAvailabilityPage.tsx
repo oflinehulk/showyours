@@ -157,6 +157,95 @@ function MatchSlotPicker({
   );
 }
 
+const LANGS = ['EN', 'TA', 'HI', 'TE'] as const;
+type Lang = (typeof LANGS)[number];
+
+const NOTICE_CONTENT: Record<Lang, { title: string; items: string[]; expiry: string }> = {
+  EN: {
+    title: 'How this works',
+    items: [
+      'Select multiple times and dates for each match \u2014 the more you pick, the easier it is to find a slot that works for both teams.',
+      'If your opponent has already picked their times, their slots show in blue. Picking overlapping slots (green) speeds up scheduling.',
+      'You can come back and update your availability anytime using this same link.',
+      'Check back regularly to see if your opponent has updated their slots \u2014 refresh this page to see the latest.',
+      'Once both teams have overlapping slots, the host will confirm the match time and notify you.',
+    ],
+    expiry: 'This link expires in 30 days. Contact your tournament host if you need a new one.',
+  },
+  TA: {
+    title: '\u0b87\u0ba4\u0bc1 \u0b8e\u0baa\u0bcd\u0baa\u0b9f\u0bbf \u0b9a\u0bc6\u0baf\u0bb2\u0bcd\u0baa\u0b9f\u0bc1\u0b95\u0bbf\u0bb1\u0ba4\u0bc1',
+    items: [
+      '\u0b92\u0bb5\u0bcd\u0bb5\u0bca\u0bb0\u0bc1 \u0baa\u0bcb\u0b9f\u0bcd\u0b9f\u0bbf\u0b95\u0bcd\u0b95\u0bc1\u0bae\u0bcd \u0baa\u0bb2 \u0ba8\u0bc7\u0bb0\u0b99\u0bcd\u0b95\u0bb3\u0bc8\u0baf\u0bc1\u0bae\u0bcd \u0ba4\u0bc7\u0ba4\u0bbf\u0b95\u0bb3\u0bc8\u0baf\u0bc1\u0bae\u0bcd \u0ba4\u0bc7\u0bb0\u0bcd\u0ba8\u0bcd\u0ba4\u0bc6\u0b9f\u0bc1\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u2014 \u0ba8\u0bc0\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u0b85\u0ba4\u0bbf\u0b95\u0bae\u0bbe\u0b95 \u0ba4\u0bc7\u0bb0\u0bcd\u0ba8\u0bcd\u0ba4\u0bc6\u0b9f\u0bc1\u0b95\u0bcd\u0b95\u0bc1\u0bae\u0bcd\u0baa\u0bcb\u0ba4\u0bc1, \u0b87\u0bb0\u0bc1 \u0b85\u0ba3\u0bbf\u0b95\u0bb3\u0bc1\u0b95\u0bcd\u0b95\u0bc1\u0bae\u0bcd \u0baa\u0bca\u0bb0\u0bc1\u0ba4\u0bcd\u0ba4\u0bae\u0bbe\u0ba9 \u0ba8\u0bc7\u0bb0\u0ba4\u0bcd\u0ba4\u0bc8 \u0b95\u0ba3\u0bcd\u0b9f\u0bc1\u0baa\u0bbf\u0b9f\u0bbf\u0baa\u0bcd\u0baa\u0ba4\u0bc1 \u0b8e\u0bb3\u0bbf\u0ba4\u0bbe\u0b95\u0bc1\u0bae\u0bcd.',
+      '\u0b89\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u0b8e\u0ba4\u0bbf\u0bb0\u0ba3\u0bbf \u0b87\u0baa\u0bcd\u0baa\u0bcb\u0ba4\u0bc7 \u0ba4\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u0ba8\u0bc7\u0bb0\u0b99\u0bcd\u0b95\u0bb3\u0bc8\u0ba4\u0bcd \u0ba4\u0bc7\u0bb0\u0bcd\u0ba8\u0bcd\u0ba4\u0bc6\u0b9f\u0bc1\u0ba4\u0bcd\u0ba4\u0bbf\u0bb0\u0bc1\u0ba8\u0bcd\u0ba4\u0bbe\u0bb2\u0bcd, \u0b85\u0bb5\u0bc8 \u0ba8\u0bc0\u0bb2 \u0ba8\u0bbf\u0bb1\u0ba4\u0bcd\u0ba4\u0bbf\u0bb2\u0bcd \u0b95\u0bbe\u0b9f\u0bcd\u0b9f\u0baa\u0bcd\u0baa\u0b9f\u0bc1\u0bae\u0bcd. \u0b92\u0bb0\u0bc7 \u0ba8\u0bc7\u0bb0\u0ba4\u0bcd\u0ba4\u0bc8 (\u0baa\u0b9a\u0bcd\u0b9a\u0bc8) \u0ba4\u0bc7\u0bb0\u0bcd\u0ba8\u0bcd\u0ba4\u0bc6\u0b9f\u0bc1\u0baa\u0bcd\u0baa\u0ba4\u0bc1 schedule-\u0b90 \u0bb5\u0bbf\u0bb0\u0bc8\u0bb5\u0bc1\u0baa\u0b9f\u0bc1\u0ba4\u0bcd\u0ba4\u0bc1\u0bae\u0bcd.',
+      '\u0b87\u0ba4\u0bc7 link-\u0b90 \u0baa\u0baf\u0ba9\u0bcd\u0baa\u0b9f\u0bc1\u0ba4\u0bcd\u0ba4\u0bbf \u0b8e\u0baa\u0bcd\u0baa\u0bcb\u0ba4\u0bc1 \u0bb5\u0bc7\u0ba3\u0bcd\u0b9f\u0bc1\u0bae\u0bbe\u0ba9\u0bbe\u0bb2\u0bc1\u0bae\u0bcd \u0ba4\u0bbf\u0bb0\u0bc1\u0bae\u0bcd\u0baa \u0bb5\u0ba8\u0bcd\u0ba4\u0bc1 \u0b89\u0b99\u0bcd\u0b95\u0bb3\u0bcd availability-\u0b90 \u0bae\u0bbe\u0bb1\u0bcd\u0bb1\u0bb2\u0bbe\u0bae\u0bcd.',
+      '\u0b89\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u0b8e\u0ba4\u0bbf\u0bb0\u0ba3\u0bbf \u0ba4\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u0ba8\u0bc7\u0bb0\u0b99\u0bcd\u0b95\u0bb3\u0bc8 \u0bae\u0bbe\u0bb1\u0bcd\u0bb1\u0bbf\u0baf\u0bbf\u0bb0\u0bc1\u0b95\u0bcd\u0b95\u0bbf\u0bb1\u0bbe\u0bb0\u0bcd\u0b95\u0bb3\u0bbe \u0b8e\u0ba9\u0bcd\u0bb1\u0bc1 \u0b85\u0b9f\u0bbf\u0b95\u0bcd\u0b95\u0b9f\u0bbf \u0b9a\u0bb0\u0bbf\u0baa\u0bbe\u0bb0\u0bc1\u0b99\u0bcd\u0b95\u0bb3\u0bcd \u2014 \u0baa\u0bc1\u0ba4\u0bbf\u0baf \u0ba4\u0b95\u0bb5\u0bb2\u0bc1\u0b95\u0bcd\u0b95\u0bc1 page-\u0b90 refresh \u0b9a\u0bc6\u0baf\u0bcd\u0baf\u0bc1\u0b99\u0bcd\u0b95\u0bb3\u0bcd.',
+      '\u0b87\u0bb0\u0bc1 \u0b85\u0ba3\u0bbf\u0b95\u0bb3\u0bc1\u0b95\u0bcd\u0b95\u0bc1\u0bae\u0bcd \u0b92\u0bb0\u0bc7 \u0ba8\u0bc7\u0bb0\u0bae\u0bcd \u0b87\u0bb0\u0bc1\u0ba8\u0bcd\u0ba4\u0bbe\u0bb2\u0bcd, host \u0baa\u0bcb\u0b9f\u0bcd\u0b9f\u0bbf \u0ba8\u0bc7\u0bb0\u0ba4\u0bcd\u0ba4\u0bc8 \u0b89\u0bb1\u0bc1\u0ba4\u0bbf\u0b9a\u0bc6\u0baf\u0bcd\u0ba4\u0bc1 \u0b89\u0b99\u0bcd\u0b95\u0bb3\u0bc1\u0b95\u0bcd\u0b95\u0bc1 \u0ba4\u0bc6\u0bb0\u0bbf\u0bb5\u0bbf\u0baa\u0bcd\u0baa\u0bbe\u0bb0\u0bcd.',
+    ],
+    expiry: '\u0b87\u0ba8\u0bcd\u0ba4 link 30 \u0ba8\u0bbe\u0b9f\u0bcd\u0b95\u0bb3\u0bbf\u0bb2\u0bcd \u0b95\u0bbe\u0bb2\u0bbe\u0bb5\u0ba4\u0bbf\u0baf\u0bbe\u0b95\u0bc1\u0bae\u0bcd. \u0baa\u0bc1\u0ba4\u0bbf\u0baf link \u0ba4\u0bc7\u0bb5\u0bc8\u0baa\u0bcd\u0baa\u0b9f\u0bcd\u0b9f\u0bbe\u0bb2\u0bcd tournament host-\u0b90 \u0ba4\u0bca\u0b9f\u0bb0\u0bcd\u0baa\u0bc1 \u0b95\u0bca\u0bb3\u0bcd\u0bb3\u0bc1\u0b99\u0bcd\u0b95\u0bb3\u0bcd.',
+  },
+  HI: {
+    title: '\u092f\u0939 \u0915\u0948\u0938\u0947 \u0915\u093e\u092e \u0915\u0930\u0924\u093e \u0939\u0948',
+    items: [
+      '\u0939\u0930 \u092e\u0948\u091a \u0915\u0947 \u0932\u093f\u090f \u0915\u0908 \u0938\u092e\u092f \u0914\u0930 \u0924\u093e\u0930\u0940\u0916\u0947\u0902 \u091a\u0941\u0928\u0947\u0902 \u2014 \u091c\u093f\u0924\u0928\u093e \u091c\u093c\u094d\u092f\u093e\u0926\u093e \u091a\u0941\u0928\u0947\u0902\u0917\u0947, \u0926\u094b\u0928\u094b\u0902 \u091f\u0940\u092e\u094b\u0902 \u0915\u0947 \u0932\u093f\u090f \u0938\u0939\u0940 \u0938\u092e\u092f \u092e\u093f\u0932\u0928\u093e \u0909\u0924\u0928\u093e \u0906\u0938\u093e\u0928 \u0939\u094b\u0917\u093e\u0964',
+      '\u0905\u0917\u0930 \u0906\u092a\u0915\u0947 opponent \u0928\u0947 \u092a\u0939\u0932\u0947 \u0938\u0947 \u0905\u092a\u0928\u093e \u0938\u092e\u092f \u091a\u0941\u0928\u093e \u0939\u0948, \u0924\u094b \u0909\u0928\u0915\u0947 slots \u0928\u0940\u0932\u0947 \u0930\u0902\u0917 \u092e\u0947\u0902 \u0926\u093f\u0916\u0947\u0902\u0917\u0947\u0964 \u090f\u0915 \u091c\u0948\u0938\u0947 slots (\u0939\u0930\u093e) \u091a\u0941\u0928\u0928\u0947 \u0938\u0947 scheduling \u0924\u0947\u091c\u093c \u0939\u094b\u0924\u0940 \u0939\u0948\u0964',
+      '\u0906\u092a \u0907\u0938\u0940 link \u0938\u0947 \u0915\u092d\u0940 \u092d\u0940 \u0935\u093e\u092a\u0938 \u0906\u0915\u0930 \u0905\u092a\u0928\u0940 availability \u092c\u0926\u0932 \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964',
+      '\u0928\u093f\u092f\u092e\u093f\u0924 \u0930\u0942\u092a \u0938\u0947 check \u0915\u0930\u0947\u0902 \u0915\u093f \u0906\u092a\u0915\u0947 opponent \u0928\u0947 \u0905\u092a\u0928\u0947 slots \u0905\u092a\u0921\u0947\u091f \u0915\u093f\u090f \u0939\u0948\u0902 \u092f\u093e \u0928\u0939\u0940\u0902 \u2014 latest \u0926\u0947\u0916\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f page refresh \u0915\u0930\u0947\u0902\u0964',
+      '\u091c\u092c \u0926\u094b\u0928\u094b\u0902 \u091f\u0940\u092e\u094b\u0902 \u0915\u0947 slots match \u0915\u0930\u0947\u0902, \u0924\u094b host \u092e\u0948\u091a \u0915\u093e \u0938\u092e\u092f confirm \u0915\u0930\u0915\u0947 \u0906\u092a\u0915\u094b \u092c\u0924\u093e\u090f\u0917\u093e\u0964',
+    ],
+    expiry: '\u092f\u0939 link 30 \u0926\u093f\u0928\u094b\u0902 \u092e\u0947\u0902 expire \u0939\u094b \u091c\u093e\u090f\u0917\u093e\u0964 \u0928\u092f\u093e link \u091a\u093e\u0939\u093f\u090f \u0924\u094b tournament host \u0938\u0947 \u0938\u0902\u092a\u0930\u094d\u0915 \u0915\u0930\u0947\u0902\u0964',
+  },
+  TE: {
+    title: '\u0c07\u0c26\u0c3f \u0c0e\u0c32\u0c3e \u0c2a\u0c28\u0c3f \u0c1a\u0c47\u0c38\u0c4d\u0c24\u0c41\u0c02\u0c26\u0c3f',
+    items: [
+      '\u0c2a\u0c4d\u0c30\u0c24\u0c3f \u0c2e\u0c4d\u0c2f\u0c3e\u0c1a\u0c4d\u200c\u0c15\u0c41 \u0c05\u0c28\u0c47\u0c15 \u0c38\u0c2e\u0c2f\u0c3e\u0c32\u0c41 \u0c2e\u0c30\u0c3f\u0c2f\u0c41 \u0c24\u0c47\u0c26\u0c40\u0c32\u0c28\u0c41 \u0c0e\u0c02\u0c1a\u0c41\u0c15\u0c4b\u0c02\u0c21\u0c3f \u2014 \u0c2e\u0c40\u0c30\u0c41 \u0c0e\u0c15\u0c4d\u0c15\u0c41\u0c35\u0c17\u0c3e \u0c0e\u0c02\u0c1a\u0c41\u0c15\u0c41\u0c02\u0c1f\u0c47, \u0c30\u0c46\u0c02\u0c21\u0c41 \u0c1c\u0c1f\u0c4d\u0c32\u0c15\u0c41 \u0c38\u0c30\u0c3f\u0c2a\u0c21\u0c47 \u0c38\u0c2e\u0c2f\u0c3e\u0c28\u0c4d\u0c28\u0c3f \u0c15\u0c28\u0c41\u0c17\u0c4a\u0c28\u0c21\u0c02 \u0c24\u0c47\u0c32\u0c3f\u0c15\u0c35\u0c41\u0c24\u0c41\u0c02\u0c26\u0c3f.',
+      '\u0c2e\u0c40 \u0c2a\u0c4d\u0c30\u0c24\u0c4d\u0c2f\u0c30\u0c4d\u0c25\u0c3f \u0c07\u0c2a\u0c4d\u0c2a\u0c1f\u0c3f\u0c15\u0c47 \u0c24\u0c2e \u0c38\u0c2e\u0c2f\u0c3e\u0c32\u0c28\u0c41 \u0c0e\u0c02\u0c1a\u0c41\u0c15\u0c41\u0c02\u0c1f\u0c47, \u0c35\u0c3e\u0c30\u0c3f slots \u0c28\u0c40\u0c32\u0c02 \u0c30\u0c02\u0c17\u0c41\u0c32\u0c4b \u0c1a\u0c42\u0c2a\u0c2c\u0c21\u0c24\u0c3e\u0c2f\u0c3f. \u0c12\u0c15\u0c47 slots (\u0c06\u0c15\u0c41\u0c2a\u0c1a\u0c4d\u0c1a) \u0c0e\u0c02\u0c1a\u0c41\u0c15\u0c4b\u0c35\u0c21\u0c02 scheduling \u0c35\u0c47\u0c17\u0c35\u0c02\u0c24\u0c02 \u0c1a\u0c47\u0c38\u0c4d\u0c24\u0c41\u0c02\u0c26\u0c3f.',
+      '\u0c07\u0c26\u0c47 link \u0c09\u0c2a\u0c2f\u0c4b\u0c17\u0c3f\u0c02\u0c1a\u0c3f \u0c2e\u0c40\u0c30\u0c41 \u0c0e\u0c2a\u0c4d\u0c2a\u0c41\u0c21\u0c48\u0c28\u0c3e \u0c24\u0c3f\u0c30\u0c3f\u0c17\u0c3f \u0c35\u0c1a\u0c4d\u0c1a\u0c3f \u0c2e\u0c40 availability \u0c2e\u0c3e\u0c30\u0c4d\u0c1a\u0c41\u0c15\u0c4b\u0c35\u0c1a\u0c4d\u0c1a\u0c41.',
+      '\u0c2e\u0c40 \u0c2a\u0c4d\u0c30\u0c24\u0c4d\u0c2f\u0c30\u0c4d\u0c25\u0c3f \u0c24\u0c2e slots update \u0c1a\u0c47\u0c36\u0c3e\u0c30\u0c3e \u0c05\u0c28\u0c3f \u0c15\u0c4d\u0c30\u0c2e\u0c02 \u0c24\u0c2a\u0c4d\u0c2a\u0c15\u0c41\u0c02\u0c21\u0c3e \u0c1a\u0c46\u0c15\u0c4d \u0c1a\u0c47\u0c2f\u0c02\u0c21\u0c3f \u2014 \u0c24\u0c3e\u0c1c\u0c3e \u0c38\u0c2e\u0c3e\u0c1a\u0c3e\u0c30\u0c02 \u0c15\u0c4b\u0c38\u0c02 page refresh \u0c1a\u0c47\u0c2f\u0c02\u0c21\u0c3f.',
+      '\u0c30\u0c46\u0c02\u0c21\u0c41 \u0c1c\u0c1f\u0c4d\u0c32 slots match \u0c05\u0c2f\u0c3f\u0c28\u0c2a\u0c4d\u0c2a\u0c41\u0c21\u0c41, host \u0c2e\u0c4d\u0c2f\u0c3e\u0c1a\u0c4d \u0c38\u0c2e\u0c2f\u0c3e\u0c28\u0c4d\u0c28\u0c3f confirm \u0c1a\u0c47\u0c38\u0c3f \u0c2e\u0c40\u0c15\u0c41 \u0c24\u0c46\u0c32\u0c3f\u0c2f\u0c1c\u0c47\u0c38\u0c4d\u0c24\u0c3e\u0c30\u0c41.',
+    ],
+    expiry: '\u0c08 link 30 \u0c30\u0c4b\u0c1c\u0c41\u0c32\u0c4d\u0c32\u0c4b expire \u0c05\u0c35\u0c41\u0c24\u0c41\u0c02\u0c26\u0c3f. \u0c15\u0c4a\u0c24\u0c4d\u0c24 link \u0c15\u0c3e\u0c35\u0c3e\u0c32\u0c02\u0c1f\u0c47 tournament host \u0c28\u0c41 \u0c38\u0c02\u0c2a\u0c4d\u0c30\u0c26\u0c3f\u0c02\u0c1a\u0c02\u0c21\u0c3f.',
+  },
+};
+
+function HowItWorksNotice() {
+  const [lang, setLang] = useState<Lang>('EN');
+  const t = NOTICE_CONTENT[lang];
+
+  return (
+    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3.5 mb-6">
+      <div className="flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+        <div className="space-y-2 text-xs text-muted-foreground flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-medium text-blue-400 text-sm">{t.title}</p>
+            <div className="flex gap-1 shrink-0">
+              {LANGS.map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                    lang === l
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                      : 'text-muted-foreground hover:text-foreground border border-transparent'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ul className="space-y-1 list-disc list-inside marker:text-blue-500/40">
+            {t.items.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+            <li className="text-muted-foreground/60">{t.expiry}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ScheduleAvailabilityPage() {
   const { token } = useParams<{ token: string }>();
   const { data: context, isLoading, error } = useSchedulingContext(token);
@@ -310,39 +399,7 @@ export default function ScheduleAvailabilityPage() {
         </div>
 
         {/* How it works notice */}
-        <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3.5 mb-6">
-          <div className="flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            <div className="space-y-1.5 text-xs text-muted-foreground">
-              <p className="font-medium text-blue-400 text-sm">How this works</p>
-              <ul className="space-y-1 list-disc list-inside marker:text-blue-500/40">
-                <li>
-                  Select <span className="text-foreground font-medium">multiple times and dates</span> for
-                  each match &mdash; the more you pick, the easier it is to find a slot that works for both teams.
-                </li>
-                <li>
-                  If your opponent has already picked their times, their slots show in{' '}
-                  <span className="text-blue-400 font-medium">blue</span>. Picking overlapping slots
-                  (<span className="text-green-500 font-medium">green</span>) speeds up scheduling.
-                </li>
-                <li>
-                  You can <span className="text-foreground font-medium">come back and update</span> your
-                  availability anytime using this same link.
-                </li>
-                <li>
-                  Check back regularly to see if your opponent has updated their slots &mdash; refresh this page
-                  to see the latest.
-                </li>
-                <li>
-                  Once both teams have overlapping slots, the host will confirm the match time and notify you.
-                </li>
-                <li className="text-muted-foreground/60">
-                  This link expires in 30 days. Contact your tournament host if you need a new one.
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <HowItWorksNotice />
 
         {/* Scheduled matches */}
         {scheduledMatches.length > 0 && (

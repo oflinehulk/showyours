@@ -58,9 +58,9 @@ export function useSubmitAvailability() {
       token: string;
       matchSlots: { match_id: string; slots: { date: string; time: string }[] }[];
     }) => {
-      const { data, error } = await (supabase.rpc as any)('rpc_submit_availability', {
+      const { data, error } = await supabase.rpc('rpc_submit_availability', {
         p_token: token,
-        p_match_slots: matchSlots,
+        p_match_slots: matchSlots as unknown as Record<string, unknown>,
       });
 
       if (error) throw new Error(error.message);

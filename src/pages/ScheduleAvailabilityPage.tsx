@@ -69,11 +69,11 @@ function MatchSlotPicker({
       {/* Day navigation */}
       <div className="flex items-center gap-1 mb-3">
         <Button
-          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+          variant="ghost" size="icon" className="h-9 w-9 shrink-0 touch-manipulation"
           disabled={visibleStart === 0}
           onClick={() => setVisibleStart((v) => Math.max(0, v - 3))}
         >
-          <ChevronLeft className="w-3.5 h-3.5" />
+          <ChevronLeft className="w-4 h-4" />
         </Button>
 
         <div className="flex gap-1.5 flex-1 overflow-hidden">
@@ -90,11 +90,11 @@ function MatchSlotPicker({
         </div>
 
         <Button
-          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+          variant="ghost" size="icon" className="h-9 w-9 shrink-0 touch-manipulation"
           disabled={visibleStart + 5 >= days.length}
           onClick={() => setVisibleStart((v) => Math.min(days.length - 5, v + 3))}
         >
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
 
@@ -143,7 +143,7 @@ function MatchSlotPicker({
                   <button
                     key={key}
                     onClick={() => onToggleSlot(match.id, day, time)}
-                    className={`flex-1 h-9 rounded transition-all border text-xs font-medium ${cellClass}`}
+                    className={`flex-1 h-11 rounded transition-all border text-xs font-medium touch-manipulation ${cellClass}`}
                   >
                     {isMine ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
                   </button>
@@ -223,7 +223,7 @@ function HowItWorksNotice() {
                 <button
                   key={l}
                   onClick={() => setLang(l)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors touch-manipulation ${
                     lang === l
                       ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
                       : 'text-muted-foreground hover:text-foreground border border-transparent'
@@ -435,22 +435,24 @@ export default function ScheduleAvailabilityPage() {
               return (
                 <GlowCard key={match.id} className="p-4">
                   {/* Match header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <Swords className="w-4 h-4 text-primary shrink-0" />
-                    <span className="text-sm font-medium flex-1">
+                  <div className="flex items-start gap-2 mb-3 flex-wrap">
+                    <Swords className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium flex-1 min-w-0 truncate">
                       vs {match.opponent_name || 'TBD'}
                     </span>
-                    {opponentPicked && (
-                      <Badge variant="outline" className="border-blue-500/40 text-blue-500 text-xs gap-1">
-                        <Clock className="w-3 h-3" />
-                        Opponent picked
-                      </Badge>
-                    )}
-                    {myCount > 0 && (
-                      <Badge variant="outline" className="border-primary/40 text-primary text-xs">
-                        {myCount} selected
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {opponentPicked && (
+                        <Badge variant="outline" className="border-blue-500/40 text-blue-500 text-xs gap-1">
+                          <Clock className="w-3 h-3" />
+                          Opponent picked
+                        </Badge>
+                      )}
+                      {myCount > 0 && (
+                        <Badge variant="outline" className="border-primary/40 text-primary text-xs">
+                          {myCount} selected
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {opponentPicked && (

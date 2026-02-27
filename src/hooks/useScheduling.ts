@@ -135,10 +135,13 @@ export function useGenerateSchedulingTokens() {
       squadIds: string[];
     }) => {
       // Insert tokens for all squads (ignore conflicts from existing ones)
+      // expires_at: 30 days from now
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const rows = squadIds.map((squadId) => ({
         tournament_id: tournamentId,
         tournament_squad_id: squadId,
         token: crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 16),
+        expires_at: expiresAt,
       }));
 
       const { error } = await supabase

@@ -1,8 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useBulkUpdateMatchSchedule } from './useMatchScheduler';
-import { autoScheduleMatches, type MatchToSchedule } from '@/lib/scheduling-algorithm';
-import type { TournamentMatch } from '@/lib/tournament-types';
 
 // ---------- Public page hooks (token-based, no auth) ----------
 
@@ -27,6 +24,7 @@ export interface SchedulingContext {
   squad_logo: string | null;
   matches: MatchSchedulingInfo[];
   submitted_at: string | null;
+  booked_slots: { date: string; time: string }[];
 }
 
 export function useSchedulingContext(token: string | undefined) {
@@ -182,66 +180,5 @@ export function useSquadAvailability(tournamentId: string | undefined) {
       }[]);
     },
     enabled: !!tournamentId,
-  });
-}
-
-export function useAutoScheduleMatches() {
-  const bulkUpdate = useBulkUpdateMatchSchedule();
-
-  return useMutation({
-    mutationFn: async ({
-      tournamentId,
-      matches,
-      availabilityData,
-      gapMinutes,
-    }: {
-      tournamentId: string;
-      matches: TournamentMatch[];
-      availabilityData: {
-        tournament_squad_id: string;
-        match_id: string;
-        available_date: string;
-        slot_time: string;
-      }[];
-      gapMinutes: number;
-    }) => {
-      // Build per-match availability: Map<matchId, Map<squadId, slots[]>>
-      const perMatchAvail = new Map<string, Map<string, { date: string; time: string }[]>>();
-      for (const row of availabilityData) {
-        if (!perMatchAvail.has(row.match_id)) perMatchAvail.set(row.match_id, new Map());
-        const matchMap = perMatchAvail.get(row.match_id)!;
-        if (!matchMap.has(row.tournament_squad_id)) matchMap.set(row.tournament_squad_id, []);
-        matchMap.get(row.tournament_squad_id)!.push({
-          date: row.available_date,
-          time: row.slot_time.slice(0, 5),
-        });
-      }
-
-      // Convert matches to algorithm format
-      const matchInputs: MatchToSchedule[] = matches.map((m) => ({
-        id: m.id,
-        round: m.round,
-        match_number: m.match_number,
-        squad_a_id: m.squad_a_id,
-        squad_b_id: m.squad_b_id,
-        scheduled_time: m.scheduled_time,
-      }));
-
-      // Run algorithm with per-match availability
-      const result = autoScheduleMatches(matchInputs, perMatchAvail, gapMinutes);
-
-      // Persist scheduled matches
-      if (result.scheduled.length > 0) {
-        await bulkUpdate.mutateAsync({
-          updates: result.scheduled.map((s) => ({
-            matchId: s.matchId,
-            scheduledTime: s.scheduledTime,
-          })),
-          tournamentId,
-        });
-      }
-
-      return result;
-    },
   });
 }

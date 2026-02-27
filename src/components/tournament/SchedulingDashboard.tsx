@@ -1,14 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Loader2,
   Link as LinkIcon,
@@ -16,10 +9,10 @@ import {
   Copy,
   CheckCircle2,
   Clock,
-  Zap,
   Send,
-  AlertCircle,
   Swords,
+  CalendarCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -27,10 +20,10 @@ import {
   useSchedulingSubmissions,
   useGenerateSchedulingTokens,
   useSquadAvailability,
-  useAutoScheduleMatches,
   type SchedulingToken,
   type SchedulingSubmission,
 } from '@/hooks/useScheduling';
+import { useUpdateMatchSchedule } from '@/hooks/useMatchScheduler';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { getContactValue } from '@/lib/contacts';
 import {
@@ -43,13 +36,24 @@ import type {
   TournamentSquad,
   TournamentMatch,
 } from '@/lib/tournament-types';
-import type { ScheduleResult } from '@/lib/scheduling-algorithm';
 
 interface SchedulingDashboardProps {
   tournamentId: string;
   tournamentName: string;
   matches: TournamentMatch[];
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+}
+
+// Convert ISO scheduled_time to "YYYY-MM-DD|HH:MM" in IST
+function isoToSlotKey(isoTime: string): string {
+  const d = new Date(isoTime);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}|${get('hour')}:${get('minute')}`;
 }
 
 function useLeaderInfo(existingSquadId: string | null) {
@@ -137,53 +141,78 @@ function TeamCell({
   );
 }
 
-interface MatchAvailStats {
-  teamASlots: number;
-  teamBSlots: number;
-  overlapSlots: number;
+interface OverlapSlot {
+  key: string; // "YYYY-MM-DD|HH:MM"
+  date: string;
+  time: string;
+  label: string; // formatted for display
+  isBooked: boolean;
 }
 
-function computeMatchAvailStats(
+function computeOverlapSlots(
   matchId: string,
   squadAId: string | null,
   squadBId: string | null,
   availabilityData: { tournament_squad_id: string; match_id: string; available_date: string; slot_time: string }[],
-): MatchAvailStats {
-  if (!squadAId || !squadBId) return { teamASlots: 0, teamBSlots: 0, overlapSlots: 0 };
+  bookedSlotSet: Set<string>,
+): { teamACount: number; teamBCount: number; overlaps: OverlapSlot[] } {
+  if (!squadAId || !squadBId) return { teamACount: 0, teamBCount: 0, overlaps: [] };
 
   const teamAKeys = new Set<string>();
   const teamBKeys = new Set<string>();
 
   for (const row of availabilityData) {
     if (row.match_id !== matchId) continue;
-    const key = `${row.available_date}|${row.slot_time}`;
+    const key = `${row.available_date}|${row.slot_time.slice(0, 5)}`;
     if (row.tournament_squad_id === squadAId) teamAKeys.add(key);
     if (row.tournament_squad_id === squadBId) teamBKeys.add(key);
   }
 
-  let overlap = 0;
+  const overlaps: OverlapSlot[] = [];
   for (const k of teamAKeys) {
-    if (teamBKeys.has(k)) overlap++;
+    if (!teamBKeys.has(k)) continue;
+    const [date, time] = k.split('|');
+    const d = new Date(date + 'T00:00:00');
+    const [h, m] = time.split(':').map(Number);
+    const hour12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const timeLabel = m === 0 ? `${hour12} ${ampm}` : `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    overlaps.push({
+      key: k,
+      date,
+      time,
+      label: `${dayLabel} ${timeLabel}`,
+      isBooked: bookedSlotSet.has(k),
+    });
   }
 
-  return { teamASlots: teamAKeys.size, teamBSlots: teamBKeys.size, overlapSlots: overlap };
+  // Sort by date then time
+  overlaps.sort((a, b) => a.key.localeCompare(b.key));
+
+  return { teamACount: teamAKeys.size, teamBCount: teamBKeys.size, overlaps };
 }
 
-// Match row combining both teams + match info
+// Match row combining both teams + match info + approve controls
 function MatchRow({
   match,
   registrations,
   tokenMap,
   submissionMap,
   tournamentName,
+  tournamentId,
   availabilityData,
+  bookedSlotSet,
 }: {
   match: TournamentMatch;
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
   tokenMap: Map<string, SchedulingToken>;
   submissionMap: Map<string, SchedulingSubmission>;
   tournamentName: string;
+  tournamentId: string;
   availabilityData: { tournament_squad_id: string; match_id: string; available_date: string; slot_time: string }[];
+  bookedSlotSet: Set<string>;
 }) {
   const regA = registrations.find((r) => r.tournament_squad_id === match.squad_a_id);
   const regB = registrations.find((r) => r.tournament_squad_id === match.squad_b_id);
@@ -194,9 +223,11 @@ function MatchRow({
   const leaderA = useLeaderInfo(regA?.tournament_squads.existing_squad_id ?? null);
   const leaderB = useLeaderInfo(regB?.tournament_squads.existing_squad_id ?? null);
 
-  const stats = useMemo(
-    () => computeMatchAvailStats(match.id, match.squad_a_id, match.squad_b_id, availabilityData),
-    [match.id, match.squad_a_id, match.squad_b_id, availabilityData]
+  const updateSchedule = useUpdateMatchSchedule();
+
+  const { teamACount, teamBCount, overlaps } = useMemo(
+    () => computeOverlapSlots(match.id, match.squad_a_id, match.squad_b_id, availabilityData, bookedSlotSet),
+    [match.id, match.squad_a_id, match.squad_b_id, availabilityData, bookedSlotSet]
   );
 
   const isScheduled = !!match.scheduled_time;
@@ -208,6 +239,18 @@ function MatchRow({
     : null;
 
   const bothSubmitted = submissionMap.has(match.squad_a_id!) && submissionMap.has(match.squad_b_id!);
+  const availableOverlaps = overlaps.filter((s) => !s.isBooked);
+
+  const handleConfirmSlot = async (slot: OverlapSlot) => {
+    // Convert date + time to ISO with IST offset
+    const isoTime = `${slot.date}T${slot.time}:00+05:30`;
+    try {
+      await updateSchedule.mutateAsync({ matchId: match.id, scheduledTime: isoTime, tournamentId });
+      toast.success(`${squadAName} vs ${squadBName} confirmed for ${slot.label}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to confirm match');
+    }
+  };
 
   return (
     <div className={`p-3 rounded-lg border ${isScheduled ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/10 border-border'}`}>
@@ -221,9 +264,19 @@ function MatchRow({
             <CheckCircle2 className="w-3 h-3" />
             {time}
           </Badge>
+        ) : bothSubmitted && availableOverlaps.length > 0 ? (
+          <Badge variant="outline" className="border-primary/40 text-primary text-xs gap-1 ml-auto">
+            <CalendarCheck className="w-3 h-3" />
+            {availableOverlaps.length} slot{availableOverlaps.length !== 1 ? 's' : ''} available
+          </Badge>
+        ) : bothSubmitted ? (
+          <Badge variant="outline" className="border-yellow-500/40 text-yellow-500 text-xs gap-1 ml-auto">
+            <AlertTriangle className="w-3 h-3" />
+            No overlap
+          </Badge>
         ) : (
           <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground text-xs ml-auto">
-            Unscheduled
+            Waiting
           </Badge>
         )}
         {/* Notify buttons for scheduled matches */}
@@ -256,15 +309,10 @@ function MatchRow({
       </div>
 
       {/* Availability stats (for unscheduled matches) */}
-      {!isScheduled && (stats.teamASlots > 0 || stats.teamBSlots > 0) && (
+      {!isScheduled && (teamACount > 0 || teamBCount > 0) && (
         <div className="flex items-center gap-2 mb-2 text-[10px]">
-          <span className="text-muted-foreground">{squadAName}: <span className="text-foreground font-medium">{stats.teamASlots}</span></span>
-          <span className="text-muted-foreground">{squadBName}: <span className="text-foreground font-medium">{stats.teamBSlots}</span></span>
-          {bothSubmitted && (
-            <span className={stats.overlapSlots > 0 ? 'text-green-500 font-medium' : 'text-yellow-500'}>
-              {stats.overlapSlots > 0 ? `${stats.overlapSlots} overlap` : 'No overlap'}
-            </span>
-          )}
+          <span className="text-muted-foreground">{squadAName}: <span className="text-foreground font-medium">{teamACount}</span></span>
+          <span className="text-muted-foreground">{squadBName}: <span className="text-foreground font-medium">{teamBCount}</span></span>
         </div>
       )}
 
@@ -293,6 +341,38 @@ function MatchRow({
           />
         )}
       </div>
+
+      {/* Overlapping slots with confirm buttons (for unscheduled matches with overlap) */}
+      {!isScheduled && bothSubmitted && overlaps.length > 0 && (
+        <div className="mt-3 pt-2 border-t border-border/50">
+          <p className="text-[10px] text-muted-foreground mb-2">Overlapping slots &mdash; pick one to confirm:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {overlaps.map((slot) => (
+              <Button
+                key={slot.key}
+                size="sm"
+                variant={slot.isBooked ? 'ghost' : 'outline'}
+                disabled={slot.isBooked || updateSchedule.isPending}
+                onClick={() => handleConfirmSlot(slot)}
+                className={`h-7 text-[11px] px-2 ${
+                  slot.isBooked
+                    ? 'border-red-500/30 text-red-500/50 line-through cursor-not-allowed'
+                    : 'hover:bg-green-500/10 hover:border-green-500/40 hover:text-green-500'
+                }`}
+              >
+                {updateSchedule.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : slot.isBooked ? (
+                  <span className="text-red-500/50 mr-1">&times;</span>
+                ) : (
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                )}
+                {slot.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -312,10 +392,6 @@ export default function SchedulingDashboard({
   const { data: submissions } = useSchedulingSubmissions(tournamentId);
   const { data: availabilityData } = useSquadAvailability(tournamentId);
   const generateTokens = useGenerateSchedulingTokens();
-  const autoSchedule = useAutoScheduleMatches();
-
-  const [gapMinutes, setGapMinutes] = useState('60');
-  const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
 
   const tokenMap = useMemo(() => {
     const map = new Map<string, SchedulingToken>();
@@ -329,26 +405,60 @@ export default function SchedulingDashboard({
     return map;
   }, [submissions]);
 
+  // Booked slots: all scheduled match times in this tournament
+  const bookedSlotSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of matches) {
+      if (m.scheduled_time) set.add(isoToSlotKey(m.scheduled_time));
+    }
+    return set;
+  }, [matches]);
+
   const submittedCount = submissions?.length || 0;
   const totalSquads = approvedRegs.length;
   const hasTokens = (tokens?.length || 0) > 0;
 
-  const activeMatches = useMemo(
-    () => matches
-      .filter((m) => m.squad_a_id && m.squad_b_id && m.status !== 'completed')
-      .sort((a, b) => {
-        // Unscheduled first, then by round/match_number
-        if (a.scheduled_time && !b.scheduled_time) return 1;
-        if (!a.scheduled_time && b.scheduled_time) return -1;
-        return a.round - b.round || a.match_number - b.match_number;
-      }),
-    [matches]
-  );
+  // Sort: unscheduled first, then by overlap readiness (both submitted first, sorted by earliest mutual submission)
+  const activeMatches = useMemo(() => {
+    const filtered = matches.filter((m) => m.squad_a_id && m.squad_b_id && m.status !== 'completed');
 
-  const pendingMatches = useMemo(
-    () => matches.filter((m) => m.status === 'pending' && m.squad_a_id && m.squad_b_id),
-    [matches]
-  );
+    return filtered.sort((a, b) => {
+      // Scheduled matches go to the bottom
+      if (a.scheduled_time && !b.scheduled_time) return 1;
+      if (!a.scheduled_time && b.scheduled_time) return -1;
+      // Both scheduled: by round/match
+      if (a.scheduled_time && b.scheduled_time) return a.round - b.round || a.match_number - b.match_number;
+
+      // Both unscheduled: prioritize by overlap readiness
+      const aSubA = submissionMap.get(a.squad_a_id!);
+      const aSubB = submissionMap.get(a.squad_b_id!);
+      const bSubA = submissionMap.get(b.squad_a_id!);
+      const bSubB = submissionMap.get(b.squad_b_id!);
+
+      const aBothSubmitted = aSubA && aSubB;
+      const bBothSubmitted = bSubA && bSubB;
+
+      // Both-submitted matches first
+      if (aBothSubmitted && !bBothSubmitted) return -1;
+      if (!aBothSubmitted && bBothSubmitted) return 1;
+
+      // Both have both submitted: sort by earliest overlap time (when the second team submitted)
+      if (aBothSubmitted && bBothSubmitted) {
+        const aOverlapTime = Math.max(
+          new Date(aSubA.submitted_at).getTime(),
+          new Date(aSubB.submitted_at).getTime()
+        );
+        const bOverlapTime = Math.max(
+          new Date(bSubA.submitted_at).getTime(),
+          new Date(bSubB.submitted_at).getTime()
+        );
+        return aOverlapTime - bOverlapTime;
+      }
+
+      // Neither has both: by round/match
+      return a.round - b.round || a.match_number - b.match_number;
+    });
+  }, [matches, submissionMap]);
 
   // Progress stats
   const progressStats = useMemo(() => {
@@ -374,27 +484,6 @@ export default function SchedulingDashboard({
     }
   };
 
-  const handleAutoSchedule = async () => {
-    if (!availabilityData) return;
-    try {
-      const result = await autoSchedule.mutateAsync({
-        tournamentId,
-        matches: pendingMatches,
-        availabilityData,
-        gapMinutes: parseInt(gapMinutes, 10),
-      });
-      setScheduleResult(result);
-      if (result.scheduled.length > 0) {
-        toast.success(`${result.scheduled.length} match(es) scheduled`);
-      }
-      if (result.unschedulable.length > 0) {
-        toast.warning(`${result.unschedulable.length} match(es) could not be scheduled`);
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Auto-schedule failed');
-    }
-  };
-
   if (approvedRegs.length === 0) return null;
 
   return (
@@ -402,7 +491,7 @@ export default function SchedulingDashboard({
       <div>
         <h2 className="text-lg font-display font-bold mb-1">WhatsApp Scheduling</h2>
         <p className="text-sm text-muted-foreground">
-          Send scheduling links to team leaders via WhatsApp. They pick available slots, and matches get auto-scheduled.
+          Send scheduling links to team leaders via WhatsApp. They pick available slots, and you confirm each match.
         </p>
       </div>
 
@@ -419,7 +508,7 @@ export default function SchedulingDashboard({
           </div>
           <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
             <p className="text-2xl font-bold text-primary">{progressStats.unscheduledWithBothSubmitted}</p>
-            <p className="text-[10px] text-muted-foreground">Ready to schedule</p>
+            <p className="text-[10px] text-muted-foreground">Ready to approve</p>
           </div>
           <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 text-center">
             <p className="text-2xl font-bold text-yellow-500">{progressStats.waitingForAvailability}</p>
@@ -428,8 +517,8 @@ export default function SchedulingDashboard({
         </div>
       )}
 
-      {/* Generate Links + Auto-Schedule controls */}
-      <GlowCard className="p-4 space-y-4">
+      {/* Generate Links */}
+      <GlowCard className="p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-sm">Scheduling Links</h3>
@@ -449,67 +538,20 @@ export default function SchedulingDashboard({
             {hasTokens ? 'Regenerate' : 'Generate Links'}
           </Button>
         </div>
-
-        {/* Auto-Schedule controls (show when links exist and some teams submitted) */}
-        {hasTokens && submittedCount > 0 && (
-          <div className="border-t border-border pt-4">
-            <div className="flex items-center gap-3 mb-3">
-              <label className="text-xs text-muted-foreground shrink-0">Gap between matches:</label>
-              <Select value={gapMinutes} onValueChange={setGapMinutes}>
-                <SelectTrigger className="w-32 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 min</SelectItem>
-                  <SelectItem value="60">60 min</SelectItem>
-                  <SelectItem value="90">90 min</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                onClick={handleAutoSchedule}
-                disabled={autoSchedule.isPending || pendingMatches.length === 0}
-                className="ml-auto"
-              >
-                {autoSchedule.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Zap className="w-4 h-4 mr-2" />
-                )}
-                Auto-Schedule
-              </Button>
-            </div>
-
-            {scheduleResult && (
-              <div className="space-y-1">
-                {scheduleResult.scheduled.length > 0 && (
-                  <p className="flex items-center gap-2 text-xs text-green-500">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {scheduleResult.scheduled.length} match(es) scheduled
-                  </p>
-                )}
-                {scheduleResult.unschedulable.length > 0 && (
-                  <p className="flex items-center gap-2 text-xs text-yellow-500">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    {scheduleResult.unschedulable.length} could not be auto-scheduled
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </GlowCard>
 
-      {/* Match list -- the main section */}
+      {/* Match list */}
       {hasTokens && activeMatches.length > 0 && (
         <GlowCard className="p-4">
           <h3 className="font-semibold text-sm mb-1">Matches</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            <CheckCircle2 className="w-3 h-3 inline text-green-500" /> = availability submitted
+            <CheckCircle2 className="w-3 h-3 inline text-green-500" /> = submitted
             &nbsp;&middot;&nbsp;
-            <Clock className="w-3 h-3 inline text-yellow-500" /> = link sent, waiting
+            <Clock className="w-3 h-3 inline text-yellow-500" /> = waiting
             &nbsp;&middot;&nbsp;
-            <Send className="w-3 h-3 inline text-green-500" /> = notify confirmed time
+            <CalendarCheck className="w-3 h-3 inline text-primary" /> = ready to approve
+            &nbsp;&middot;&nbsp;
+            <span className="text-red-500">&times;</span> = slot booked
           </p>
           <div className="space-y-3 max-h-[600px] overflow-y-auto">
             {activeMatches.map((match) => (
@@ -520,7 +562,9 @@ export default function SchedulingDashboard({
                 tokenMap={tokenMap}
                 submissionMap={submissionMap}
                 tournamentName={tournamentName}
+                tournamentId={tournamentId}
                 availabilityData={availabilityData || []}
+                bookedSlotSet={bookedSlotSet}
               />
             ))}
           </div>

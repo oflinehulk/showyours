@@ -57,11 +57,13 @@ function MatchSlotPicker({
   match,
   days,
   selectedSlots,
+  bookedSlotSet,
   onToggleSlot,
 }: {
   match: MatchSchedulingInfo;
   days: string[];
   selectedSlots: Set<string>;
+  bookedSlotSet: Set<string>;
   onToggleSlot: (matchId: string, date: string, time: string) => void;
 }) {
   const [visibleStart, setVisibleStart] = useState(0);
@@ -109,22 +111,28 @@ function MatchSlotPicker({
       </div>
 
       {/* Legend */}
-      {hasOpponentPicked && (
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2 px-1">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded bg-primary/30 border border-primary/50" />
-            Your pick
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded bg-blue-500/30 border border-blue-500/50" />
-            Opponent
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded bg-green-500/30 border border-green-500/50" />
-            Both
-          </span>
-        </div>
-      )}
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2 px-1 flex-wrap">
+        {hasOpponentPicked && (
+          <>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-primary/30 border border-primary/50" />
+              Your pick
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-blue-500/30 border border-blue-500/50" />
+              Opponent
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-green-500/30 border border-green-500/50" />
+              Both
+            </span>
+          </>
+        )}
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded bg-red-500/30 border border-red-500/50" />
+          Booked
+        </span>
+      </div>
 
       {/* Slot grid */}
       <div className="space-y-1.5">
@@ -140,9 +148,13 @@ function MatchSlotPicker({
                 const isOpponent = opponentSlotSet.has(key);
                 const isBoth = isMine && isOpponent;
                 const isPast = isSlotPast(day, time);
+                const isBooked = bookedSlotSet.has(key);
+                const isDisabled = isPast || isBooked;
 
                 let cellClass = 'border-border bg-muted/10 text-muted-foreground hover:border-muted-foreground/40';
-                if (isPast) {
+                if (isBooked) {
+                  cellClass = 'border-red-500/40 bg-red-500/10 text-red-500/60 cursor-not-allowed';
+                } else if (isPast) {
                   cellClass = 'border-border/50 bg-muted/5 text-muted-foreground/30 cursor-not-allowed';
                 } else if (isBoth) {
                   cellClass = 'border-green-500 bg-green-500/20 text-green-500 shadow-[0_0_6px_rgba(34,197,94,0.3)]';
@@ -155,11 +167,11 @@ function MatchSlotPicker({
                 return (
                   <button
                     key={key}
-                    onClick={() => !isPast && onToggleSlot(match.id, day, time)}
-                    disabled={isPast}
+                    onClick={() => !isDisabled && onToggleSlot(match.id, day, time)}
+                    disabled={isDisabled}
                     className={`flex-1 h-11 rounded transition-all border text-xs font-medium touch-manipulation ${cellClass}`}
                   >
-                    {isMine && !isPast ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
+                    {isBooked ? '\u00d7' : isMine && !isDisabled ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
                   </button>
                 );
               })}
@@ -266,6 +278,15 @@ export default function ScheduleAvailabilityPage() {
   const submitMutation = useSubmitAvailability();
 
   const days = useMemo(() => getNextDays(14), []);
+
+  // Build booked slots set from context
+  const bookedSlotSet = useMemo(() => {
+    const set = new Set<string>();
+    if (context?.booked_slots) {
+      for (const s of context.booked_slots) set.add(slotKey(s.date, s.time));
+    }
+    return set;
+  }, [context?.booked_slots]);
 
   // State: Map<matchId, Set<slotKey>>
   const [matchSelections, setMatchSelections] = useState<Map<string, Set<string>>>(new Map());
@@ -479,6 +500,7 @@ export default function ScheduleAvailabilityPage() {
                     match={match}
                     days={days}
                     selectedSlots={matchSelections.get(match.id) || new Set()}
+                    bookedSlotSet={bookedSlotSet}
                     onToggleSlot={toggleSlot}
                   />
                 </GlowCard>

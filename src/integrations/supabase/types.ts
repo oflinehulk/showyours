@@ -330,6 +330,87 @@ export type Database = {
           },
         ]
       }
+      scheduling_submissions: {
+        Row: {
+          id: string
+          submitted_at: string
+          tournament_id: string
+          tournament_squad_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          submitted_at?: string
+          tournament_id: string
+          tournament_squad_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          submitted_at?: string
+          tournament_id?: string
+          tournament_squad_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_submissions_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_submissions_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduling_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          tournament_id?: string
+          tournament_squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_tokens_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_tokens_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       squad_applications: {
         Row: {
           applicant_id: string
@@ -374,6 +455,48 @@ export type Database = {
             columns: ["squad_id"]
             isOneToOne: false
             referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      squad_availability: {
+        Row: {
+          available_date: string
+          created_at: string
+          id: string
+          slot_time: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Insert: {
+          available_date: string
+          created_at?: string
+          id?: string
+          slot_time: string
+          tournament_id: string
+          tournament_squad_id: string
+        }
+        Update: {
+          available_date?: string
+          created_at?: string
+          id?: string
+          slot_time?: string
+          tournament_id?: string
+          tournament_squad_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squad_availability_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "squad_availability_tournament_squad_id_fkey"
+            columns: ["tournament_squad_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_squads"
             referencedColumns: ["id"]
           },
         ]
@@ -1168,6 +1291,7 @@ export type Database = {
         Args: { p_change_id: string }
         Returns: undefined
       }
+      rpc_get_scheduling_context: { Args: { p_token: string }; Returns: Json }
       rpc_host_add_squad: {
         Args: { p_squad_id: string; p_tournament_id: string }
         Returns: string
@@ -1185,6 +1309,10 @@ export type Database = {
           p_tournament_id: string
         }
         Returns: string
+      }
+      rpc_submit_availability: {
+        Args: { p_slots: Json; p_token: string }
+        Returns: Json
       }
       search_profiles:
         | {

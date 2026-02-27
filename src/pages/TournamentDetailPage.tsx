@@ -26,6 +26,7 @@ import { TournamentHostControls } from '@/components/tournament/TournamentHostCo
 import { TournamentRosterManagement } from '@/components/tournament/TournamentRosterManagement';
 import { TournamentInviteSquads } from '@/components/tournament/TournamentInviteSquads';
 import { MatchScheduler } from '@/components/tournament/MatchScheduler';
+import SchedulingDashboard from '@/components/tournament/SchedulingDashboard';
 import { UpcomingMatches } from '@/components/tournament/UpcomingMatches';
 import {
   useTournament,
@@ -853,6 +854,12 @@ export default function TournamentDetailPage() {
           {/* Schedule Tab */}
           {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
             <TabsContent value="schedule">
+              <SchedulingDashboard
+                tournamentId={tournament.id}
+                tournamentName={tournament.name}
+                matches={matches || []}
+                registrations={registrations || []}
+              />
               <MatchScheduler
                 tournamentId={tournament.id}
                 matches={matches || []}

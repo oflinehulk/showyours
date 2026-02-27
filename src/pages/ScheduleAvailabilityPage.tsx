@@ -4,7 +4,7 @@ import { CircuitBackground } from '@/components/tron/CircuitBackground';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, ChevronLeft, ChevronRight, Swords, CalendarCheck, Clock } from 'lucide-react';
+import { Loader2, Check, ChevronLeft, ChevronRight, Swords, CalendarCheck, Clock, Info } from 'lucide-react';
 import { useSchedulingContext, useSubmitAvailability, type MatchSchedulingInfo } from '@/hooks/useScheduling';
 import { toast } from 'sonner';
 
@@ -306,6 +306,41 @@ export default function ScheduleAvailabilityPage() {
           <div className="flex-1 rounded-lg bg-green-500/10 border border-green-500/20 p-3 text-center">
             <p className="text-2xl font-bold text-green-500">{scheduledMatches.length}</p>
             <p className="text-xs text-muted-foreground">Confirmed</p>
+          </div>
+        </div>
+
+        {/* How it works notice */}
+        <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3.5 mb-6">
+          <div className="flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="space-y-1.5 text-xs text-muted-foreground">
+              <p className="font-medium text-blue-400 text-sm">How this works</p>
+              <ul className="space-y-1 list-disc list-inside marker:text-blue-500/40">
+                <li>
+                  Select <span className="text-foreground font-medium">multiple times and dates</span> for
+                  each match &mdash; the more you pick, the easier it is to find a slot that works for both teams.
+                </li>
+                <li>
+                  If your opponent has already picked their times, their slots show in{' '}
+                  <span className="text-blue-400 font-medium">blue</span>. Picking overlapping slots
+                  (<span className="text-green-500 font-medium">green</span>) speeds up scheduling.
+                </li>
+                <li>
+                  You can <span className="text-foreground font-medium">come back and update</span> your
+                  availability anytime using this same link.
+                </li>
+                <li>
+                  Check back regularly to see if your opponent has updated their slots &mdash; refresh this page
+                  to see the latest.
+                </li>
+                <li>
+                  Once both teams have overlapping slots, the host will confirm the match time and notify you.
+                </li>
+                <li className="text-muted-foreground/60">
+                  This link expires in 30 days. Contact your tournament host if you need a new one.
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 

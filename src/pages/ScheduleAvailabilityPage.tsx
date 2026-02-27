@@ -14,12 +14,22 @@ const SLOT_LABELS = ['9 PM', '9:30', '10 PM', '10:30', '11 PM', '11:30'];
 function getNextDays(count: number): string[] {
   const days: string[] = [];
   const now = new Date();
-  for (let i = 0; i < count; i++) {
+  // Skip today if all evening slots have passed (past 23:30)
+  const startOffset = now.getHours() >= 23 && now.getMinutes() >= 30 ? 1 : 0;
+  for (let i = startOffset; i < count + startOffset; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() + i);
     days.push(d.toISOString().split('T')[0]);
   }
   return days;
+}
+
+function isSlotPast(date: string, time: string): boolean {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  if (date !== today) return false;
+  const [hours, mins] = time.split(':').map(Number);
+  return now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= mins);
 }
 
 function formatDate(dateStr: string): { day: string; date: string; month: string } {
@@ -129,9 +139,12 @@ function MatchSlotPicker({
                 const isMine = selectedSlots.has(key);
                 const isOpponent = opponentSlotSet.has(key);
                 const isBoth = isMine && isOpponent;
+                const isPast = isSlotPast(day, time);
 
                 let cellClass = 'border-border bg-muted/10 text-muted-foreground hover:border-muted-foreground/40';
-                if (isBoth) {
+                if (isPast) {
+                  cellClass = 'border-border/50 bg-muted/5 text-muted-foreground/30 cursor-not-allowed';
+                } else if (isBoth) {
                   cellClass = 'border-green-500 bg-green-500/20 text-green-500 shadow-[0_0_6px_rgba(34,197,94,0.3)]';
                 } else if (isMine) {
                   cellClass = 'border-primary bg-primary/20 text-primary shadow-[0_0_6px_rgba(255,69,0,0.3)]';
@@ -142,10 +155,11 @@ function MatchSlotPicker({
                 return (
                   <button
                     key={key}
-                    onClick={() => onToggleSlot(match.id, day, time)}
+                    onClick={() => !isPast && onToggleSlot(match.id, day, time)}
+                    disabled={isPast}
                     className={`flex-1 h-11 rounded transition-all border text-xs font-medium touch-manipulation ${cellClass}`}
                   >
-                    {isMine ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
+                    {isMine && !isPast ? <Check className="w-3.5 h-3.5 mx-auto" /> : ''}
                   </button>
                 );
               })}

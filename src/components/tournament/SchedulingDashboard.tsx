@@ -137,6 +137,38 @@ function TeamCell({
   );
 }
 
+interface MatchAvailStats {
+  teamASlots: number;
+  teamBSlots: number;
+  overlapSlots: number;
+}
+
+function computeMatchAvailStats(
+  matchId: string,
+  squadAId: string | null,
+  squadBId: string | null,
+  availabilityData: { tournament_squad_id: string; match_id: string; available_date: string; slot_time: string }[],
+): MatchAvailStats {
+  if (!squadAId || !squadBId) return { teamASlots: 0, teamBSlots: 0, overlapSlots: 0 };
+
+  const teamAKeys = new Set<string>();
+  const teamBKeys = new Set<string>();
+
+  for (const row of availabilityData) {
+    if (row.match_id !== matchId) continue;
+    const key = `${row.available_date}|${row.slot_time}`;
+    if (row.tournament_squad_id === squadAId) teamAKeys.add(key);
+    if (row.tournament_squad_id === squadBId) teamBKeys.add(key);
+  }
+
+  let overlap = 0;
+  for (const k of teamAKeys) {
+    if (teamBKeys.has(k)) overlap++;
+  }
+
+  return { teamASlots: teamAKeys.size, teamBSlots: teamBKeys.size, overlapSlots: overlap };
+}
+
 // Match row combining both teams + match info
 function MatchRow({
   match,
@@ -144,12 +176,14 @@ function MatchRow({
   tokenMap,
   submissionMap,
   tournamentName,
+  availabilityData,
 }: {
   match: TournamentMatch;
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
   tokenMap: Map<string, SchedulingToken>;
   submissionMap: Map<string, SchedulingSubmission>;
   tournamentName: string;
+  availabilityData: { tournament_squad_id: string; match_id: string; available_date: string; slot_time: string }[];
 }) {
   const regA = registrations.find((r) => r.tournament_squad_id === match.squad_a_id);
   const regB = registrations.find((r) => r.tournament_squad_id === match.squad_b_id);
@@ -160,6 +194,11 @@ function MatchRow({
   const leaderA = useLeaderInfo(regA?.tournament_squads.existing_squad_id ?? null);
   const leaderB = useLeaderInfo(regB?.tournament_squads.existing_squad_id ?? null);
 
+  const stats = useMemo(
+    () => computeMatchAvailStats(match.id, match.squad_a_id, match.squad_b_id, availabilityData),
+    [match.id, match.squad_a_id, match.squad_b_id, availabilityData]
+  );
+
   const isScheduled = !!match.scheduled_time;
   const time = isScheduled
     ? new Date(match.scheduled_time!).toLocaleString('en-IN', {
@@ -167,6 +206,8 @@ function MatchRow({
         hour: '2-digit', minute: '2-digit', hour12: true,
       })
     : null;
+
+  const bothSubmitted = submissionMap.has(match.squad_a_id!) && submissionMap.has(match.squad_b_id!);
 
   return (
     <div className={`p-3 rounded-lg border ${isScheduled ? 'bg-green-500/5 border-green-500/20' : 'bg-muted/10 border-border'}`}>
@@ -213,6 +254,19 @@ function MatchRow({
           </div>
         )}
       </div>
+
+      {/* Availability stats (for unscheduled matches) */}
+      {!isScheduled && (stats.teamASlots > 0 || stats.teamBSlots > 0) && (
+        <div className="flex items-center gap-2 mb-2 text-[10px]">
+          <span className="text-muted-foreground">{squadAName}: <span className="text-foreground font-medium">{stats.teamASlots}</span></span>
+          <span className="text-muted-foreground">{squadBName}: <span className="text-foreground font-medium">{stats.teamBSlots}</span></span>
+          {bothSubmitted && (
+            <span className={stats.overlapSlots > 0 ? 'text-green-500 font-medium' : 'text-yellow-500'}>
+              {stats.overlapSlots > 0 ? `${stats.overlapSlots} overlap` : 'No overlap'}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Two teams */}
       <div className="space-y-1.5">
@@ -296,6 +350,18 @@ export default function SchedulingDashboard({
     [matches]
   );
 
+  // Progress stats
+  const progressStats = useMemo(() => {
+    const scheduledCount = activeMatches.filter((m) => m.scheduled_time).length;
+    const unscheduledCount = activeMatches.length - scheduledCount;
+    const unscheduledWithBothSubmitted = activeMatches.filter((m) => {
+      if (m.scheduled_time) return false;
+      return submissionMap.has(m.squad_a_id!) && submissionMap.has(m.squad_b_id!);
+    }).length;
+    const waitingForAvailability = unscheduledCount - unscheduledWithBothSubmitted;
+    return { scheduledCount, unscheduledCount, unscheduledWithBothSubmitted, waitingForAvailability };
+  }, [activeMatches, submissionMap]);
+
   const handleGenerateTokens = async () => {
     try {
       await generateTokens.mutateAsync({
@@ -339,6 +405,28 @@ export default function SchedulingDashboard({
           Send scheduling links to team leaders via WhatsApp. They pick available slots, and matches get auto-scheduled.
         </p>
       </div>
+
+      {/* Progress summary */}
+      {hasTokens && activeMatches.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="rounded-lg bg-muted/20 border border-border p-3 text-center">
+            <p className="text-2xl font-bold">{submittedCount}/{totalSquads}</p>
+            <p className="text-[10px] text-muted-foreground">Squads submitted</p>
+          </div>
+          <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3 text-center">
+            <p className="text-2xl font-bold text-green-500">{progressStats.scheduledCount}</p>
+            <p className="text-[10px] text-muted-foreground">Scheduled</p>
+          </div>
+          <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
+            <p className="text-2xl font-bold text-primary">{progressStats.unscheduledWithBothSubmitted}</p>
+            <p className="text-[10px] text-muted-foreground">Ready to schedule</p>
+          </div>
+          <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 text-center">
+            <p className="text-2xl font-bold text-yellow-500">{progressStats.waitingForAvailability}</p>
+            <p className="text-[10px] text-muted-foreground">Waiting for teams</p>
+          </div>
+        </div>
+      )}
 
       {/* Generate Links + Auto-Schedule controls */}
       <GlowCard className="p-4 space-y-4">
@@ -432,6 +520,7 @@ export default function SchedulingDashboard({
                 tokenMap={tokenMap}
                 submissionMap={submissionMap}
                 tournamentName={tournamentName}
+                availabilityData={availabilityData || []}
               />
             ))}
           </div>

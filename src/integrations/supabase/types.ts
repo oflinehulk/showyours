@@ -464,6 +464,7 @@ export type Database = {
           available_date: string
           created_at: string
           id: string
+          match_id: string
           slot_time: string
           tournament_id: string
           tournament_squad_id: string
@@ -472,6 +473,7 @@ export type Database = {
           available_date: string
           created_at?: string
           id?: string
+          match_id: string
           slot_time: string
           tournament_id: string
           tournament_squad_id: string
@@ -480,11 +482,19 @@ export type Database = {
           available_date?: string
           created_at?: string
           id?: string
+          match_id?: string
           slot_time?: string
           tournament_id?: string
           tournament_squad_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "squad_availability_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "squad_availability_tournament_id_fkey"
             columns: ["tournament_id"]
@@ -1311,7 +1321,7 @@ export type Database = {
         Returns: string
       }
       rpc_submit_availability: {
-        Args: { p_slots: Json; p_token: string }
+        Args: { p_match_slots: Json; p_token: string }
         Returns: Json
       }
       search_profiles:

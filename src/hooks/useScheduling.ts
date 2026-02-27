@@ -58,9 +58,9 @@ export function useSubmitAvailability() {
       token: string;
       matchSlots: { match_id: string; slots: { date: string; time: string }[] }[];
     }) => {
-      const { data, error } = await supabase.rpc('rpc_submit_availability', {
+      const { data, error } = await (supabase.rpc as any)('rpc_submit_availability', {
         p_token: token,
-        p_match_slots: matchSlots as unknown as Record<string, unknown>,
+        p_match_slots: matchSlots,
       });
 
       if (error) throw new Error(error.message);
@@ -172,14 +172,14 @@ export function useSquadAvailability(tournamentId: string | undefined) {
         .eq('tournament_id', tournamentId);
 
       if (error) throw new Error(error.message);
-      return data as {
+      return (data as unknown as {
         id: string;
         tournament_id: string;
         tournament_squad_id: string;
         match_id: string;
         available_date: string;
         slot_time: string;
-      }[];
+      }[]);
     },
     enabled: !!tournamentId,
   });

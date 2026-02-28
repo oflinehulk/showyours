@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Tournament, RosterSnapshotEntry } from '@/lib/tournament-types';
 import type { Json } from '@/integrations/supabase/types';
+import { HostRosterEditor } from '@/components/tournament/HostRosterEditor';
 
 interface TournamentRosterManagementProps {
   tournament: Tournament;
@@ -154,10 +155,18 @@ export function TournamentRosterManagement({ tournament, isHost }: TournamentRos
                             </CardDescription>
                           </div>
                         </div>
-                        <Badge variant="outline" className="bg-primary/10 text-primary">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Locked
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            <Lock className="w-3 h-3 mr-1" />
+                            Locked
+                          </Badge>
+                          {isHost && (
+                            <HostRosterEditor
+                              tournamentId={tournament.id}
+                              registration={reg}
+                            />
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>

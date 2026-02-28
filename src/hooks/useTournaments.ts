@@ -1511,6 +1511,53 @@ export function useUpdateRosterChangeStatus() {
   });
 }
 
+// ========== Host Roster Editing ==========
+
+export function useHostEditRoster() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      tournamentSquadId,
+      action,
+      memberId,
+      newIgn,
+      newMlbbId,
+      newRole,
+      reason,
+    }: {
+      tournamentId: string;
+      tournamentSquadId: string;
+      action: 'add' | 'remove' | 'swap';
+      memberId?: string;
+      newIgn?: string;
+      newMlbbId?: string;
+      newRole?: 'main' | 'substitute';
+      reason?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('rpc_host_edit_roster', {
+        p_tournament_id: tournamentId,
+        p_tournament_squad_id: tournamentSquadId,
+        p_action: action,
+        p_member_id: memberId,
+        p_new_ign: newIgn,
+        p_new_mlbb_id: newMlbbId,
+        p_new_role: newRole ?? 'substitute',
+        p_reason: reason,
+      });
+
+      if (error) throw new Error(error.message);
+      return { result: data as { success: boolean; action: string }, tournamentId, tournamentSquadId };
+    },
+    onSuccess: ({ tournamentId, tournamentSquadId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-squad-members', tournamentSquadId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-roster-changes', tournamentId] });
+    },
+  });
+}
+
 // ========== Seeding ==========
 
 // Standard bracket seeding placement (1v16, 8v9, 4v13, 5v12, etc.)

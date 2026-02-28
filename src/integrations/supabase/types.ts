@@ -1306,6 +1306,19 @@ export type Database = {
         Args: { p_squad_id: string; p_tournament_id: string }
         Returns: string
       }
+      rpc_host_edit_roster: {
+        Args: {
+          p_action: string
+          p_member_id?: string
+          p_new_ign?: string
+          p_new_mlbb_id?: string
+          p_new_role?: string
+          p_reason?: string
+          p_tournament_id: string
+          p_tournament_squad_id: string
+        }
+        Returns: Json
+      }
       rpc_recapture_roster_snapshots: {
         Args: { p_tournament_id: string }
         Returns: undefined

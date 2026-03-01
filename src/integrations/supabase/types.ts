@@ -1288,6 +1288,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      atomic_replace_tournament_matches: {
+        Args: { p_new_matches: Json; p_tournament_id: string }
+        Returns: number
+      }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
       has_role: {
         Args: {

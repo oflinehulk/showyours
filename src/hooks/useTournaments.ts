@@ -1168,18 +1168,13 @@ export function useGenerateBracket() {
         matches = generateRoundRobinBracket(tournamentId, orderedSquadIds.filter((id): id is string => id !== null));
       }
 
-      // Insert matches (delete any existing first as a safety net)
-      const { error: delErr } = await supabase
-        .from('tournament_matches')
-        .delete()
-        .eq('tournament_id', tournamentId);
-      if (delErr) throw new Error(`Failed to clear old matches: ${delErr.message}`);
+      // Atomically replace matches via RPC (delete + insert in single transaction)
+      const { error: rpcError } = await supabase.rpc('atomic_replace_tournament_matches', {
+        p_tournament_id: tournamentId,
+        p_new_matches: matches,
+      });
 
-      const { error: matchError } = await supabase
-        .from('tournament_matches')
-        .insert(matches);
-
-      if (matchError) throw new Error(matchError.message);
+      if (rpcError) throw new Error(rpcError.message);
 
       // Update tournament status and format
       const { error: updateError } = await supabase

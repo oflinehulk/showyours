@@ -299,6 +299,38 @@ export function useCreateTournamentSquad() {
   });
 }
 
+// Update tournament squad name/logo (host action)
+export function useUpdateTournamentSquad() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      squadId,
+      tournamentId,
+      name,
+      logo_url,
+    }: {
+      squadId: string;
+      tournamentId: string;
+      name: string;
+      logo_url: string | null;
+    }) => {
+      const { error } = await supabase
+        .from('tournament_squads')
+        .update({ name, logo_url })
+        .eq('id', squadId);
+
+      if (error) throw new Error(error.message);
+      return { tournamentId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: ['tournament-registrations', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['tournament-matches', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+    },
+  });
+}
+
 // Fetch squad members
 export function useTournamentSquadMembers(squadId: string | undefined) {
   return useQuery({

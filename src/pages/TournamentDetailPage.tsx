@@ -28,6 +28,7 @@ import { TournamentInviteSquads } from '@/components/tournament/TournamentInvite
 import { MatchScheduler } from '@/components/tournament/MatchScheduler';
 import SchedulingDashboard from '@/components/tournament/SchedulingDashboard';
 import { UpcomingMatches } from '@/components/tournament/UpcomingMatches';
+import { TournamentPromoCard } from '@/components/tournament/TournamentPromoCard';
 import {
   useTournament,
   useTournamentRegistrations,
@@ -402,6 +403,13 @@ export default function TournamentDetailPage() {
                   )}
                   Withdraw Squad
                 </Button>
+              )}
+              {tournament.status === 'registration_open' && (
+                <TournamentPromoCard
+                  tournament={tournament}
+                  spotsLeft={spotsLeft}
+                  registrationCount={registrationCount}
+                />
               )}
             </div>
           </div>

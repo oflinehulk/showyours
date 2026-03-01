@@ -171,6 +171,7 @@ export default function DocsPage() {
                 <li><strong>Coin toss</strong> — Before a match, the host may run a coin toss to determine which team picks their side (Blue or Red). Watch the animated coin flip live.</li>
                 <li><strong>Disputes</strong> — If you believe a match result is incorrect, the squad leader can raise a dispute from the match card. Provide a clear reason — the host will review and resolve it.</li>
                 <li><strong>Share results</strong> — After a match completes, use the share button to generate a result card image with team logos and scores.</li>
+                <li><strong>Upcoming matches</strong> — View scheduled matches with times, team rosters, coin toss results, and check-in status. Use share buttons to download match cards as images.</li>
               </ul>
             </DocSection>
 
@@ -199,6 +200,20 @@ export default function DocsPage() {
               <p>
                 When squads register, their status is <strong>pending</strong> by default.
                 Review each registration and approve or reject it. You can view the squad's roster before approving.
+              </p>
+
+              <h4>Editing Team Names & Logos</h4>
+              <p>
+                In the Teams tab, click the pencil icon on any team card to update their display name or logo URL for this tournament.
+                This lets you correct typos or standardize team branding without needing the squad leader's involvement.
+                Changes only affect the tournament copy — the original squad profile is unchanged.
+              </p>
+
+              <h4>Sharing a Registration Promo</h4>
+              <p>
+                When registration is open, a Share button appears in the tournament hero section.
+                Click it to generate a promotional image showing the tournament name, date, prize pool, and spots remaining.
+                Share this image on social media or WhatsApp to invite more teams.
               </p>
 
               <h4>Adding Squads After Registration Closes</h4>
@@ -246,6 +261,13 @@ export default function DocsPage() {
                 Squad leaders can request player substitutions during a tournament.
                 Each squad is limited to <strong>2 approved roster changes</strong>.
                 Review them from the Registrations tab — approve or reject each request.
+              </p>
+
+              <h4>Roster Check & Schedule Sharing</h4>
+              <p>
+                In the Upcoming tab, expand any match card to view locked rosters for both teams.
+                Use the Copy and Thumbnail buttons in the "Today" header to copy the day's schedule as text
+                or generate a branded image for social media sharing.
               </p>
 
               <h4>Activity Log</h4>
@@ -460,6 +482,19 @@ export default function DocsPage() {
               <p>
                 You can clear all scheduled times and start over at any point. Individual match times can also be edited or removed.
               </p>
+
+              <h4>Scheduling Dashboard</h4>
+              <p>
+                In the Schedule tab, generate unique scheduling links for each squad. Squad leaders submit their
+                available time slots, and you can see overlap between opponents. Pick a mutually available slot to
+                confirm the match time, then notify leaders via WhatsApp with one click.
+              </p>
+
+              <h4>Sharing the Schedule</h4>
+              <p>
+                In the Upcoming tab, use the <strong>Copy</strong> button to copy today's match list as formatted text,
+                or the <strong>Thumbnail</strong> button to generate a branded schedule image for social media sharing.
+              </p>
             </DocSection>
 
             {/* Notifications */}
@@ -559,6 +594,14 @@ export default function DocsPage() {
               <FaqItem q="What is seeded double elimination?">
                 When advancing from a group stage, top teams enter the upper bracket and bottom-advancing teams enter the lower bracket directly.
                 This rewards group stage performance by giving stronger teams the upper bracket advantage. It includes a semi-final round with 3rd-place designation.
+              </FaqItem>
+              <FaqItem q="Can the host change my team's name or logo?">
+                Yes. Hosts can edit display names and logos from the Teams tab. This only affects the tournament
+                copy — your original squad profile is unchanged.
+              </FaqItem>
+              <FaqItem q="How do I share a tournament to attract more teams?">
+                When registration is open, click the Share button in the tournament hero section. This generates
+                a promo image with tournament details and spots remaining that you can share on social media or messaging apps.
               </FaqItem>
             </DocSection>
           </div>

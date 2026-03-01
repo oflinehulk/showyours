@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,18 +23,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  useUpdateRegistrationStatus, 
+import { Input } from '@/components/ui/input';
+import {
+  useUpdateRegistrationStatus,
   useTournamentSquadMembers,
   useDeleteRegistration,
+  useUpdateTournamentSquad,
 } from '@/hooks/useTournaments';
 import { useSquadMembers } from '@/hooks/useSquadMembers';
 import { getContactValue } from '@/lib/contacts';
 import { captureAndDownload, captureAndShare } from '@/lib/screenshot';
-import { 
-  Check, 
-  X, 
-  Users, 
+import {
+  Check,
+  X,
+  Users,
   Eye,
   Loader2,
   Shield,
@@ -47,6 +49,7 @@ import {
   Hash,
   Download,
   Share2,
+  Edit3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -67,6 +70,7 @@ export function TournamentRegistrations({
   const deleteRegistration = useDeleteRegistration();
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
   const [selectedExistingSquadId, setSelectedExistingSquadId] = useState<string | null>(null);
+  const [editingSquad, setEditingSquad] = useState<TournamentSquad | null>(null);
   const teamsRef = useRef<HTMLDivElement>(null);
   const screenshotRef = useRef<HTMLDivElement>(null);
 
@@ -168,6 +172,17 @@ export function TournamentRegistrations({
 
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0">
+          {isHost && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-primary"
+              onClick={() => setEditingSquad(reg.tournament_squads)}
+              title="Edit team name/logo"
+            >
+              <Edit3 className="w-4 h-4" />
+            </Button>
+          )}
           <Dialog>
             <DialogTrigger asChild>
               <Button
@@ -471,6 +486,16 @@ export function TournamentRegistrations({
           </div>
         </div>
       </div>
+
+      {/* Edit Squad Dialog */}
+      {editingSquad && (
+        <EditSquadDialog
+          squad={editingSquad}
+          tournamentId={tournamentId}
+          open={!!editingSquad}
+          onOpenChange={(open) => { if (!open) setEditingSquad(null); }}
+        />
+      )}
     </div>
   );
 }
@@ -637,5 +662,101 @@ function SquadRosterView({ tournamentSquadId, existingSquadId, isHost }: SquadRo
         </div>
       )}
     </div>
+  );
+}
+
+function EditSquadDialog({
+  squad,
+  tournamentId,
+  open,
+  onOpenChange,
+}: {
+  squad: TournamentSquad;
+  tournamentId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const updateSquad = useUpdateTournamentSquad();
+  const [name, setName] = useState(squad.name);
+  const [logoUrl, setLogoUrl] = useState(squad.logo_url || '');
+
+  useEffect(() => {
+    setName(squad.name);
+    setLogoUrl(squad.logo_url || '');
+  }, [squad.id, squad.name, squad.logo_url]);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error('Team name cannot be empty');
+      return;
+    }
+    try {
+      await updateSquad.mutateAsync({
+        squadId: squad.id,
+        tournamentId,
+        name: name.trim(),
+        logo_url: logoUrl.trim() || null,
+      });
+      toast.success('Team updated');
+      onOpenChange(false);
+    } catch (error: unknown) {
+      toast.error('Failed to update team', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edit Team</DialogTitle>
+          <DialogDescription>
+            Update the team name or logo for this tournament.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt="Preview"
+              className="w-16 h-16 rounded-xl object-cover border border-border/50 mx-auto"
+            />
+          )}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Team Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Team name"
+              className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Logo URL</label>
+            <Input
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://..."
+              className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-2">
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            <X className="w-4 h-4 mr-1" />
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={updateSquad.isPending}>
+            {updateSquad.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1" />
+            ) : (
+              <Check className="w-4 h-4 mr-1" />
+            )}
+            Save
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

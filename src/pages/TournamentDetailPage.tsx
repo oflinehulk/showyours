@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Layout } from '@/components/Layout';
 import { CircuitBackground } from '@/components/tron/CircuitBackground';
@@ -76,6 +76,7 @@ import { toast } from 'sonner';
 export default function TournamentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { data: tournament, isLoading } = useTournament(id);
   const { data: registrations } = useTournamentRegistrations(id);
@@ -83,7 +84,21 @@ export default function TournamentDetailPage() {
   const updateTournament = useUpdateTournament();
   const withdrawFromTournament = useWithdrawFromTournament();
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('overview');
+
+  const validTabs = ['overview', 'teams', 'bracket', 'upcoming', 'rosters', 'schedule', 'register', 'activity'];
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview';
+  const [activeTab, setActiveTabState] = useState(initialTab);
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    if (tab === 'overview') {
+      searchParams.delete('tab');
+    } else {
+      searchParams.set('tab', tab);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   // Editing states
   const [isEditingDesc, setIsEditingDesc] = useState(false);
@@ -592,7 +607,7 @@ export default function TournamentDetailPage() {
                     </Button>
                   </div>
                 )}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                   {[
                     { icon: Calendar, label: 'Date', value: format(new Date(tournament.date_time), 'MMM d, yyyy'), color: 'text-[#FF4500]' },
                     { icon: Clock, label: 'Time', value: format(new Date(tournament.date_time), 'h:mm a'), color: 'text-[#FF4500]' },
@@ -603,7 +618,7 @@ export default function TournamentDetailPage() {
                     { icon: Swords, label: 'Format', value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', color: 'text-[#FF4500]' },
                     { icon: Globe, label: 'Region', value: tournament.region || '—', color: 'text-sky-400' },
                   ].map((item, i) => (
-                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-4 relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
+                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-3 sm:p-4 relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FF4500]/40 to-transparent" />
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
@@ -837,6 +852,10 @@ export default function TournamentDetailPage() {
                 <UpcomingMatches
                   matches={matches || []}
                   tournamentName={tournament.name}
+                  isHost={isHost}
+                  tournamentId={tournament.id}
+                  tournamentStatus={tournament.status}
+                  userSquadIds={userSquadIds}
                 />
               </TabsContent>
             </>

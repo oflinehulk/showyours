@@ -1,26 +1,51 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { GlowCard } from '@/components/tron/GlowCard';
+import { ScoreEditSheet } from '@/components/tournament/ScoreEditSheet';
+import { CoinTossOverlay } from '@/components/tournament/CoinTossOverlay';
 import { captureAndShare, captureAndDownload } from '@/lib/screenshot';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  useUpdateMatchCheckIn,
+  useForfeitMatch,
+  useResetCoinToss,
+} from '@/hooks/useTournaments';
 import {
   Clock,
   Share2,
   Loader2,
   AlertCircle,
   CalendarDays,
+  ChevronDown,
+  Coins,
+  ClipboardCheck,
+  Flag,
+  Check,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday, isTomorrow } from 'date-fns';
+import { toast } from 'sonner';
 import type { TournamentMatch } from '@/lib/tournament-types';
 
 interface UpcomingMatchesProps {
   matches: TournamentMatch[];
   tournamentName: string;
+  isHost?: boolean;
+  tournamentId?: string;
+  tournamentStatus?: string;
+  userSquadIds?: string[];
 }
 
-export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProps) {
+export function UpcomingMatches({
+  matches,
+  tournamentName,
+  isHost = false,
+  tournamentId,
+  tournamentStatus,
+  userSquadIds = [],
+}: UpcomingMatchesProps) {
   // Only show matches that have a scheduled time — TBA matches are already visible in the Bracket tab
   const upcoming = matches
     .filter(m => (m.status === 'pending' || m.status === 'ongoing') && m.scheduled_time)
@@ -39,7 +64,6 @@ export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProp
   }
 
   // Group by date
-
   const groups = new Map<string, TournamentMatch[]>();
   for (const match of upcoming) {
     const date = new Date(match.scheduled_time!);
@@ -70,12 +94,15 @@ export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProp
                 key={match.id}
                 match={match}
                 tournamentName={tournamentName}
+                isHost={isHost}
+                tournamentId={tournamentId}
+                tournamentStatus={tournamentStatus}
+                userSquadIds={userSquadIds}
               />
             ))}
           </div>
         </div>
       ))}
-
     </div>
   );
 }
@@ -83,14 +110,39 @@ export function UpcomingMatches({ matches, tournamentName }: UpcomingMatchesProp
 function UpcomingMatchCard({
   match,
   tournamentName,
+  isHost,
+  tournamentId,
+  tournamentStatus,
+  userSquadIds,
 }: {
   match: TournamentMatch;
   tournamentName: string;
+  isHost: boolean;
+  tournamentId?: string;
+  tournamentStatus?: string;
+  userSquadIds: string[];
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [sharing, setSharing] = useState(false);
   const [renderCard, setRenderCard] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [showScoreSheet, setShowScoreSheet] = useState(false);
+  const [tossMatch, setTossMatch] = useState<TournamentMatch | null>(null);
+
+  const updateCheckIn = useUpdateMatchCheckIn();
+  const forfeitMatch = useForfeitMatch();
+  const resetCoinToss = useResetCoinToss();
+
+  const isOngoing = tournamentStatus === 'ongoing' || tournamentStatus === 'bracket_generated';
+  const canDoToss = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.toss_completed_at;
+  const canRedoToss = isHost && isOngoing && (match.status === 'pending' || match.status === 'ongoing') && match.toss_completed_at;
+  const canCheckIn = isHost && isOngoing && match.status === 'pending';
+  const canEditScore = isHost && match.squad_a_id && match.squad_b_id;
+  const canForfeitA = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.squad_a_checked_in && match.squad_b_checked_in;
+  const canForfeitB = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && match.squad_a_checked_in && !match.squad_b_checked_in;
+
+  const hasHostActions = isHost && tournamentId && (canDoToss || canRedoToss || canCheckIn || canEditScore);
 
   const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9-_ ]/g, '').trim();
   const filename = `showyours-upcoming-${sanitize(match.squad_a?.name || 'teamA')}-vs-${sanitize(match.squad_b?.name || 'teamB')}`;
@@ -114,6 +166,22 @@ function UpcomingMatchCard({
       setSharing(false);
       setRenderCard(false);
     }
+  };
+
+  const handleCheckIn = (field: 'squad_a_checked_in' | 'squad_b_checked_in', value: boolean) => {
+    if (!tournamentId) return;
+    updateCheckIn.mutate({ matchId: match.id, field, value, tournamentId });
+  };
+
+  const handleForfeit = (winnerId: string) => {
+    if (!tournamentId) return;
+    forfeitMatch.mutate(
+      { matchId: match.id, winnerId, bestOf: match.best_of, tournamentId },
+      {
+        onSuccess: () => toast.success('Match forfeited'),
+        onError: (err: Error) => toast.error('Failed to forfeit', { description: err.message }),
+      }
+    );
   };
 
   return (
@@ -146,35 +214,174 @@ function UpcomingMatchCard({
 
         {/* Teams */}
         <div className="space-y-2">
-          <TeamRow squad={match.squad_a} sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_a_id ? 'blue' : match.red_side_team === match.squad_a_id ? 'red' : undefined) : undefined} />
+          <TeamRow
+            squad={match.squad_a}
+            sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_a_id ? 'blue' : match.red_side_team === match.squad_a_id ? 'red' : undefined) : undefined}
+            checkedIn={match.squad_a_checked_in}
+            showCheckIn={canCheckIn && !!match.squad_a_id && expanded}
+            onCheckIn={(val) => handleCheckIn('squad_a_checked_in', val)}
+          />
           <div className="flex items-center gap-2 text-xs">
             <div className="flex-1 h-px bg-[#FF4500]/20" />
             <span className="text-[#FF4500] font-display font-bold tracking-wider text-[10px]">VS</span>
             <div className="flex-1 h-px bg-[#FF4500]/20" />
           </div>
-          <TeamRow squad={match.squad_b} sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_b_id ? 'blue' : match.red_side_team === match.squad_b_id ? 'red' : undefined) : undefined} />
+          <TeamRow
+            squad={match.squad_b}
+            sideBadge={match.toss_completed_at ? (match.blue_side_team === match.squad_b_id ? 'blue' : match.red_side_team === match.squad_b_id ? 'red' : undefined) : undefined}
+            checkedIn={match.squad_b_checked_in}
+            showCheckIn={canCheckIn && !!match.squad_b_id && expanded}
+            onCheckIn={(val) => handleCheckIn('squad_b_checked_in', val)}
+          />
         </div>
 
-        {/* Round info + share */}
+        {/* Round info + share + expand */}
         <div className="flex items-center justify-between pt-1">
           <span className="text-[10px] text-muted-foreground">
             Round {match.round} &middot; Match #{match.match_number}
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleShare}
-            disabled={sharing}
-            className="h-7 px-2 text-muted-foreground hover:text-[#FF4500]"
-          >
-            {sharing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Share2 className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              disabled={sharing}
+              className="h-7 px-2 text-muted-foreground hover:text-[#FF4500]"
+            >
+              {sharing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+            </Button>
+            {hasHostActions && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpanded(!expanded)}
+                className="h-7 px-2 text-muted-foreground hover:text-[#FF4500]"
+              >
+                <ChevronDown className={cn(
+                  'w-3.5 h-3.5 transition-transform duration-200',
+                  expanded && 'rotate-180'
+                )} />
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
+
+        {/* Expandable Host Actions Panel */}
+        {hasHostActions && expanded && (
+          <div className="border-t border-[#FF4500]/10 pt-3 space-y-2">
+            <p className="text-[10px] font-display uppercase tracking-wider text-[#FF4500] font-medium">
+              Host Actions
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {/* Toss */}
+              {canDoToss && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-[#FF4500]/20 hover:border-[#FF4500]/40"
+                  onClick={() => setTossMatch(match)}
+                >
+                  <Coins className="w-3.5 h-3.5 mr-1.5" />
+                  Do Toss
+                </Button>
+              )}
+              {canRedoToss && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-[#FF4500]/20 hover:border-[#FF4500]/40"
+                  onClick={() => {
+                    if (!tournamentId) return;
+                    resetCoinToss.mutate(
+                      { matchId: match.id, tournamentId, stageId: match.stage_id },
+                      { onSuccess: () => { toast.success('Toss reset'); setTossMatch(match); } }
+                    );
+                  }}
+                  disabled={resetCoinToss.isPending}
+                >
+                  <Coins className="w-3.5 h-3.5 mr-1.5" />
+                  Redo Toss
+                </Button>
+              )}
+
+              {/* Score Entry */}
+              {canEditScore && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-[#FF4500]/20 hover:border-[#FF4500]/40"
+                  onClick={() => setShowScoreSheet(true)}
+                >
+                  <ClipboardCheck className="w-3.5 h-3.5 mr-1.5" />
+                  Enter Result
+                </Button>
+              )}
+
+              {/* Forfeit options */}
+              {canForfeitA && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={() => handleForfeit(match.squad_b_id!)}
+                  disabled={forfeitMatch.isPending}
+                >
+                  <Flag className="w-3.5 h-3.5 mr-1.5" />
+                  Forfeit {match.squad_a?.name || 'A'}
+                </Button>
+              )}
+              {canForfeitB && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={() => handleForfeit(match.squad_a_id!)}
+                  disabled={forfeitMatch.isPending}
+                >
+                  <Flag className="w-3.5 h-3.5 mr-1.5" />
+                  Forfeit {match.squad_b?.name || 'B'}
+                </Button>
+              )}
+            </div>
+
+            {/* Toss status indicator */}
+            {match.toss_completed_at && (
+              <p className="text-[10px] text-green-400 flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Toss completed
+              </p>
+            )}
+          </div>
+        )}
       </GlowCard>
+
+      {/* Score Edit Sheet */}
+      {tournamentId && (
+        <ScoreEditSheet
+          match={showScoreSheet ? match : null}
+          tournamentId={tournamentId}
+          isHost={isHost}
+          canEdit={isHost}
+          open={showScoreSheet}
+          onOpenChange={setShowScoreSheet}
+        />
+      )}
+
+      {/* Coin Toss Overlay */}
+      {tossMatch && tournamentId && tossMatch.squad_a && tossMatch.squad_b && (
+        <CoinTossOverlay
+          match={tossMatch}
+          squadA={tossMatch.squad_a}
+          squadB={tossMatch.squad_b}
+          tournamentId={tournamentId}
+          onClose={() => setTossMatch(null)}
+          onSaved={() => setTossMatch(null)}
+        />
+      )}
 
       {/* Hidden render target for shareable card */}
       {renderCard && (
@@ -289,12 +496,31 @@ function UpcomingMatchCard({
 function TeamRow({
   squad,
   sideBadge,
+  checkedIn,
+  showCheckIn,
+  onCheckIn,
 }: {
   squad: TournamentMatch['squad_a'];
   sideBadge?: 'blue' | 'red';
+  checkedIn?: boolean;
+  showCheckIn?: boolean;
+  onCheckIn?: (value: boolean) => void;
 }) {
   return (
     <div className="flex items-center gap-2 p-2 rounded">
+      {showCheckIn && onCheckIn && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onCheckIn(!checkedIn); }}
+          className={cn(
+            'w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors',
+            checkedIn
+              ? 'bg-green-500/20 border-green-500/50 text-green-500'
+              : 'border-muted-foreground/30 text-muted-foreground hover:border-green-500/30'
+          )}
+        >
+          {checkedIn ? <Check className="w-3 h-3" /> : null}
+        </button>
+      )}
       <Avatar className="h-6 w-6 shrink-0">
         {squad?.logo_url ? (
           <AvatarImage src={squad.logo_url} alt={squad.name} />
@@ -314,6 +540,11 @@ function TeamRow({
             : 'bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30',
         )}>
           {sideBadge === 'blue' ? 'Blue' : 'Red'}
+        </span>
+      )}
+      {!showCheckIn && checkedIn !== undefined && checkedIn && (
+        <span className="text-[9px] text-green-400 flex items-center gap-0.5 shrink-0">
+          <Check className="w-3 h-3" />
         </span>
       )}
     </div>

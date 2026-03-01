@@ -15,7 +15,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col bg-[#0a0a0a] relative">
       <ScanLineOverlay />
       <Navbar />
-      <main className="flex-1 md:pb-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+      <main className="flex-1 md:pb-0" style={{ paddingBottom: 'calc(4.25rem + env(safe-area-inset-bottom, 0px))' }}>
         <PageTransition>{children}</PageTransition>
       </main>
       <div className="hidden md:block">

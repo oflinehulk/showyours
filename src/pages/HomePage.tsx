@@ -6,12 +6,16 @@ import { CircuitBackground } from '@/components/tron/CircuitBackground';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useSquads } from '@/hooks/useSquads';
+import { useGlobalUpcomingMatches } from '@/hooks/useTournaments';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Shield, Zap, UserPlus, ChevronRight, Trophy, TrendingUp, Target } from 'lucide-react';
+import { Users, Shield, Zap, UserPlus, ChevronRight, Trophy, TrendingUp, Target, Swords, Clock, AlertCircle, CalendarDays } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
+import { cn } from '@/lib/utils';
+import { format, isToday, isTomorrow } from 'date-fns';
 
 export default function HomePage() {
   useSEO({ title: 'ShowYours', description: 'MLBB recruitment platform — find players, build squads, host tournaments effortlessly.', path: '/' });
@@ -32,6 +36,7 @@ export default function HomePage() {
   const recruitingSquads = squads?.filter(s => s.is_recruiting).length || 0;
   const featuredPlayers = profiles?.filter(p => p.looking_for_squad).slice(0, 3) || [];
   const featuredSquads = squads?.slice(0, 2) || [];
+  const { data: upcomingMatches, isLoading: matchesLoading } = useGlobalUpcomingMatches(8);
 
   return (
     <Layout>
@@ -113,6 +118,117 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Live & Upcoming Matches */}
+      {!matchesLoading && upcomingMatches && upcomingMatches.length > 0 && (
+        <section className="py-12 md:py-16 relative">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                  <Swords className="h-5 w-5 text-yellow-500" />
+                </div>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground tracking-wide">
+                    Live & Upcoming
+                  </h2>
+                  <p className="text-muted-foreground text-sm">
+                    Matches happening now and coming up next
+                  </p>
+                </div>
+              </div>
+              <Button variant="ghost" asChild className="hidden sm:flex btn-interactive text-[#FF4500] hover:text-[#FF6B35] hover:bg-[#FF4500]/5">
+                <Link to="/tournaments">
+                  All Tournaments
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              {upcomingMatches.map((match) => {
+                const isLive = match.status === 'ongoing';
+                const scheduledDate = match.scheduled_time ? new Date(match.scheduled_time) : null;
+                let dateLabel = '';
+                if (scheduledDate) {
+                  if (isToday(scheduledDate)) dateLabel = 'Today';
+                  else if (isTomorrow(scheduledDate)) dateLabel = 'Tomorrow';
+                  else dateLabel = format(scheduledDate, 'MMM d');
+                }
+
+                return (
+                  <Link
+                    key={match.id}
+                    to={`/tournament/${match.tournament_id}`}
+                    className="block"
+                  >
+                    <GlowCard hoverable className={cn(
+                      'p-3 space-y-2 h-full',
+                      isLive && 'border-yellow-400/40',
+                    )}>
+                      {/* Tournament name + status */}
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-display uppercase tracking-wider text-[#FF4500] font-medium truncate">
+                          {(match as any).tournament?.name || 'Tournament'}
+                        </p>
+                        <span className={cn(
+                          'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0',
+                          isLive
+                            ? 'bg-yellow-500/10 text-yellow-400'
+                            : 'bg-muted text-muted-foreground',
+                        )}>
+                          {isLive && <AlertCircle className="w-2.5 h-2.5" />}
+                          {isLive ? 'Live' : dateLabel}
+                        </span>
+                      </div>
+
+                      {/* Teams */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            {match.squad_a?.logo_url ? <AvatarImage src={match.squad_a.logo_url} /> : null}
+                            <AvatarFallback className="text-[8px] bg-[#1a1a1a]">
+                              {match.squad_a?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium truncate">{match.squad_a?.name || 'TBD'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground pl-7">
+                          VS
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            {match.squad_b?.logo_url ? <AvatarImage src={match.squad_b.logo_url} /> : null}
+                            <AvatarFallback className="text-[8px] bg-[#1a1a1a]">
+                              {match.squad_b?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium truncate">{match.squad_b?.name || 'TBD'}</span>
+                        </div>
+                      </div>
+
+                      {/* Time + format */}
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {scheduledDate ? format(scheduledDate, 'h:mm a') : 'TBA'}
+                        </span>
+                        <span>Bo{match.best_of}</span>
+                      </div>
+                    </GlowCard>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 text-center sm:hidden">
+              <Button variant="outline" asChild className="btn-interactive border-[#FF4500]/30 hover:border-[#FF4500]/50">
+                <Link to="/tournaments">View All Tournaments</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Players */}
       <section className="py-16 md:py-24 relative">

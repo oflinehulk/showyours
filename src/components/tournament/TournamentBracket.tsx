@@ -723,7 +723,7 @@ function BracketView({
         <div className="flex gap-3 min-w-max py-2">
           {rounds.map((round, roundIndex) => (
             <div key={round} className="flex items-stretch">
-              <div className="flex flex-col gap-3 min-w-[200px]">
+              <div className="flex flex-col gap-3 min-w-[170px]">
                 <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
                   {roundIndex === rounds.length - 1 ? 'Final' : `R${round}`}
                 </h4>
@@ -1168,7 +1168,12 @@ function ResolveDisputeDialog({
 
     let newWinnerId: string | undefined;
     if (scoreA !== undefined && scoreB !== undefined && scoreA !== scoreB) {
-      newWinnerId = scoreA > scoreB ? match.squad_a_id! : match.squad_b_id!;
+      const winningSide = scoreA > scoreB ? match.squad_a_id : match.squad_b_id;
+      if (!winningSide) {
+        toast.error('Cannot determine winner — squad data missing');
+        return;
+      }
+      newWinnerId = winningSide;
     }
 
     try {

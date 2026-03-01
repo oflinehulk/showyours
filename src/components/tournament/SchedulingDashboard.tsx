@@ -217,11 +217,11 @@ function MatchRow({
   const regA = registrations.find((r) => r.tournament_squad_id === match.squad_a_id);
   const regB = registrations.find((r) => r.tournament_squad_id === match.squad_b_id);
 
-  const squadAName = regA?.tournament_squads.name || 'TBD';
-  const squadBName = regB?.tournament_squads.name || 'TBD';
+  const squadAName = regA?.tournament_squads?.name || 'TBD';
+  const squadBName = regB?.tournament_squads?.name || 'TBD';
 
-  const leaderA = useLeaderInfo(regA?.tournament_squads.existing_squad_id ?? null);
-  const leaderB = useLeaderInfo(regB?.tournament_squads.existing_squad_id ?? null);
+  const leaderA = useLeaderInfo(regA?.tournament_squads?.existing_squad_id ?? null);
+  const leaderB = useLeaderInfo(regB?.tournament_squads?.existing_squad_id ?? null);
 
   const updateSchedule = useUpdateMatchSchedule();
 
@@ -321,7 +321,7 @@ function MatchRow({
         {regA && (
           <TeamCell
             squadName={squadAName}
-            existingSquadId={regA.tournament_squads.existing_squad_id}
+            existingSquadId={regA.tournament_squads?.existing_squad_id}
             token={tokenMap.get(match.squad_a_id!)}
             submission={submissionMap.get(match.squad_a_id!)}
             tournamentName={tournamentName}
@@ -334,7 +334,7 @@ function MatchRow({
         {regB && (
           <TeamCell
             squadName={squadBName}
-            existingSquadId={regB.tournament_squads.existing_squad_id}
+            existingSquadId={regB.tournament_squads?.existing_squad_id}
             token={tokenMap.get(match.squad_b_id!)}
             submission={submissionMap.get(match.squad_b_id!)}
             tournamentName={tournamentName}

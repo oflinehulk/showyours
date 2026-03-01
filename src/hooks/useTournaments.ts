@@ -521,6 +521,33 @@ export function useTournamentMatches(tournamentId: string | undefined) {
   });
 }
 
+// Fetch upcoming and live matches across all tournaments (for homepage)
+export function useGlobalUpcomingMatches(limit = 10) {
+  return useQuery({
+    queryKey: ['global-upcoming-matches', limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tournament_matches')
+        .select(`
+          *,
+          squad_a:tournament_squads!tournament_matches_squad_a_id_fkey(id, name, logo_url),
+          squad_b:tournament_squads!tournament_matches_squad_b_id_fkey(id, name, logo_url),
+          tournament:tournaments!tournament_matches_tournament_id_fkey(id, name, status)
+        `)
+        .in('status', ['pending', 'ongoing'])
+        .not('scheduled_time', 'is', null)
+        .order('scheduled_time', { ascending: true })
+        .limit(limit);
+
+      if (error) throw new Error(error.message);
+      // Only include matches from active tournaments
+      return (data || []).filter(
+        (m: any) => m.tournament && ['bracket_generated', 'ongoing'].includes(m.tournament.status)
+      ) as (TournamentMatch & { tournament: { id: string; name: string; status: string } })[];
+    },
+  });
+}
+
 // Update match result
 export function useUpdateMatchResult() {
   const queryClient = useQueryClient();
@@ -1110,6 +1137,9 @@ export function useGenerateBracket() {
         .eq('status', 'approved');
 
       if (regError) throw new Error(regError.message);
+      if (!registrations || registrations.length < 2) {
+        throw new Error('Need at least 2 approved squads to generate bracket');
+      }
 
       // Sort by seed if seeds exist, otherwise random shuffle
       const hasSeeds = registrations.some((r) => r.seed != null);

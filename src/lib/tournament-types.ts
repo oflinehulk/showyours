@@ -186,6 +186,10 @@ export function validateMatchScores(
   scoreA: number,
   scoreB: number
 ): { valid: boolean; error?: string } {
+  if (![1, 3, 5].includes(bestOf)) {
+    return { valid: false, error: 'Best-of must be 1, 3, or 5' };
+  }
+
   const winsNeeded = Math.ceil(bestOf / 2); // 1 for Bo1, 2 for Bo3, 3 for Bo5
 
   if (scoreA < 0 || scoreB < 0) {

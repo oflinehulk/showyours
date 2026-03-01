@@ -14,8 +14,10 @@ import {
   IndianRupee,
   Globe,
   Swords,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Tournament } from '@/lib/tournament-types';
 import { TOURNAMENT_STATUS_LABELS, TOURNAMENT_FORMAT_LABELS } from '@/lib/tournament-types';
 
@@ -25,6 +27,8 @@ interface TournamentCardProps {
 }
 
 export function TournamentCard({ tournament, registrationCount = 0 }: TournamentCardProps) {
+  const { user } = useAuth();
+  const isHost = user?.id === tournament.host_id;
   const statusColors: Record<string, string> = {
     registration_open: 'bg-green-500/20 text-green-400 border-green-500/30',
     registration_closed: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
@@ -148,15 +152,26 @@ export function TournamentCard({ tournament, registrationCount = 0 }: Tournament
           asChild
           className={cn(
             'w-full group/btn',
-            tournament.status === 'registration_open'
-              ? 'btn-gaming'
-              : 'border-[#FF4500]/20 hover:border-[#FF4500]/40'
+            isHost
+              ? 'bg-secondary/10 border-secondary/40 hover:border-secondary/60 text-secondary hover:bg-secondary/20'
+              : tournament.status === 'registration_open'
+                ? 'btn-gaming'
+                : 'border-[#FF4500]/20 hover:border-[#FF4500]/40'
           )}
-          variant={tournament.status === 'registration_open' ? 'default' : 'outline'}
+          variant={isHost ? 'outline' : tournament.status === 'registration_open' ? 'default' : 'outline'}
         >
           <Link to={`/tournament/${tournament.id}`}>
-            {tournament.status === 'registration_open' ? 'Register Now' : 'View Tournament'}
-            <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover/btn:translate-x-1" />
+            {isHost ? (
+              <>
+                <Settings className="w-4 h-4 mr-2" />
+                Manage Tournament
+              </>
+            ) : (
+              <>
+                {tournament.status === 'registration_open' ? 'Register Now' : 'View Tournament'}
+                <ChevronRight className="w-4 h-4 ml-2 transition-transform group-hover/btn:translate-x-1" />
+              </>
+            )}
           </Link>
         </Button>
       </div>

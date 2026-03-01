@@ -56,7 +56,7 @@ export function BottomTabBar() {
                 )}
               </div>
               <span className={cn(
-                'text-[11px] font-medium leading-tight',
+                'text-[10px] font-medium leading-tight',
                 isActive && 'font-bold'
               )}>
                 {tab.label}

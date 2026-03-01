@@ -169,7 +169,7 @@ export default function HomePage() {
                       {/* Tournament name + status */}
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-display uppercase tracking-wider text-[#FF4500] font-medium truncate">
-                          {(match as any).tournament?.name || 'Tournament'}
+                          {match.tournament?.name || 'Tournament'}
                         </p>
                         <span className={cn(
                           'flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0',

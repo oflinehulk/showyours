@@ -541,8 +541,9 @@ export function useGlobalUpcomingMatches(limit = 10) {
 
       if (error) throw new Error(error.message);
       // Only include matches from active tournaments
-      return (data || []).filter(
-        (m: any) => m.tournament && ['bracket_generated', 'ongoing'].includes(m.tournament.status)
+      type MatchWithTournament = TournamentMatch & { tournament?: { id: string; name: string; status: string } | null };
+      return (data as MatchWithTournament[] || []).filter(
+        (m) => m.tournament && ['bracket_generated', 'ongoing'].includes(m.tournament.status)
       ) as (TournamentMatch & { tournament: { id: string; name: string; status: string } })[];
     },
   });

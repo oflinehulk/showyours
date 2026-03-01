@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ImageUpload } from '@/components/ImageUpload';
 import type { TournamentRegistration, TournamentSquad, TournamentSquadMember } from '@/lib/tournament-types';
 
 interface TournamentRegistrationsProps {
@@ -695,7 +696,7 @@ function EditSquadDialog({
         squadId: squad.id,
         tournamentId,
         name: name.trim(),
-        logo_url: logoUrl.trim() || null,
+        logo_url: logoUrl || null,
       });
       toast.success('Team updated');
       onOpenChange(false);
@@ -716,28 +717,22 @@ function EditSquadDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {logoUrl && (
-            <img
-              src={logoUrl}
-              alt="Preview"
-              className="w-16 h-16 rounded-xl object-cover border border-border/50 mx-auto"
+          <div className="flex justify-center">
+            <ImageUpload
+              bucket="squad-logos"
+              currentUrl={logoUrl || null}
+              onUpload={setLogoUrl}
+              onRemove={() => setLogoUrl('')}
+              shape="square"
+              size="md"
             />
-          )}
+          </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Team Name</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Team name"
-              className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Logo URL</label>
-            <Input
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://..."
               className="bg-[#0a0a0a] border-[#FF4500]/20 focus:border-[#FF4500]/50"
             />
           </div>

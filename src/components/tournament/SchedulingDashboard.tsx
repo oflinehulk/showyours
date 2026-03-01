@@ -188,10 +188,21 @@ function computeOverlapSlots(
     });
   }
 
-  // Sort by date then time
-  overlaps.sort((a, b) => a.key.localeCompare(b.key));
+  // Filter out past slots (IST timezone)
+  const nowIST = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+  );
+  const futureOverlaps = overlaps.filter((slot) => {
+    const [year, month, day] = slot.date.split('-').map(Number);
+    const [hour, minute] = slot.time.split(':').map(Number);
+    const slotDate = new Date(year, month - 1, day, hour, minute);
+    return slotDate >= nowIST;
+  });
 
-  return { teamACount: teamAKeys.size, teamBCount: teamBKeys.size, overlaps };
+  // Sort by date then time
+  futureOverlaps.sort((a, b) => a.key.localeCompare(b.key));
+
+  return { teamACount: teamAKeys.size, teamBCount: teamBKeys.size, overlaps: futureOverlaps };
 }
 
 // Match row combining both teams + match info + approve controls

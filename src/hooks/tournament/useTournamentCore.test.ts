@@ -97,6 +97,7 @@ describe('useCreateTournament', () => {
 
     const { result } = renderHook(() => useCreateTournament(), { wrapper: createWrapper() });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock input
     result.current.mutate({ name: 'MLBB Cup', max_squads: 16, date_time: '2024-06-15T14:00:00Z' } as any);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

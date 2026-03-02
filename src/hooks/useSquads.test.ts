@@ -99,6 +99,7 @@ describe('useCreateSquad', () => {
 
     const { result } = renderHook(() => useCreateSquad(), { wrapper: createWrapper() });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial mock input
     result.current.mutate({ name: 'Alpha Squad', min_rank: 'epic', needed_roles: ['gold'], max_members: 5 } as any);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

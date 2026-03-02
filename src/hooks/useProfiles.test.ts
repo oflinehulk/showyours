@@ -101,8 +101,8 @@ describe('useCreateProfile', () => {
     const { result } = renderHook(() => useCreateProfile(), { wrapper: createWrapper() });
 
     result.current.mutate({
-      ign: 'Player1', rank: 'mythic' as any, main_role: 'gold' as any,
-      hero_class: 'marksman' as any, state: 'maharashtra' as any,
+      ign: 'Player1', rank: 'mythic', main_role: 'gold',
+      hero_class: 'marksman', state: 'maharashtra',
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

@@ -56,16 +56,34 @@ export function SwapTeamDialog({
     });
   }, [registrations, withdrawnSquadId, assignedSquadIds]);
 
-  // For "Add New Team" tab - fetch all squads
+  // For "Add New Team" tab - fetch all squads with actual member counts
   const { data: allSquads } = useQuery({
     queryKey: ['all-squads-for-host-add'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: squads, error } = await supabase
         .from('squads')
         .select('id, name, logo_url, owner_id, member_count, min_rank, server')
         .order('name');
       if (error) throw error;
-      return data;
+      if (!squads || squads.length === 0) return [];
+
+      // Compute actual member counts from squad_members table
+      // (stored member_count may be stale)
+      const squadIds = squads.map(s => s.id);
+      const { data: members } = await supabase
+        .from('squad_members')
+        .select('squad_id')
+        .in('squad_id', squadIds);
+
+      const countMap: Record<string, number> = {};
+      members?.forEach(m => {
+        countMap[m.squad_id] = (countMap[m.squad_id] || 0) + 1;
+      });
+
+      return squads.map(s => ({
+        ...s,
+        member_count: countMap[s.id] || 0,
+      }));
     },
     enabled: open,
   });
@@ -120,6 +138,15 @@ export function SwapTeamDialog({
   const handleSwapNewTeam = async (squadId: string, squadName: string) => {
     setSwapping(true);
     try {
+      // Sync stored member_count with actual count so the RPC validation passes
+      const { count } = await supabase
+        .from('squad_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('squad_id', squadId);
+      if (count != null) {
+        await supabase.from('squads').update({ member_count: count }).eq('id', squadId);
+      }
+
       // First add the squad to the tournament (auto-approves)
       const result = await hostAddSquad.mutateAsync({
         tournamentId: tournament.id,

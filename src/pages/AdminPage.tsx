@@ -97,8 +97,8 @@ const AdminPage = () => {
     if (!profiles) return [];
     let list = profiles;
 
-    if (playerFilter === 'banned') list = list.filter(p => !!(p as Record<string, unknown>).banned_at);
-    else if (playerFilter === 'active') list = list.filter(p => !(p as Record<string, unknown>).banned_at);
+    if (playerFilter === 'banned') list = list.filter(p => !!p.banned_at);
+    else if (playerFilter === 'active') list = list.filter(p => !p.banned_at);
     else if (playerFilter === 'looking') list = list.filter(p => p.looking_for_squad);
 
     if (!playerSearch.trim()) return list;
@@ -374,7 +374,7 @@ const AdminPage = () => {
                       </TableHeader>
                       <TableBody>
                         {filteredProfiles.map((profile) => {
-                          const isBanned = !!(profile as Record<string, unknown>).banned_at;
+                          const isBanned = !!profile.banned_at;
                           return (
                             <TableRow key={profile.id} className="border-b border-[#FF4500]/5 hover:bg-[#FF4500]/5">
                               <TableCell className="font-medium">

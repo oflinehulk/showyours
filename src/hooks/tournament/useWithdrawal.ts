@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { TournamentMatch, MatchStatus } from '@/lib/tournament-types';
+import type { TournamentMatch } from '@/lib/tournament-types';
 import { tournamentKeys } from './queryKeys';
 import { advanceWinnerToNextRound } from './matchAdvancementHelpers';
 
@@ -17,7 +17,7 @@ export function useWithdrawSquad() {
       squadId: string;
       tournamentId: string;
     }) => {
-      // Get all pending/ongoing matches for this squad
+      // Fetch matches that will be forfeited so we can advance winners client-side
       const { data: matches, error: matchError } = await supabase
         .from('tournament_matches')
         .select('*')
@@ -27,39 +27,33 @@ export function useWithdrawSquad() {
 
       if (matchError) throw new Error(matchError.message);
 
-      // Forfeit each match first — if any fails, registration stays approved
+      // Atomic forfeit + withdrawal via RPC
+      const { error } = await supabase.rpc('rpc_withdraw_squad_with_forfeits', {
+        p_registration_id: registrationId,
+        p_squad_id: squadId,
+        p_tournament_id: tournamentId,
+      });
+
+      if (error) throw new Error(error.message);
+
+      // Advance winners client-side (DB lacks next_match_id columns)
       for (const match of matches || []) {
         const opponentId = match.squad_a_id === squadId ? match.squad_b_id : match.squad_a_id;
-        if (!opponentId) continue; // Skip if no opponent (TBD match)
+        if (!opponentId) continue;
 
         const winsNeeded = Math.ceil((match.best_of || 1) / 2);
-        const { data: updated, error: forfeitError } = await supabase
-          .from('tournament_matches')
-          .update({
-            winner_id: opponentId,
-            status: 'completed' as MatchStatus,
-            is_forfeit: true,
-            squad_a_score: opponentId === match.squad_a_id ? winsNeeded : 0,
-            squad_b_score: opponentId === match.squad_b_id ? winsNeeded : 0,
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', match.id)
-          .select()
-          .single();
+        const completed: TournamentMatch = {
+          ...match,
+          winner_id: opponentId,
+          status: 'completed',
+          is_forfeit: true,
+          squad_a_score: opponentId === match.squad_a_id ? winsNeeded : 0,
+          squad_b_score: opponentId === match.squad_b_id ? winsNeeded : 0,
+          completed_at: new Date().toISOString(),
+        } as unknown as TournamentMatch;
 
-        if (forfeitError) throw new Error(forfeitError.message);
-
-        // Advance opponent
-        await advanceWinnerToNextRound(tournamentId, updated as unknown as TournamentMatch);
+        await advanceWinnerToNextRound(tournamentId, completed);
       }
-
-      // Set registration to withdrawn only after all forfeits succeeded
-      const { error: regError } = await supabase
-        .from('tournament_registrations')
-        .update({ status: 'withdrawn' })
-        .eq('id', registrationId);
-
-      if (regError) throw new Error(regError.message);
 
       return tournamentId;
     },

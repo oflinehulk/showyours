@@ -59,24 +59,11 @@ export function useAutoSeedByRegistrationOrder() {
 
   return useMutation({
     mutationFn: async (tournamentId: string) => {
-      const { data: registrations, error: fetchError } = await supabase
-        .from('tournament_registrations')
-        .select('id')
-        .eq('tournament_id', tournamentId)
-        .eq('status', 'approved')
-        .order('registered_at', { ascending: true });
+      const { error } = await supabase.rpc('rpc_batch_seed_registrations', {
+        p_tournament_id: tournamentId,
+      });
 
-      if (fetchError) throw new Error(fetchError.message);
-
-      // Update each registration with sequential seed
-      for (let i = 0; i < registrations.length; i++) {
-        const { error } = await supabase
-          .from('tournament_registrations')
-          .update({ seed: i + 1 })
-          .eq('id', registrations[i].id);
-        if (error) throw new Error(error.message);
-      }
-
+      if (error) throw new Error(error.message);
       return tournamentId;
     },
     onSuccess: (tournamentId) => {

@@ -16,6 +16,7 @@ import { ScoreEditSheet } from '@/components/tournament/ScoreEditSheet';
 import { ShareCardGenerator } from '@/components/tournament/ShareCardGenerator';
 import { CoinTossOverlay } from '@/components/tournament/CoinTossOverlay';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
+import { SwapTeamDialog } from '@/components/tournament/SwapTeamDialog';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +29,7 @@ import {
   useTournamentGroups,
   useTournamentGroupTeams,
   useStageMatches,
+  useTournamentRegistrations,
 } from '@/hooks/useTournaments';
 import { computeGroupStandings } from '@/lib/bracket-utils';
 import {
@@ -436,6 +438,19 @@ function GroupStageView({
 }) {
   const { data: groups } = useTournamentGroups(stage.id);
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
+  const { data: registrations } = useTournamentRegistrations(tournament.id);
+  const [swapTarget, setSwapTarget] = useState<{
+    groupId: string;
+    squadId: string;
+    squadName: string;
+  } | null>(null);
+
+  // Build set of withdrawn squad IDs
+  const withdrawnSquadIds = new Set(
+    (registrations || [])
+      .filter(r => r.status === 'withdrawn')
+      .map(r => r.tournament_squad_id)
+  );
 
   if (!groups || groups.length === 0) {
     return (
@@ -477,6 +492,11 @@ function GroupStageView({
               groupLabel={group.label}
               advanceCount={stage.advance_per_group}
               advanceToLowerCount={stage.advance_to_lower_per_group}
+              isHost={isHost}
+              withdrawnSquadIds={withdrawnSquadIds}
+              onSwapTeam={stage.status === 'ongoing' ? (squadId, squadName) => {
+                setSwapTarget({ groupId: group.id, squadId, squadName });
+              } : undefined}
             />
 
             {/* Group Matches */}
@@ -509,6 +529,20 @@ function GroupStageView({
           </div>
         );
       })}
+
+      {/* Swap Team Dialog */}
+      {swapTarget && registrations && (
+        <SwapTeamDialog
+          open={!!swapTarget}
+          onOpenChange={(open) => { if (!open) setSwapTarget(null); }}
+          tournament={tournament}
+          stageId={stage.id}
+          groupId={swapTarget.groupId}
+          withdrawnSquadId={swapTarget.squadId}
+          withdrawnSquadName={swapTarget.squadName}
+          registrations={registrations}
+        />
+      )}
     </div>
   );
 }

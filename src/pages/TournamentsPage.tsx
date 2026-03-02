@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Plus, Trophy, Calendar, Users } from 'lucide-react';
@@ -15,7 +16,7 @@ import { useSEO } from '@/hooks/useSEO';
 export default function TournamentsPage() {
   useSEO({ title: 'Tournaments', description: 'Compete in MLBB tournaments and win prizes.', path: '/tournaments' });
   const { user } = useAuth();
-  const { data: tournaments, isLoading } = useTournaments();
+  const { data: tournaments, isLoading, isError, error, refetch } = useTournaments();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('upcoming');
 
@@ -121,6 +122,9 @@ export default function TournamentsPage() {
             <CircuitLoader size="lg" />
           </div>
         )}
+
+        {/* Error state */}
+        {isError && <QueryErrorState error={error} onRetry={refetch} />}
 
         {/* Tournament Grid */}
         {!isLoading && filteredTournaments.length > 0 && (

@@ -1,10 +1,15 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initSentry } from "./lib/sentry";
+import { initSentry, Sentry } from "./lib/sentry";
 
 // Initialize error tracking
 initSentry();
+
+// Catch unhandled promise rejections globally and report to Sentry
+window.addEventListener('unhandledrejection', (event) => {
+  Sentry.captureException(event.reason);
+});
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {

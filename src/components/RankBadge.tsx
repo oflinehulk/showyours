@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { RANKS, type RankId } from '@/lib/constants';
 
@@ -34,7 +35,7 @@ const rankIcons: Record<string, string> = {
   immortal: '🌌',
 };
 
-export function RankBadge({ rank, size = 'md', showName = true, className }: RankBadgeProps) {
+export const RankBadge = memo(function RankBadge({ rank, size = 'md', showName = true, className }: RankBadgeProps) {
   const rankData = RANKS.find(r => r.id === rank);
   
   const sizeClasses = {
@@ -56,4 +57,4 @@ export function RankBadge({ rank, size = 'md', showName = true, className }: Ran
       {showName && <span>{rankData?.name || rank}</span>}
     </span>
   );
-}
+});

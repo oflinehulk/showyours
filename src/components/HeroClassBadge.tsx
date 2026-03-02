@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { HERO_CLASSES, type HeroClassId } from '@/lib/constants';
 import { Shield, Swords, Skull, Sparkles, Target, Heart, HelpCircle } from 'lucide-react';
@@ -27,7 +28,7 @@ const classColors: Record<string, string> = {
   support: 'text-green-400 bg-green-400/10',
 };
 
-export function HeroClassBadge({ heroClass, size = 'md', showName = true, className }: HeroClassBadgeProps) {
+export const HeroClassBadge = memo(function HeroClassBadge({ heroClass, size = 'md', showName = true, className }: HeroClassBadgeProps) {
   const classData = HERO_CLASSES.find(c => c.id === heroClass);
   
   const sizeClasses = {
@@ -55,4 +56,4 @@ export function HeroClassBadge({ heroClass, size = 'md', showName = true, classN
       {showName && <span>{classData?.name || heroClass}</span>}
     </span>
   );
-}
+});

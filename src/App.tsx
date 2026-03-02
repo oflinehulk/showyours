@@ -9,6 +9,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { getUserFriendlyMessage } from "@/lib/error-utils";
+import { Sentry } from "@/lib/sentry";
 
 // Lazy-loaded pages for code splitting
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -28,9 +31,25 @@ const DocsPage = lazy(() => import("./pages/DocsPage"));
 const ScheduleAvailabilityPage = lazy(() => import("./pages/ScheduleAvailabilityPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
-// Expose queryClient for auth signOut cache clearing
-(window as unknown as Record<string, unknown>).__queryClient = queryClient;
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,      // 2 min — avoid refetching unchanged data
+      gcTime: 10 * 60 * 1000,         // 10 min garbage collection
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      onError: (error) => {
+        toast.error('Action failed', { description: getUserFriendlyMessage(error) });
+        Sentry.captureException(error);
+      },
+    },
+  },
+});
+
+// Export queryClient for auth signOut cache clearing
+export { queryClient };
 
 function PageLoader() {
   return (

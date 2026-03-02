@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { RankBadge } from './RankBadge';
@@ -11,7 +12,7 @@ interface SquadCardProps {
   className?: string;
 }
 
-export function SquadCard({ squad, className }: SquadCardProps) {
+export const SquadCard = memo(function SquadCard({ squad, className }: SquadCardProps) {
   const neededRoles = squad.needed_roles || [];
   const maxMembers = squad.max_members || 5;
 
@@ -80,4 +81,4 @@ export function SquadCard({ squad, className }: SquadCardProps) {
       </GlowCard>
     </Link>
   );
-}
+});

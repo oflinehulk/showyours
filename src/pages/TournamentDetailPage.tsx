@@ -29,6 +29,7 @@ import { MatchScheduler } from '@/components/tournament/MatchScheduler';
 import SchedulingDashboard from '@/components/tournament/SchedulingDashboard';
 import { UpcomingMatches } from '@/components/tournament/UpcomingMatches';
 import { TournamentPromoCard } from '@/components/tournament/TournamentPromoCard';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import {
   useTournament,
   useTournamentRegistrations,
@@ -79,7 +80,7 @@ export default function TournamentDetailPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { data: tournament, isLoading } = useTournament(id);
+  const { data: tournament, isLoading, isError, error, refetch } = useTournament(id);
   const { data: registrations } = useTournamentRegistrations(id);
   const { data: matches } = useTournamentMatches(id);
   const updateTournament = useUpdateTournament();
@@ -238,6 +239,16 @@ export default function TournamentDetailPage() {
           <Skeleton className="h-72 w-full rounded-2xl mb-8 bg-[#111111]" />
           <Skeleton className="h-10 w-80 mb-4 bg-[#111111]" />
           <Skeleton className="h-5 w-[500px] bg-[#111111]" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <QueryErrorState error={error} onRetry={refetch} />
         </div>
       </Layout>
     );

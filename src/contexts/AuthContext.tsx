@@ -70,16 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error as Error | null };
   };
 
+  const queryClient = useQueryClient();
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     // Clear all cached data so the next user doesn't see stale data
-    try {
-      const queryClient = (window as unknown as Record<string, { clear: () => void } | undefined>).__queryClient;
-      if (queryClient) queryClient.clear();
-    } catch {
-      // queryClient not available outside provider - that's ok
-    }
-  }, []);
+    queryClient.clear();
+  }, [queryClient]);
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth?type=recovery`;

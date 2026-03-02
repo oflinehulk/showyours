@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { ROLES, type RoleId } from '@/lib/constants';
 import { Target, Swords, Crosshair, Shield, Trees, HelpCircle } from 'lucide-react';
@@ -25,7 +26,7 @@ const roleColors: Record<string, string> = {
   jungle: 'text-green-400',
 };
 
-export function RoleIcon({ role, size = 'md', showName = true, className }: RoleIconProps) {
+export const RoleIcon = memo(function RoleIcon({ role, size = 'md', showName = true, className }: RoleIconProps) {
   const roleData = ROLES.find(r => r.id === role);
   
   const sizeClasses = {
@@ -44,4 +45,4 @@ export function RoleIcon({ role, size = 'md', showName = true, className }: Role
       )}
     </span>
   );
-}
+});

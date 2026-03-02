@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { useSquads } from '@/hooks/useSquads';
 import { RANKS, ROLES } from '@/lib/constants';
 import { Search, Filter, Shield, X, Plus } from 'lucide-react';
@@ -21,7 +22,7 @@ import { useSEO } from '@/hooks/useSEO';
 
 export default function SquadsPage() {
   useSEO({ title: 'Find Squads', description: 'Browse MLBB squads actively recruiting new members.', path: '/squads' });
-  const { data: squads, isLoading } = useSquads();
+  const { data: squads, isLoading, isError, error, refetch } = useSquads();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -179,6 +180,9 @@ export default function SquadsPage() {
             <CircuitLoader size="lg" />
           </div>
         )}
+
+        {/* Error state */}
+        {isError && <QueryErrorState error={error} onRetry={refetch} />}
 
         {/* Looking for Members */}
         {!isLoading && recruitingSquads.length > 0 && (

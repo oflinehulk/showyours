@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { GlowCard } from '@/components/tron/GlowCard';
 import { CircuitLoader } from '@/components/tron/CircuitLoader';
+import { QueryErrorState } from '@/components/QueryErrorState';
 import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { getContactValue } from '@/lib/contacts';
@@ -25,7 +26,7 @@ type SortOption = 'recent' | 'winrate' | 'rank';
 
 export default function PlayersPage() {
   useSEO({ title: 'Find Players', description: 'Browse MLBB players open for recruitment. Filter by rank, role, and state.', path: '/players' });
-  const { data: profiles, isLoading } = useProfiles();
+  const { data: profiles, isLoading, isError, error, refetch } = useProfiles();
   const [searchQuery, setSearchQuery] = useState('');
   const [rankFilter, setRankFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -274,6 +275,9 @@ export default function PlayersPage() {
             <CircuitLoader size="lg" />
           </div>
         )}
+
+        {/* Error state */}
+        {isError && <QueryErrorState error={error} onRetry={refetch} />}
 
         {/* Grid View */}
         {!isLoading && viewMode === 'grid' && (

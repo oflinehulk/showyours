@@ -4,6 +4,7 @@ import {
   TOURNAMENT_FORMAT_LABELS,
   MATCH_STATUS_LABELS,
   MAX_SQUAD_SIZES,
+  validateMatchScores,
 } from '@/lib/tournament-types';
 
 describe('Tournament type constants', () => {
@@ -39,5 +40,67 @@ describe('Tournament type constants', () => {
     for (let i = 1; i < MAX_SQUAD_SIZES.length; i++) {
       expect(MAX_SQUAD_SIZES[i]).toBeGreaterThan(MAX_SQUAD_SIZES[i - 1]);
     }
+  });
+});
+
+describe('validateMatchScores', () => {
+  // Bo1
+  it('accepts valid Bo1 result 1-0', () => {
+    expect(validateMatchScores(1, 1, 0)).toEqual({ valid: true });
+  });
+
+  it('accepts valid Bo1 result 0-1', () => {
+    expect(validateMatchScores(1, 0, 1)).toEqual({ valid: true });
+  });
+
+  it('rejects Bo1 tie 0-0', () => {
+    expect(validateMatchScores(1, 0, 0).valid).toBe(false);
+  });
+
+  it('rejects Bo1 with 2-0', () => {
+    expect(validateMatchScores(1, 2, 0).valid).toBe(false);
+  });
+
+  // Bo3
+  it('accepts valid Bo3 result 2-0', () => {
+    expect(validateMatchScores(3, 2, 0)).toEqual({ valid: true });
+  });
+
+  it('accepts valid Bo3 result 2-1', () => {
+    expect(validateMatchScores(3, 2, 1)).toEqual({ valid: true });
+  });
+
+  it('accepts valid Bo3 result 1-2', () => {
+    expect(validateMatchScores(3, 1, 2)).toEqual({ valid: true });
+  });
+
+  it('rejects Bo3 with 3-0', () => {
+    expect(validateMatchScores(3, 3, 0).valid).toBe(false);
+  });
+
+  it('rejects Bo3 tie 1-1', () => {
+    expect(validateMatchScores(3, 1, 1).valid).toBe(false);
+  });
+
+  // Bo5
+  it('accepts valid Bo5 result 3-0', () => {
+    expect(validateMatchScores(5, 3, 0)).toEqual({ valid: true });
+  });
+
+  it('accepts valid Bo5 result 3-2', () => {
+    expect(validateMatchScores(5, 3, 2)).toEqual({ valid: true });
+  });
+
+  it('rejects Bo5 with 4-1', () => {
+    expect(validateMatchScores(5, 4, 1).valid).toBe(false);
+  });
+
+  // Edge cases
+  it('rejects negative scores', () => {
+    expect(validateMatchScores(3, -1, 2).valid).toBe(false);
+  });
+
+  it('rejects decimal scores', () => {
+    expect(validateMatchScores(3, 1.5, 2).valid).toBe(false);
   });
 });

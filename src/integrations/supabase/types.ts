@@ -1305,6 +1305,10 @@ export type Database = {
         Args: { p_change_id: string }
         Returns: undefined
       }
+      rpc_batch_seed_registrations: {
+        Args: { p_tournament_id: string }
+        Returns: undefined
+      }
       rpc_get_scheduling_context: { Args: { p_token: string }; Returns: Json }
       rpc_host_add_squad: {
         Args: { p_squad_id: string; p_tournament_id: string }
@@ -1340,6 +1344,14 @@ export type Database = {
       rpc_submit_availability: {
         Args: { p_match_slots: Json; p_token: string }
         Returns: Json
+      }
+      rpc_withdraw_squad_with_forfeits: {
+        Args: {
+          p_registration_id: string
+          p_squad_id: string
+          p_tournament_id: string
+        }
+        Returns: undefined
       }
       search_profiles:
         | {
@@ -1390,6 +1402,8 @@ export type Database = {
               user_id: string
             }[]
           }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

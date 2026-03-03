@@ -96,7 +96,7 @@ export function UpcomingMatches({
 
     lines.push(`\u{1F4E2} Watch live on ShowYours`);
     if (tournamentId) {
-      lines.push(`\u{1F517} showyours.lovable.app/tournament/${tournamentId}`);
+      lines.push(`\u{1F517} showyours.fun/tournament/${tournamentId}`);
     }
 
     const text = lines.join('\n');
@@ -305,94 +305,77 @@ export function UpcomingMatches({
                     <span style={{ color: '#555', marginLeft: '12px', fontSize: '12px' }}>Round {m.round} &middot; Match #{m.match_number}</span>
                   </div>
 
-                  {/* Teams row - horizontal */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}>
+                  {/* Teams - vertical layout */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {/* Team A */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      flex: 1,
-                      minWidth: 0,
+                      gap: '12px',
+                      padding: '6px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255,255,255,0.02)',
                     }}>
                       {m.squad_a?.logo_url ? (
                         <img
                           src={m.squad_a.logo_url}
                           crossOrigin="anonymous"
-                          style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                         />
                       ) : (
                         <div style={{
-                          width: '36px', height: '36px', borderRadius: '50%',
+                          width: '32px', height: '32px', borderRadius: '50%',
                           backgroundColor: '#1a1a1a', display: 'flex',
                           alignItems: 'center', justifyContent: 'center',
-                          fontSize: '16px', color: '#666', flexShrink: 0,
+                          fontSize: '14px', color: '#666', flexShrink: 0,
                         }}>
                           {m.squad_a?.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                       )}
-                      <span style={{
-                        color: '#ddd',
-                        fontWeight: 700,
-                        fontSize: '18px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
+                      <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>
                         {m.squad_a?.name || 'TBD'}
                       </span>
                     </div>
 
                     {/* VS */}
-                    <span style={{
-                      color: '#FF4500',
-                      fontSize: '16px',
+                    <div style={{
+                      textAlign: 'center',
+                      color: 'rgba(255,69,0,0.5)',
+                      fontSize: '12px',
                       fontWeight: 700,
-                      letterSpacing: '0.1em',
-                      margin: '0 20px',
-                      flexShrink: 0,
+                      letterSpacing: '0.15em',
                     }}>
                       VS
-                    </span>
+                    </div>
 
                     {/* Team B */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      flex: 1,
-                      minWidth: 0,
-                      justifyContent: 'flex-end',
+                      gap: '12px',
+                      padding: '6px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255,255,255,0.02)',
                     }}>
-                      <span style={{
-                        color: '#ddd',
-                        fontWeight: 700,
-                        fontSize: '18px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {m.squad_b?.name || 'TBD'}
-                      </span>
                       {m.squad_b?.logo_url ? (
                         <img
                           src={m.squad_b.logo_url}
                           crossOrigin="anonymous"
-                          style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                         />
                       ) : (
                         <div style={{
-                          width: '36px', height: '36px', borderRadius: '50%',
+                          width: '32px', height: '32px', borderRadius: '50%',
                           backgroundColor: '#1a1a1a', display: 'flex',
                           alignItems: 'center', justifyContent: 'center',
-                          fontSize: '16px', color: '#666', flexShrink: 0,
+                          fontSize: '14px', color: '#666', flexShrink: 0,
                         }}>
                           {m.squad_b?.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                       )}
+                      <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>
+                        {m.squad_b?.name || 'TBD'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -419,7 +402,7 @@ export function UpcomingMatches({
                 ShowYours
               </span>
               <span style={{ color: '#555', fontSize: '14px' }}>
-                showyours.lovable.app
+                showyours.fun
               </span>
             </div>
           </div>
@@ -841,7 +824,7 @@ function UpcomingMatchCard({
                 ShowYours
               </span>
               <span style={{ color: '#444', fontSize: '9px' }}>
-                showyours.lovable.app
+                showyours.fun
               </span>
             </div>
           </div>

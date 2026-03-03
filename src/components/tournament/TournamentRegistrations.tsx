@@ -482,7 +482,7 @@ export function TournamentRegistrations({
               ShowYours
             </span>
             <span style={{ color: '#444', fontSize: '9px' }}>
-              showyours.lovable.app
+              showyours.fun
             </span>
           </div>
         </div>

@@ -223,7 +223,7 @@ export function TournamentPromoCard({
                 ShowYours
               </span>
               <span style={{ color: '#444', fontSize: '10px' }}>
-                showyours.lovable.app
+                showyours.fun
               </span>
             </div>
           </div>

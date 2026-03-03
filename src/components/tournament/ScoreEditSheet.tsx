@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ImageUpload } from '@/components/ImageUpload';
 import { BottomSheet } from '@/components/tron/BottomSheet';
-import { useUpdateMatchResult } from '@/hooks/useTournaments';
+import { useUpdateMatchResult, useResetMatchResult } from '@/hooks/useTournaments';
 import { DraftPickPanel } from '@/components/tournament/DraftPickPanel';
 import { cn } from '@/lib/utils';
 import {
   CheckCircle,
   Loader2,
   Swords,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MATCH_STATUS_LABELS, validateMatchScores } from '@/lib/tournament-types';
@@ -35,6 +36,7 @@ export function ScoreEditSheet({
   onOpenChange,
 }: ScoreEditSheetProps) {
   const updateResult = useUpdateMatchResult();
+  const resetResult = useResetMatchResult();
   const [showDraftPanel, setShowDraftPanel] = useState(false);
 
   const [squadAScore, setSquadAScore] = useState('0');
@@ -197,6 +199,30 @@ export function ScoreEditSheet({
               >
                 <Swords className="w-4 h-4 mr-2" />
                 Draft Pick/Ban
+              </Button>
+            )}
+            {isHost && match.status === 'completed' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await resetResult.mutateAsync({ matchId: match.id, tournamentId });
+                    toast.success('Match result reset to pending');
+                    onOpenChange(false);
+                  } catch (error: unknown) {
+                    toast.error('Failed to reset', { description: error instanceof Error ? error.message : 'Unknown error' });
+                  }
+                }}
+                disabled={resetResult.isPending}
+                className="border-orange-400/30 text-orange-400 hover:bg-orange-400/10"
+              >
+                {resetResult.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                )}
+                Reset Result
               </Button>
             )}
             <div className="flex-1" />

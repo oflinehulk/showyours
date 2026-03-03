@@ -72,6 +72,25 @@ export function useSwapTeam() {
         .eq('winner_id', withdrawnSquadId);
       if (winnerErr) throw new Error(winnerErr.message);
 
+      // Swap toss references (toss_winner, blue_side_team, red_side_team)
+      await supabase
+        .from('tournament_matches')
+        .update({ toss_winner: newSquadId })
+        .eq('group_id', groupId)
+        .eq('toss_winner', withdrawnSquadId);
+
+      await supabase
+        .from('tournament_matches')
+        .update({ blue_side_team: newSquadId })
+        .eq('group_id', groupId)
+        .eq('blue_side_team', withdrawnSquadId);
+
+      await supabase
+        .from('tournament_matches')
+        .update({ red_side_team: newSquadId })
+        .eq('group_id', groupId)
+        .eq('red_side_team', withdrawnSquadId);
+
       // 4. Update tournament_group_teams: replace withdrawn with new team
       const { error: gtErr } = await supabase
         .from('tournament_group_teams')
@@ -126,7 +145,37 @@ export function useSwapTeam() {
         })
         .eq('id', newRegistrationId);
 
-      // 7. Write audit log
+      // 7. Clean up old team's scheduling data and create token for new team
+      // Delete old team's scheduling token for this tournament
+      await supabase
+        .from('scheduling_tokens')
+        .delete()
+        .eq('tournament_id', tournamentId)
+        .eq('tournament_squad_id', withdrawnSquadId);
+
+      // Delete old team's availability and submissions for this tournament
+      await supabase
+        .from('squad_availability')
+        .delete()
+        .eq('tournament_squad_id', withdrawnSquadId);
+
+      await supabase
+        .from('scheduling_submissions')
+        .delete()
+        .eq('tournament_squad_id', withdrawnSquadId);
+
+      // Generate a scheduling token for the new team
+      const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+      await supabase
+        .from('scheduling_tokens')
+        .insert({
+          tournament_id: tournamentId,
+          tournament_squad_id: newSquadId,
+          token,
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+
+      // 8. Write audit log
       const { data: { user } } = await supabase.auth.getUser();
       await supabase
         .from('tournament_audit_log')
@@ -151,6 +200,8 @@ export function useSwapTeam() {
       queryClient.invalidateQueries({ queryKey: tournamentKeys.groupTeams(stageId) });
       queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
       queryClient.invalidateQueries({ queryKey: tournamentKeys.allSquadsForHostAdd });
+      queryClient.invalidateQueries({ queryKey: ['scheduling-tokens', tournamentId] });
+      queryClient.invalidateQueries({ queryKey: ['scheduling-submissions', tournamentId] });
     },
   });
 }

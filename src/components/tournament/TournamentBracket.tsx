@@ -25,6 +25,7 @@ import {
   useRaiseDispute,
   useResolveDispute,
   useResetCoinToss,
+  useResetMatchResult,
   useTournamentStages,
   useTournamentGroups,
   useTournamentGroupTeams,
@@ -46,6 +47,7 @@ import {
   MoreHorizontal,
   Layers,
   Coins,
+  RotateCcw,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -840,6 +842,7 @@ function MatchCard({
   const updateCheckIn = useUpdateMatchCheckIn();
   const forfeitMatch = useForfeitMatch();
   const resetCoinToss = useResetCoinToss();
+  const resetMatchResult = useResetMatchResult();
 
   const isOngoing = tournamentStatus === 'ongoing' || tournamentStatus === 'bracket_generated';
   const userInMatch = userSquadIds.some(id => id === match.squad_a_id || id === match.squad_b_id);
@@ -950,7 +953,8 @@ function MatchCard({
             const showResolve = isHost && match.status === 'disputed';
             const showDoToss = onToss && isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.toss_completed_at;
             const showRedoToss = onToss && isHost && isOngoing && (match.status === 'pending' || match.status === 'ongoing') && match.toss_completed_at;
-            const hasActions = showForfeitA || showForfeitB || showDispute || showResolve || showDoToss || showRedoToss;
+            const showResetResult = isHost && isOngoing && match.status === 'completed';
+            const hasActions = showForfeitA || showForfeitB || showDispute || showResolve || showDoToss || showRedoToss || showResetResult;
 
             if (!hasActions) return null;
 
@@ -1021,6 +1025,25 @@ function MatchCard({
                     >
                       <CheckCircle className="w-3.5 h-3.5 mr-2" />
                       Resolve Dispute
+                    </DropdownMenuItem>
+                  )}
+                  {showResetResult && (
+                    <DropdownMenuItem
+                      className="text-orange-400 focus:text-orange-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resetMatchResult.mutate(
+                          { matchId: match.id, tournamentId },
+                          {
+                            onSuccess: () => toast.success('Match result reset to pending'),
+                            onError: (err: Error) => toast.error('Failed to reset', { description: err.message }),
+                          }
+                        );
+                      }}
+                      disabled={resetMatchResult.isPending}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                      Reset Result
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

@@ -1,11 +1,15 @@
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 
-export async function captureAndDownload(element: HTMLElement, filename: string) {
+interface CaptureOptions {
+  scale?: number;
+}
+
+export async function captureAndDownload(element: HTMLElement, filename: string, options?: CaptureOptions) {
   try {
     const canvas = await html2canvas(element, {
       backgroundColor: '#0a0a0a',
-      scale: 2,
+      scale: options?.scale ?? 2,
       useCORS: true,
       logging: false,
     });
@@ -19,11 +23,11 @@ export async function captureAndDownload(element: HTMLElement, filename: string)
   }
 }
 
-export async function captureAndShare(element: HTMLElement, filename: string) {
+export async function captureAndShare(element: HTMLElement, filename: string, options?: CaptureOptions) {
   try {
     const canvas = await html2canvas(element, {
       backgroundColor: '#0a0a0a',
-      scale: 2,
+      scale: options?.scale ?? 2,
       useCORS: true,
       logging: false,
     });

@@ -168,12 +168,12 @@ export function useSwapTeam() {
       const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
       await supabase
         .from('scheduling_tokens')
-        .insert({
+        .upsert({
           tournament_id: tournamentId,
           tournament_squad_id: newSquadId,
           token,
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        });
+        }, { onConflict: 'tournament_id,tournament_squad_id' });
 
       // 8. Write audit log
       const { data: { user } } = await supabase.auth.getUser();

@@ -465,17 +465,13 @@ function GroupStageView({
   return (
     <div className="space-y-6">
       {groups.map((group) => {
-        const teamIds = (groupTeams || [])
-          .filter(gt => gt.group_id === group.id)
-          .map(gt => gt.tournament_squad_id);
-
         const groupMatches = stageMatches.filter(m => m.group_id === group.id);
 
         // Build squad map from match data
         const squadMap = new Map<string, TournamentSquad>();
         for (const m of groupMatches) {
-          if (m.squad_a && teamIds.includes(m.squad_a_id!)) squadMap.set(m.squad_a_id!, m.squad_a);
-          if (m.squad_b && teamIds.includes(m.squad_b_id!)) squadMap.set(m.squad_b_id!, m.squad_b);
+          if (m.squad_a && m.squad_a_id) squadMap.set(m.squad_a_id, m.squad_a);
+          if (m.squad_b && m.squad_b_id) squadMap.set(m.squad_b_id, m.squad_b);
         }
         // Also use groupTeams data if available
         for (const gt of (groupTeams || [])) {

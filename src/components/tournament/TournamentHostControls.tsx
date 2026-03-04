@@ -67,6 +67,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { DownloadLogosDialog } from '@/components/tournament/DownloadLogosDialog';
 import type {
   Tournament,
   TournamentRegistration,
@@ -279,6 +280,9 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
             Multi-Stage
           </span>
         )}
+        <div className="ml-auto">
+          <DownloadLogosDialog tournamentName={tournament.name} registrations={registrations} />
+        </div>
       </div>
 
       {/* Step Progress Indicator */}

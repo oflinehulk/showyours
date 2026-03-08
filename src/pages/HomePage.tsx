@@ -58,7 +58,7 @@ export default function HomePage() {
             {/* Tagline */}
             <div className="mb-6 animate-slide-up">
               <p className="font-display text-[#FF4500] text-sm md:text-base tracking-[0.3em] uppercase mb-4 text-neon-subtle">
-                DOMINATE &middot; ORGANIZE &middot; CONQUER
+                ORGANIZE &middot; COMPETE &middot; CONQUER
               </p>
             </div>
 

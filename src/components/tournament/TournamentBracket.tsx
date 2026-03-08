@@ -751,12 +751,12 @@ function BracketView({
 
   if (isMobile) {
     return (
-      <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-        <div className="flex gap-3 min-w-max py-2">
+      <div className="overflow-x-auto -mx-3 px-3 scrollbar-hide">
+        <div className="flex gap-2 min-w-max py-1">
           {rounds.map((round, roundIndex) => (
             <div key={round} className="flex items-stretch">
-              <div className="flex flex-col gap-3 min-w-[170px]">
-                <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
+              <div className="flex flex-col gap-2 min-w-[155px]">
+                <h4 className="text-[10px] font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
                   {roundIndex === rounds.length - 1 ? 'Final' : `R${round}`}
                 </h4>
                 {matches

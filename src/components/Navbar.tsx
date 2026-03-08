@@ -6,10 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
 import { useMySquads } from '@/hooks/useSquads';
 import { useIsAdmin } from '@/hooks/useAdmin';
-import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw, BookOpen } from 'lucide-react';
+import { Users, UserPlus, Shield, LogOut, LogIn, Settings, ShieldCheck, Trophy, Search, RefreshCw, BookOpen, ChevronDown, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvitationBadge } from '@/components/InvitationInbox';
 import { NotificationBell } from '@/components/NotificationBell';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const navLinks = [
   { to: '/players', label: 'Find Players', icon: Users },
@@ -56,6 +64,7 @@ export function Navbar() {
                 className={cn(
                   'px-4 py-2 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 flex items-center gap-2',
                   'hover:scale-[1.02] active:scale-[0.98]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   location.pathname === link.to
                     ? 'bg-[#FF4500]/10 text-[#FF4500] border border-[#FF4500]/20'
                     : 'text-muted-foreground hover:text-foreground hover:bg-[#111111]'
@@ -71,48 +80,76 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                {isAdmin && (
-                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/30 text-[#FF4500] hover:bg-[#FF4500]/10" asChild>
-                    <Link to="/admin">
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      Admin
-                    </Link>
-                  </Button>
-                )}
-                {hasProfile ? (
-                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
-                    <Link to={`/player/${myProfile.id}`}>
-                      <Settings className="w-4 h-4 mr-2" />
-                      Profile
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" className="btn-interactive border-[#FF4500]/20 hover:border-[#FF4500]/40" asChild>
-                    <Link to="/create-profile">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Create Profile
-                    </Link>
-                  </Button>
-                )}
-                {hasSquad ? (
-                  <Button size="sm" className="btn-gaming" asChild>
-                    <Link to={`/squad/${mySquads[0].id}`}>Manage Squad</Link>
-                  </Button>
-                ) : (
-                  hasProfile && (
-                    <Button size="sm" className="btn-gaming" asChild>
-                      <Link to="/create-squad">Post Squad</Link>
-                    </Button>
-                  )
-                )}
                 {hasProfile && <InvitationBadge />}
                 {hasProfile && <NotificationBell />}
-                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9 text-muted-foreground hover:text-[#FF4500]" title="Hard refresh">
+                <Button variant="ghost" size="icon" onClick={handleHardRefresh} className="btn-interactive w-9 h-9 text-muted-foreground hover:text-[#FF4500] focus-visible:ring-2 focus-visible:ring-ring" title="Hard refresh">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={handleSignOut} className="btn-interactive text-muted-foreground hover:text-[#FF4500]">
-                  <LogOut className="w-4 h-4" />
-                </Button>
+
+                {/* Avatar dropdown — groups Profile, Squad, Admin, Logout */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+                      <Avatar className="h-7 w-7">
+                        {myProfile?.avatar_url ? (
+                          <AvatarImage src={myProfile.avatar_url} alt={myProfile.ign} />
+                        ) : null}
+                        <AvatarFallback className="bg-[#FF4500]/10 text-[#FF4500] text-xs">
+                          {myProfile?.ign?.charAt(0)?.toUpperCase() || <User className="w-3.5 h-3.5" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {hasProfile ? (
+                      <DropdownMenuItem asChild>
+                        <Link to={`/player/${myProfile.id}`} className="flex items-center gap-2">
+                          <Settings className="w-4 h-4" />
+                          My Profile
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem asChild>
+                        <Link to="/create-profile" className="flex items-center gap-2">
+                          <UserPlus className="w-4 h-4" />
+                          Create Profile
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {hasSquad ? (
+                      <DropdownMenuItem asChild>
+                        <Link to={`/squad/${mySquads[0].id}`} className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          My Squad
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : hasProfile ? (
+                      <DropdownMenuItem asChild>
+                        <Link to="/create-squad" className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Create Squad
+                        </Link>
+                      </DropdownMenuItem>
+                    ) : null}
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center gap-2 text-[#FF4500]">
+                            <ShieldCheck className="w-4 h-4" />
+                            Admin Panel
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-muted-foreground">
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>

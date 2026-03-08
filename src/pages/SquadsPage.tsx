@@ -215,7 +215,7 @@ export default function SquadsPage() {
               Not Recruiting
               <span className="text-sm font-normal text-muted-foreground">({otherSquads.length})</span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {otherSquads.map((squad) => (
                 <SquadCard key={squad.id} squad={squad} />
               ))}

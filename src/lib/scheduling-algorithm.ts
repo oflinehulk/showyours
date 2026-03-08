@@ -38,10 +38,15 @@ function slotKey(date: string, time: string): string {
 
 /**
  * Get adjacent slot keys that should be blocked given a gap in minutes.
- * The 6 standard slots are: 21:00, 21:30, 22:00, 22:30, 23:00, 23:30
+ * Standard slots: 16:00–23:30 in 30-min increments.
  */
 function getBlockedSlots(date: string, time: string, gapMinutes: number): string[] {
-  const SLOTS = ['21:00', '21:30', '22:00', '22:30', '23:00', '23:30'];
+  const SLOTS = [
+    '16:00', '16:30', '17:00', '17:30',
+    '18:00', '18:30', '19:00', '19:30',
+    '20:00', '20:30', '21:00', '21:30',
+    '22:00', '22:30', '23:00', '23:30',
+  ];
   const blocked: string[] = [slotKey(date, time)];
 
   const baseIndex = SLOTS.indexOf(time);

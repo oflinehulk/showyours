@@ -8,6 +8,16 @@ import { RoleIcon } from '@/components/RoleIcon';
 import { Search, Loader2, User, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Debounce hook for rate-limiting search queries
+function useDebouncedValue(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 interface PlayerSearchProps {
   onSelect: (profile: SearchedProfile) => void;
   excludeSquadId?: string;
@@ -28,10 +38,11 @@ export function PlayerSearch({
   addToSquad = false,
 }: PlayerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const { data: results, isLoading } = useSearchProfiles(searchTerm, excludeSquadId, forTournament, addToSquad);
+  const { data: results, isLoading } = useSearchProfiles(debouncedSearch, excludeSquadId, forTournament, addToSquad);
 
   // Filter out excluded users
   const filteredResults = results?.filter(

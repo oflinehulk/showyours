@@ -33,6 +33,9 @@ export function ImageUpload({
     lg: shape === 'wide' ? 'w-full h-40' : 'w-32 h-32',
   };
 
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -40,17 +43,26 @@ export function ImageUpload({
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+      // Validate file type strictly against allowlist
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error('Invalid file type', {
+          description: 'Only JPEG, PNG, GIF, WebP, and SVG images are allowed.',
+        });
         return;
       }
 
       // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > MAX_SIZE) {
         toast.error('Image must be less than 5MB');
         return;
       }
+
+      // Sanitize file extension to match actual type
+      const extMap: Record<string, string> = {
+        'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+        'image/webp': 'webp', 'image/svg+xml': 'svg',
+      };
+      const safeExt = extMap[file.type] || 'jpg';
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -58,8 +70,7 @@ export function ImageUpload({
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${safeExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
@@ -88,7 +99,7 @@ export function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
         onChange={handleUpload}
         className="hidden"
         disabled={uploading}
@@ -164,8 +175,11 @@ export function MultiImageUpload({
       const file = event.target.files?.[0];
       if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+      const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error('Invalid file type', {
+          description: 'Only JPEG, PNG, GIF, WebP, and SVG images are allowed.',
+        });
         return;
       }
 
@@ -174,14 +188,19 @@ export function MultiImageUpload({
         return;
       }
 
+      const extMap: Record<string, string> = {
+        'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+        'image/webp': 'webp', 'image/svg+xml': 'svg',
+      };
+      const safeExt = extMap[file.type] || 'jpg';
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please sign in to upload images');
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${safeExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
@@ -247,7 +266,7 @@ export function MultiImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
         onChange={handleUpload}
         className="hidden"
         disabled={uploading}

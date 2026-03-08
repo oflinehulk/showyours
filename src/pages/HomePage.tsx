@@ -51,8 +51,8 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] text-sm font-semibold mb-6 animate-fade-in tracking-wide">
-              <Zap className="w-4 h-4" />
-              <span>MLBB Esports Platform</span>
+              <Trophy className="w-4 h-4" />
+              <span>MLBB Tournament Platform</span>
             </div>
 
             {/* Tagline */}

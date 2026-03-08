@@ -286,7 +286,7 @@ export default function TournamentDetailPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-6 max-w-6xl">
         {/* Back navigation */}
         <Button variant="ghost" size="sm" asChild className="mb-4 btn-interactive text-muted-foreground hover:text-foreground">
           <Link to="/tournaments">

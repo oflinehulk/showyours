@@ -319,13 +319,13 @@ function MultiStageBracket({
   return (
     <div className="space-y-6">
       {/* Stage Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {stages.map((stage, i) => (
           <button
             key={stage.id}
             onClick={() => setActiveStageIndex(i)}
             className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px]',
+              'flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-2 md:py-2.5 rounded-lg border text-[10px] md:text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[40px] md:min-h-[44px]',
               i === activeStageIndex
                 ? 'bg-[#FF4500]/10 border-[#FF4500]/50 text-[#FF4500] shadow-[0_0_8px_rgba(255,69,0,0.15)]'
                 : 'border-border/50 text-muted-foreground hover:border-[#FF4500]/30 hover:text-foreground',

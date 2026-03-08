@@ -331,43 +331,48 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
             {/* Seeding Section */}
             {approvedCount > 0 && (
               <div className="p-4 rounded-lg bg-muted/30 border border-border">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-secondary" />
                     <h4 className="text-sm font-semibold text-foreground">Seeding</h4>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-3 md:flex gap-1.5 md:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleAutoSeed}
                       disabled={autoSeed.isPending}
+                      className="text-xs md:text-sm min-h-[40px]"
                     >
                       {autoSeed.isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin mr-1" />
                       ) : (
                         <ListOrdered className="w-3 h-3 mr-1" />
                       )}
-                      Auto-seed
+                      <span className="hidden md:inline">Auto-seed</span>
+                      <span className="md:hidden">Seed</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleRecaptureSnapshots}
                       disabled={recaptureSnapshots.isPending}
+                      className="text-xs md:text-sm min-h-[40px]"
                     >
                       {recaptureSnapshots.isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin mr-1" />
                       ) : (
                         <RefreshCw className="w-3 h-3 mr-1" />
                       )}
-                      Recapture Rosters
+                      <span className="hidden md:inline">Recapture Rosters</span>
+                      <span className="md:hidden">Rosters</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleReopenRegistration}
                       disabled={updateTournament.isPending}
+                      className="text-xs md:text-sm min-h-[40px]"
                     >
                       <Play className="w-3 h-3 mr-1" />
                       Reopen

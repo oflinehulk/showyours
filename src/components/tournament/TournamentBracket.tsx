@@ -325,7 +325,7 @@ function MultiStageBracket({
             key={stage.id}
             onClick={() => setActiveStageIndex(i)}
             className={cn(
-              'flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-2 md:py-2.5 rounded-lg border text-[10px] md:text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[40px] md:min-h-[44px]',
+              'flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-2 md:py-2.5 rounded-lg border text-[10px] md:text-xs font-display font-semibold uppercase tracking-wider transition-all min-h-[40px] md:min-h-[44px] shrink-0',
               i === activeStageIndex
                 ? 'bg-[#FF4500]/10 border-[#FF4500]/50 text-[#FF4500] shadow-[0_0_8px_rgba(255,69,0,0.15)]'
                 : 'border-border/50 text-muted-foreground hover:border-[#FF4500]/30 hover:text-foreground',
@@ -333,16 +333,18 @@ function MultiStageBracket({
             )}
           >
             <span className={cn(
-              'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border',
+              'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0',
               stage.status === 'completed' && 'bg-green-500/20 border-green-500 text-green-500',
               stage.status === 'ongoing' && 'bg-[#FF4500]/20 border-[#FF4500] text-[#FF4500]',
               (stage.status === 'pending' || stage.status === 'configuring') && 'border-muted-foreground/30 text-muted-foreground/50',
             )}>
               {stage.status === 'completed' ? <Check className="w-3 h-3" /> : i + 1}
             </span>
-            {stage.name}
-            <span className="text-[10px] font-normal normal-case opacity-70">
-              {TOURNAMENT_FORMAT_LABELS[stage.format]}
+            <span className="flex flex-col items-start leading-tight">
+              <span className="whitespace-nowrap">{stage.name}</span>
+              <span className="text-[9px] md:text-[10px] font-normal normal-case opacity-70 whitespace-nowrap">
+                {TOURNAMENT_FORMAT_LABELS[stage.format]}
+              </span>
             </span>
           </button>
         ))}

@@ -329,7 +329,7 @@ export function StageConfigurator({
                     value={stage.finals_best_of ? String(stage.finals_best_of) : 'same'}
                     onValueChange={(v) => updateStage(index, { finals_best_of: v === 'same' ? null : parseInt(v) as 1 | 3 | 5 })}
                   >
-                    <SelectTrigger className="h-8 text-xs mt-0.5">
+                    <SelectTrigger className="h-8 text-[10px] sm:text-xs mt-0.5 px-1.5 sm:px-3">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

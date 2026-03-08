@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     let publicKey: string;
 
     if (existing && existing.length === 2) {
-      publicKey = existing.find((r: any) => r.key === "vapid_public_key")!.value;
+      publicKey = existing.find((r: { key: string; value: string }) => r.key === "vapid_public_key")!.value;
     } else {
       // Generate new VAPID keys
       const keys = await generateVAPIDKeys();

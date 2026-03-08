@@ -84,7 +84,7 @@ export function usePushNotifications() {
 
       setIsSubscribed(true);
       toast.success('Push notifications enabled!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Push subscription error:', error);
       toast.error('Failed to enable push notifications');
     } finally {

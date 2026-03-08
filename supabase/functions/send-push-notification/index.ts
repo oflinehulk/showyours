@@ -314,8 +314,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const vapidPublicKey = config.find((r: any) => r.key === "vapid_public_key")!.value;
-    const vapidPrivateKey = config.find((r: any) => r.key === "vapid_private_key")!.value;
+    const vapidPublicKey = config.find((r: { key: string; value: string }) => r.key === "vapid_public_key")!.value;
+    const vapidPrivateKey = config.find((r: { key: string; value: string }) => r.key === "vapid_private_key")!.value;
 
     // Get user's push subscriptions
     const { data: subscriptions } = await supabase

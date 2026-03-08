@@ -10,7 +10,7 @@ import {
 } from '@/hooks/useTournaments';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bell, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
+import { Mail, Inbox, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,7 +114,7 @@ export function InvitationBadge() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="btn-interactive w-9 h-9 relative">
-          <Bell className="w-4 h-4" />
+          <Mail className="w-4 h-4" />
           {totalCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center animate-pulse">
               {totalCount}
@@ -129,7 +129,7 @@ export function InvitationBadge() {
         <div className="max-h-96 overflow-y-auto">
           {totalCount === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
               No pending notifications
             </div>
           ) : (
@@ -253,7 +253,7 @@ export function InvitationSection() {
   return (
     <div className="glass-card p-6">
       <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-        <Bell className="w-5 h-5 text-primary" />
+        <Mail className="w-5 h-5 text-primary" />
         Pending Invitations
         <span className="ml-auto text-sm font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           {count}

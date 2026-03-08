@@ -76,8 +76,8 @@ export default function HomePage() {
               Organize tournaments, recruit players, build squads — all in one place.
             </p>
 
-            {/* CTA Buttons — player-first on mobile */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            {/* CTA Buttons — player-first on mobile, all 3 on desktop */}
+            <div className="grid grid-cols-2 md:flex md:flex-row gap-3 md:gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <Button size="lg" className="btn-gaming text-sm md:text-lg px-4 md:px-8 font-display" asChild>
                 <Link to="/squads">
                   <Shield className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
@@ -90,9 +90,17 @@ export default function HomePage() {
                   Tournaments
                 </Link>
               </Button>
+              {/* Host CTA — visible on desktop, hidden on mobile */}
+              <Button size="lg" variant="outline" className="hidden md:inline-flex text-lg px-8 btn-interactive border-[#FF6B35]/30 hover:border-[#FF6B35]/50 hover:bg-[#FF6B35]/5 text-[#FF6B35]" asChild>
+                <Link to="/create-tournament">
+                  <Zap className="w-5 h-5 mr-2" />
+                  Host Tournament
+                </Link>
+              </Button>
             </div>
-            <div className="mt-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-[#FF4500] text-xs md:text-sm">
+            {/* Mobile-only host link */}
+            <div className="mt-3 md:hidden animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-[#FF4500] text-xs">
                 <Link to="/create-tournament">
                   Want to host a tournament? <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Link>

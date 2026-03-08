@@ -164,6 +164,7 @@ export default function TournamentsPage() {
           </GlowCard>
         )}
       </div>
+      </PullToRefresh>
     </Layout>
   );
 }

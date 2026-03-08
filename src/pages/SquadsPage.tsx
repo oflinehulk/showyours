@@ -236,6 +236,7 @@ export default function SquadsPage() {
           </GlowCard>
         )}
       </div>
+      </PullToRefresh>
     </Layout>
   );
 }

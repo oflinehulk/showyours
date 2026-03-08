@@ -380,6 +380,7 @@ export default function PlayersPage() {
           </GlowCard>
         )}
       </div>
+      </PullToRefresh>
     </Layout>
   );
 }

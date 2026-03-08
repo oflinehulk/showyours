@@ -54,6 +54,7 @@ export function NotificationBell() {
   const { data: unreadCount } = useUnreadNotificationCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
 
   const handleNotificationClick = (notification: { id: string; tournament_id: string | null; read: boolean }) => {
     if (!notification.read) {

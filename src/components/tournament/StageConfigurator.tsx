@@ -311,7 +311,7 @@ export function StageConfigurator({
                     value={String(stage.best_of)}
                     onValueChange={(v) => updateStage(index, { best_of: parseInt(v) as 1 | 3 | 5 })}
                   >
-                    <SelectTrigger className="h-8 text-xs mt-0.5">
+                    <SelectTrigger className="h-8 text-[10px] sm:text-xs mt-0.5 px-1.5 sm:px-3">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

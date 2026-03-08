@@ -108,3 +108,6 @@ export {
   findSemiFinals,
   fetchStageK,
 } from './matchAdvancementHelpers';
+
+// Realtime subscriptions
+export { useTournamentRealtime } from './useTournamentRealtime';

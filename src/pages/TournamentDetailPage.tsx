@@ -87,6 +87,7 @@ export default function TournamentDetailPage() {
   const updateTournament = useUpdateTournament();
   const withdrawFromTournament = useWithdrawFromTournament();
   const isMobile = useIsMobile();
+  useTournamentRealtime(id);
 
   const validTabs = ['overview', 'teams', 'bracket', 'upcoming', 'rosters', 'schedule', 'register', 'activity'];
   const tabFromUrl = searchParams.get('tab');

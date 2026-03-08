@@ -12,6 +12,7 @@ import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Plus, Trophy, Calendar, Users } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 export default function TournamentsPage() {
   useSEO({ title: 'Tournaments', description: 'Compete in MLBB tournaments and win prizes.', path: '/tournaments' });

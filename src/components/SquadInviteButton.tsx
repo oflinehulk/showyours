@@ -64,4 +64,4 @@ export const SquadInviteButton = forwardRef<HTMLButtonElement, SquadInviteButton
       <span className="text-xs">Invite</span>
     </Button>
   );
-}
+});

@@ -129,7 +129,7 @@ export function InvitationBadge() {
         <div className="max-h-96 overflow-y-auto">
           {totalCount === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <Inbox className="w-8 h-8 mx-auto mb-2 opacity-50" />
               No pending notifications
             </div>
           ) : (

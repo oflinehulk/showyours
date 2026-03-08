@@ -95,6 +95,7 @@ describe('useCreateProfile', () => {
   });
 
   it('creates a profile', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } as any }, error: null });
     mockSupabaseResponse(mockProfiles[0]);
 

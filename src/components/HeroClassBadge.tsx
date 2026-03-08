@@ -28,7 +28,7 @@ const classColors: Record<string, string> = {
   support: 'text-green-400 bg-green-400/10',
 };
 
-export const HeroClassBadge = memo(function HeroClassBadge({ heroClass, size = 'md', showName = true, className }: HeroClassBadgeProps) {
+export const HeroClassBadge = memo(forwardRef<HTMLSpanElement, HeroClassBadgeProps>(function HeroClassBadge({ heroClass, size = 'md', showName = true, className }, ref) {
   const classData = HERO_CLASSES.find(c => c.id === heroClass);
   
   const sizeClasses = {
@@ -45,6 +45,7 @@ export const HeroClassBadge = memo(function HeroClassBadge({ heroClass, size = '
 
   return (
     <span
+      ref={ref}
       className={cn(
         'inline-flex items-center gap-1.5 rounded-md font-medium border border-current/20',
         classColors[heroClass] || 'text-muted-foreground bg-muted',
@@ -56,4 +57,4 @@ export const HeroClassBadge = memo(function HeroClassBadge({ heroClass, size = '
       {showName && <span>{classData?.name || heroClass}</span>}
     </span>
   );
-});
+}));

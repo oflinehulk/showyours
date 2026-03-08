@@ -12,7 +12,7 @@ interface SquadInviteButtonProps {
   size?: 'sm' | 'default';
 }
 
-export function SquadInviteButton({ player, size = 'sm' }: SquadInviteButtonProps) {
+export const SquadInviteButton = forwardRef<HTMLButtonElement, SquadInviteButtonProps>(function SquadInviteButton({ player, size = 'sm' }, ref) {
   const { user } = useAuth();
   const { data: mySquads } = useMySquads();
   const sendInvite = useSendInvitation();

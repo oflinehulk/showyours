@@ -114,7 +114,7 @@ export function InvitationBadge() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="btn-interactive w-9 h-9 relative">
-          <Bell className="w-4 h-4" />
+          <Mail className="w-4 h-4" />
           {totalCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center animate-pulse">
               {totalCount}

@@ -37,6 +37,7 @@ import {
   useUpdateTournament,
   useWithdrawFromTournament,
 } from '@/hooks/useTournaments';
+import { useTournamentRealtime } from '@/hooks/tournament/useTournamentRealtime';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {

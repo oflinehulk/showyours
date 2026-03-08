@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -17,7 +19,7 @@ import { QueryErrorState } from '@/components/QueryErrorState';
 import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { getContactValue } from '@/lib/contacts';
-import { Search, Filter, Trophy, Users, X } from 'lucide-react';
+import { Search, Filter, Trophy, Users, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSEO } from '@/hooks/useSEO';
 import { PullToRefresh } from '@/components/PullToRefresh';
@@ -185,47 +187,88 @@ export default function PlayersPage() {
           </div>
         </div>
 
-        {/* Filters Panel */}
+        {/* Filters Panel — collapsed on mobile, only Rank + Role shown first */}
         {showFilters && (
           <GlowCard className="p-4 mb-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-semibold text-foreground tracking-wide">Filters</h3>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="w-4 h-4 mr-1" />
-                  Clear All
-                </Button>
-              )}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-semibold text-foreground tracking-wide text-sm">Filters</h3>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Primary filters — always visible */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
               <Select value={rankFilter} onValueChange={setRankFilter}>
-                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20 h-9 text-xs">
                   <SelectValue placeholder="Rank" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Ranks</SelectItem>
                   {RANKS.map((rank) => (
-                    <SelectItem key={rank.id} value={rank.id}>
-                      {rank.name}
-                    </SelectItem>
+                    <SelectItem key={rank.id} value={rank.id}>{rank.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20 h-9 text-xs">
                   <SelectValue placeholder="Role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
                   {ROLES.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.icon} {role.name}
-                    </SelectItem>
+                    <SelectItem key={role.id} value={role.id}>{role.icon} {role.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20 h-9 text-xs col-span-2 sm:col-span-1">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Recently Added</SelectItem>
+                  <SelectItem value="winrate">Win Rate</SelectItem>
+                  <SelectItem value="rank">Rank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Secondary filters — hidden on mobile behind "More" */}
+            <details className="md:hidden">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground mb-3">More filters...</summary>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                  <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20 h-9 text-xs">
+                    <SelectValue placeholder="Hero Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {HERO_CLASSES.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>{cls.icon} {cls.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={stateFilter} onValueChange={setStateFilter}>
+                  <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20 h-9 text-xs">
+                    <SelectValue placeholder="State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {INDIAN_STATES.map((state) => (
+                      <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </details>
+            {/* Desktop: show all filters in one row */}
+            <div className="hidden md:grid grid-cols-2 gap-3">
               <Select value={classFilter} onValueChange={setClassFilter}>
                 <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
                   <SelectValue placeholder="Hero Class" />
@@ -233,9 +276,7 @@ export default function PlayersPage() {
                 <SelectContent>
                   <SelectItem value="all">All Classes</SelectItem>
                   {HERO_CLASSES.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.icon} {cls.name}
-                    </SelectItem>
+                    <SelectItem key={cls.id} value={cls.id}>{cls.icon} {cls.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -247,21 +288,8 @@ export default function PlayersPage() {
                 <SelectContent>
                   <SelectItem value="all">All States</SelectItem>
                   {INDIAN_STATES.map((state) => (
-                    <SelectItem key={state.id} value={state.id}>
-                      {state.name}
-                    </SelectItem>
+                    <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-                <SelectTrigger className="bg-[#0a0a0a] border-[#FF4500]/20">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Recently Added</SelectItem>
-                  <SelectItem value="winrate">Win Rate</SelectItem>
-                  <SelectItem value="rank">Rank</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -273,10 +301,12 @@ export default function PlayersPage() {
           Showing <span className="font-display font-bold text-foreground">{filteredPlayers.length}</span> player{filteredPlayers.length !== 1 ? 's' : ''}
         </div>
 
-        {/* Loading state */}
+        {/* Loading state — skeleton cards */}
         {isLoading && (
-          <div className="flex items-center justify-center min-h-[40vh]">
-            <CircuitLoader size="lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-56 rounded-lg bg-[#111111]" />
+            ))}
           </div>
         )}
 
@@ -364,19 +394,32 @@ export default function PlayersPage() {
           </GlowCard>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — with actionable guidance */}
         {!isLoading && filteredPlayers.length === 0 && (
-          <GlowCard className="p-12 max-w-md mx-auto text-center">
-            <Users className="w-16 h-16 text-[#FF4500] mx-auto mb-4" />
-            <h3 className="text-lg font-display font-semibold text-foreground mb-2">No players found</h3>
+          <GlowCard className="p-8 md:p-12 max-w-md mx-auto text-center">
+            <Users className="w-12 h-12 md:w-16 md:h-16 text-[#FF4500] mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-foreground mb-2">
+              {profiles?.length === 0 ? 'No players yet' : 'No matches found'}
+            </h3>
             <p className="text-muted-foreground text-sm mb-6">
               {profiles?.length === 0
-                ? "Be the first to create a profile!"
-                : "Try adjusting your filters or search query"}
+                ? "Be the first to join! Create your profile and get discovered by squads."
+                : "Try removing some filters or searching with a different name."}
             </p>
-            <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
-              Clear Filters
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
+                  <X className="w-4 h-4 mr-1" /> Clear Filters
+                </Button>
+              )}
+              {profiles?.length === 0 && (
+                <Button asChild className="btn-gaming">
+                  <Link to="/create-profile">
+                    <UserPlus className="w-4 h-4 mr-2" /> Create Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
           </GlowCard>
         )}
       </div>

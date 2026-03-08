@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { TournamentCard } from '@/components/TournamentCard';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlowCard } from '@/components/tron/GlowCard';
@@ -120,10 +121,12 @@ export default function TournamentsPage() {
           Showing <span className="font-display font-bold text-foreground">{filteredTournaments.length}</span> tournament{filteredTournaments.length !== 1 ? 's' : ''}
         </div>
 
-        {/* Loading state */}
+        {/* Loading state — skeleton cards */}
         {isLoading && (
-          <div className="flex items-center justify-center min-h-[40vh]">
-            <CircuitLoader size="lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg bg-[#111111]" />
+            ))}
           </div>
         )}
 

@@ -286,7 +286,7 @@ export default function TournamentDetailPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-6 max-w-6xl">
         {/* Back navigation */}
         <Button variant="ghost" size="sm" asChild className="mb-4 btn-interactive text-muted-foreground hover:text-foreground">
           <Link to="/tournaments">
@@ -296,9 +296,9 @@ export default function TournamentDetailPage() {
         </Button>
 
         {/* Hero Section */}
-        <div className="relative rounded-2xl overflow-hidden mb-8">
+        <div className="relative rounded-2xl overflow-hidden mb-6 md:mb-8">
           {/* Banner Image / Gradient Fallback */}
-          <div className="relative h-40 md:h-72">
+          <div className="relative h-32 md:h-72">
             {tournament.banner_url ? (
               <img
                 src={tournament.banner_url}
@@ -310,43 +310,42 @@ export default function TournamentDetailPage() {
               <div className="w-full h-full bg-gradient-to-br from-primary/30 via-card to-secondary/20" />
             )}
             {/* Dark overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
             
-            {/* Decorative grid */}
-            <div className="absolute inset-0 opacity-[0.03]" style={{
+            {/* Decorative grid — desktop only */}
+            <div className="absolute inset-0 opacity-[0.03] hidden md:block" style={{
               backgroundImage: 'linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)',
               backgroundSize: '40px 40px'
             }} />
-            <CircuitBackground intensity="light" />
+            <div className="hidden md:block"><CircuitBackground intensity="light" /></div>
           </div>
 
           {/* Floating content over banner */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="absolute bottom-0 left-0 right-0 p-3 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 md:gap-4">
               <div className="flex-1 min-w-0">
-                {/* Status badges */}
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+                {/* Status badges — compact on mobile */}
+                <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-1.5 md:mb-3">
                   <Badge
                     variant="outline"
-                    className={cn('text-xs font-semibold uppercase tracking-wider px-3 py-1', statusInfo.color)}
+                    className={cn('text-[10px] md:text-xs font-semibold uppercase tracking-wider px-2 md:px-3 py-0.5 md:py-1', statusInfo.color)}
                   >
                     {statusInfo.icon}
-                    <span className="ml-1.5">{TOURNAMENT_STATUS_LABELS[tournament.status]}</span>
+                    <span className="ml-1">{TOURNAMENT_STATUS_LABELS[tournament.status]}</span>
                   </Badge>
                   {tournament.format && (
-                    <Badge variant="secondary" className="text-xs uppercase tracking-wider">
-                      <Swords className="w-3 h-3 mr-1" />
+                    <Badge variant="secondary" className="text-[10px] md:text-xs uppercase tracking-wider px-2 py-0.5">
                       {TOURNAMENT_FORMAT_LABELS[tournament.format]}
                     </Badge>
                   )}
                   {tournament.is_multi_stage && (
-                    <Badge variant="outline" className="text-xs uppercase tracking-wider border-[#FF4500]/40 text-[#FF4500]">
+                    <Badge variant="outline" className="text-[10px] md:text-xs uppercase tracking-wider border-[#FF4500]/40 text-[#FF4500] px-2 py-0.5 hidden md:inline-flex">
                       <Layers className="w-3 h-3 mr-1" />
                       Multi-Stage
                     </Badge>
                   )}
                   {isHost && (
-                    <Badge variant="outline" className="text-xs border-secondary/50 text-secondary uppercase tracking-wider">
+                    <Badge variant="outline" className="text-[10px] md:text-xs border-secondary/50 text-secondary uppercase tracking-wider px-2 py-0.5">
                       <Shield className="w-3 h-3 mr-1" />
                       Host
                     </Badge>
@@ -354,78 +353,104 @@ export default function TournamentDetailPage() {
                 </div>
 
                 {/* Tournament name */}
-                <h1 className="text-2xl md:text-5xl font-display font-black text-foreground tracking-tight leading-none mb-1">
+                <h1 className="text-lg md:text-5xl font-display font-black text-foreground tracking-tight leading-tight md:leading-none mb-0.5 md:mb-1 line-clamp-2 md:line-clamp-none">
                   {tournament.name}
                 </h1>
 
-                {/* Quick info row */}
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground mt-3">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    {format(new Date(tournament.date_time), 'MMM d, yyyy')}
+                {/* Quick info row — simplified on mobile */}
+                <div className="flex flex-wrap items-center gap-x-3 md:gap-x-5 gap-y-0.5 md:gap-y-1 text-xs md:text-sm text-muted-foreground mt-1 md:mt-3">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                    {format(new Date(tournament.date_time), 'MMM d')}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-primary" />
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
                     {format(new Date(tournament.date_time), 'h:mm a')}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-secondary" />
-                    {registrationCount}/{tournament.max_squads} squads
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 md:w-4 md:h-4 text-secondary" />
+                    {registrationCount}/{tournament.max_squads}
                   </span>
-                  {tournament.team_size && (
-                    <span className="flex items-center gap-1.5">
-                      <Swords className="w-4 h-4 text-secondary" />
-                      {tournament.team_size}
-                    </span>
-                  )}
-                  {tournament.prize_pool ? (
-                    <span className="flex items-center gap-1.5 text-yellow-500 font-medium">
-                      <IndianRupee className="w-4 h-4" />
+                  {tournament.prize_pool && (
+                    <span className="flex items-center gap-1 text-yellow-500 font-medium">
+                      <IndianRupee className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       {tournament.prize_pool}
                     </span>
-                  ) : tournament.prize_wallet ? (
-                    <span className="flex items-center gap-1.5 text-secondary font-medium">
-                      <Wallet className="w-4 h-4" />
-                      USDT Prize
-                    </span>
-                  ) : null}
+                  )}
                 </div>
               </div>
 
-              {/* CTA */}
-              {canRegister && user && (
-                <Button
-                  className="btn-gaming text-base px-8 py-6 shadow-lg shadow-primary/25"
-                  onClick={() => setActiveTab('register')}
-                >
-                  <Trophy className="w-5 h-5 mr-2" />
-                  Register Now
-                </Button>
-              )}
-              {canWithdraw && (
-                <Button
-                  variant="outline"
-                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                  onClick={handleWithdraw}
-                  disabled={withdrawFromTournament.isPending}
-                >
-                  {withdrawFromTournament.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <LogOut className="w-4 h-4 mr-2" />
-                  )}
-                  Withdraw Squad
-                </Button>
-              )}
-              {tournament.status === 'registration_open' && (
-                <TournamentPromoCard
-                  tournament={tournament}
-                  spotsLeft={spotsLeft}
-                  registrationCount={registrationCount}
-                />
-              )}
+              {/* CTA — hidden on mobile hero, shown below instead */}
+              <div className="hidden md:flex flex-col gap-2">
+                {canRegister && user && (
+                  <Button
+                    className="btn-gaming text-base px-8 py-6 shadow-lg shadow-primary/25"
+                    onClick={() => setActiveTab('register')}
+                  >
+                    <Trophy className="w-5 h-5 mr-2" />
+                    Register Now
+                  </Button>
+                )}
+                {canWithdraw && (
+                  <Button
+                    variant="outline"
+                    className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={handleWithdraw}
+                    disabled={withdrawFromTournament.isPending}
+                  >
+                    {withdrawFromTournament.isPending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <LogOut className="w-4 h-4 mr-2" />
+                    )}
+                    Withdraw Squad
+                  </Button>
+                )}
+                {tournament.status === 'registration_open' && (
+                  <TournamentPromoCard
+                    tournament={tournament}
+                    spotsLeft={spotsLeft}
+                    registrationCount={registrationCount}
+                  />
+                )}
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Mobile CTA buttons */}
+        <div className="flex gap-2 mb-4 md:hidden">
+          {canRegister && user && (
+            <Button
+              className="btn-gaming flex-1 min-h-[44px]"
+              onClick={() => setActiveTab('register')}
+            >
+              <Trophy className="w-4 h-4 mr-1.5" />
+              Register
+            </Button>
+          )}
+          {canWithdraw && (
+            <Button
+              variant="outline"
+              className="flex-1 min-h-[44px] border-destructive/50 text-destructive"
+              onClick={handleWithdraw}
+              disabled={withdrawFromTournament.isPending}
+            >
+              {withdrawFromTournament.isPending ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4 mr-1.5" />
+              )}
+              Withdraw
+            </Button>
+          )}
+          {tournament.status === 'registration_open' && !canRegister && (
+            <TournamentPromoCard
+              tournament={tournament}
+              spotsLeft={spotsLeft}
+              registrationCount={registrationCount}
+            />
+          )}
         </div>
 
         {/* Registration Progress Bar (when registration is open) */}
@@ -474,57 +499,60 @@ export default function TournamentDetailPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Responsive tab bar: sticky scrollable on mobile, inline on desktop */}
           <div className={cn(
-            "sticky top-14 z-30 -mx-4 px-4 py-2 mb-4 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[#FF4500]/10",
+            "sticky top-14 z-30 -mx-4 px-2 py-1.5 mb-3 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[#FF4500]/10",
             "md:static md:mx-0 md:px-0 md:py-0 md:mb-6 md:border-0 md:bg-transparent md:backdrop-blur-none md:inline-flex"
           )}>
             <div className={cn(
               "md:bg-[#111111]/90 md:border md:border-[#FF4500]/20 md:p-1 md:rounded-xl md:inline-flex"
             )}>
-              <TabsList className="bg-transparent flex items-center gap-1 overflow-x-auto scrollbar-hide w-full md:w-auto">
-                <TabsTrigger value="overview" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                  <FileText className="w-4 h-4 mr-1.5" />
-                  Overview
+              <TabsList className="bg-transparent flex items-center gap-0.5 md:gap-1 overflow-x-auto scrollbar-hide w-full md:w-auto">
+                {/* Mobile: icon + short label; Desktop: icon + full label */}
+                <TabsTrigger value="overview" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                  <FileText className="w-4 h-4 md:mr-1.5" />
+                  <span className="hidden md:inline">Overview</span>
+                  <span className="md:hidden">Info</span>
                 </TabsTrigger>
-                <TabsTrigger value="teams" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                  <Users className="w-4 h-4 mr-1.5" />
-                  Teams ({registrations?.filter(r => r.status === 'approved').length || 0})
+                <TabsTrigger value="teams" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                  <Users className="w-4 h-4 md:mr-1.5" />
+                  <span className="hidden md:inline">Teams ({registrations?.filter(r => r.status === 'approved').length || 0})</span>
+                  <span className="md:hidden">{registrations?.filter(r => r.status === 'approved').length || 0}</span>
                 </TabsTrigger>
                 {(tournament.status === 'bracket_generated' ||
                   tournament.status === 'ongoing' ||
                   tournament.status === 'completed') && (
                   <>
-                    <TabsTrigger value="bracket" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                      <Swords className="w-4 h-4 mr-1.5" />
-                      Bracket
+                    <TabsTrigger value="bracket" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                      <Swords className="w-4 h-4 md:mr-1.5" />
+                      <span className="hidden md:inline">Bracket</span>
                     </TabsTrigger>
-                    <TabsTrigger value="upcoming" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                      <CalendarDays className="w-4 h-4 mr-1.5" />
-                      Upcoming
+                    <TabsTrigger value="upcoming" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                      <CalendarDays className="w-4 h-4 md:mr-1.5" />
+                      <span className="hidden md:inline">Upcoming</span>
                     </TabsTrigger>
                   </>
                 )}
                 {isHost && tournament.status !== 'registration_open' && (
-                  <TabsTrigger value="rosters" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                    <Shield className="w-4 h-4 mr-1.5" />
-                    Rosters
+                  <TabsTrigger value="rosters" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                    <Shield className="w-4 h-4 md:mr-1.5" />
+                    <span className="hidden md:inline">Rosters</span>
                   </TabsTrigger>
                 )}
                 {isHost && (tournament.status === 'bracket_generated' || tournament.status === 'ongoing') && (
-                  <TabsTrigger value="schedule" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                    <CalendarClock className="w-4 h-4 mr-1.5" />
-                    Schedule
+                  <TabsTrigger value="schedule" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                    <CalendarClock className="w-4 h-4 md:mr-1.5" />
+                    <span className="hidden md:inline">Schedule</span>
                   </TabsTrigger>
                 )}
                 {canRegister && user && (
-                  <TabsTrigger value="register" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF6B35]/10 data-[state=active]:text-[#FF6B35] data-[state=active]:border-b-2 data-[state=active]:border-[#FF6B35] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                    <Trophy className="w-4 h-4 mr-1.5" />
-                    Register
+                  <TabsTrigger value="register" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF6B35]/10 data-[state=active]:text-[#FF6B35] data-[state=active]:border-b-2 data-[state=active]:border-[#FF6B35] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                    <Trophy className="w-4 h-4 md:mr-1.5" />
+                    <span className="hidden md:inline">Register</span>
                   </TabsTrigger>
                 )}
                 {isHost && (
-                  <TabsTrigger value="activity" className="shrink-0 whitespace-nowrap min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-4 md:px-5 font-display text-xs uppercase tracking-wider">
-                    <ScrollText className="w-4 h-4 mr-1.5" />
-                    Activity
+                  <TabsTrigger value="activity" className="shrink-0 whitespace-nowrap min-h-[40px] md:min-h-[44px] data-[state=active]:bg-[#FF4500]/10 data-[state=active]:text-[#FF4500] data-[state=active]:border-b-2 data-[state=active]:border-[#FF4500] rounded-lg px-2.5 md:px-5 font-display text-[11px] md:text-xs uppercase tracking-wider">
+                    <ScrollText className="w-4 h-4 md:mr-1.5" />
+                    <span className="hidden md:inline">Activity</span>
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -628,7 +656,7 @@ export default function TournamentDetailPage() {
                     </Button>
                   </div>
                 )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
                   {[
                     { icon: Calendar, label: 'Date', value: format(new Date(tournament.date_time), 'MMM d, yyyy'), color: 'text-[#FF4500]' },
                     { icon: Clock, label: 'Time', value: format(new Date(tournament.date_time), 'h:mm a'), color: 'text-[#FF4500]' },
@@ -639,15 +667,15 @@ export default function TournamentDetailPage() {
                     { icon: Swords, label: 'Format', value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', color: 'text-[#FF4500]' },
                     { icon: Globe, label: 'Region', value: tournament.region || '—', color: 'text-sky-400' },
                   ].map((item, i) => (
-                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-3 sm:p-4 relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
+                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-2.5 md:p-4 relative overflow-hidden group hover:border-[#FF4500]/40 transition-all duration-300">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FF4500]/40 to-transparent" />
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
-                          <item.icon className={cn('w-4.5 h-4.5', item.color)} />
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
+                          <item.icon className={cn('w-3.5 h-3.5 md:w-4.5 md:h-4.5', item.color)} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-display">{item.label}</p>
-                          <p className="text-sm font-display font-bold text-foreground truncate">{item.value}</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-display">{item.label}</p>
+                          <p className="text-xs md:text-sm font-display font-bold text-foreground truncate">{item.value}</p>
                         </div>
                       </div>
                     </div>

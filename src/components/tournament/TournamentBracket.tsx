@@ -319,13 +319,13 @@ function MultiStageBracket({
   return (
     <div className="space-y-6">
       {/* Stage Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {stages.map((stage, i) => (
           <button
             key={stage.id}
             onClick={() => setActiveStageIndex(i)}
             className={cn(
-              'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px]',
+              'flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-2 md:py-2.5 rounded-lg border text-[10px] md:text-xs font-display font-semibold uppercase tracking-wider whitespace-nowrap transition-all min-h-[40px] md:min-h-[44px]',
               i === activeStageIndex
                 ? 'bg-[#FF4500]/10 border-[#FF4500]/50 text-[#FF4500] shadow-[0_0_8px_rgba(255,69,0,0.15)]'
                 : 'border-border/50 text-muted-foreground hover:border-[#FF4500]/30 hover:text-foreground',
@@ -751,12 +751,12 @@ function BracketView({
 
   if (isMobile) {
     return (
-      <div className="overflow-x-auto -mx-4 px-4 scrollbar-hide">
-        <div className="flex gap-3 min-w-max py-2">
+      <div className="overflow-x-auto -mx-3 px-3 scrollbar-hide">
+        <div className="flex gap-2 min-w-max py-1">
           {rounds.map((round, roundIndex) => (
             <div key={round} className="flex items-stretch">
-              <div className="flex flex-col gap-3 min-w-[170px]">
-                <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
+              <div className="flex flex-col gap-2 min-w-[155px]">
+                <h4 className="text-[10px] font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
                   {roundIndex === rounds.length - 1 ? 'Final' : `R${round}`}
                 </h4>
                 {matches
@@ -879,13 +879,13 @@ function MatchCard({
     <div
       onClick={onClick}
       className={cn(
-        'w-full p-3 rounded-lg border bg-[#111111] transition-all text-left cursor-pointer',
+        'w-full p-2.5 md:p-3 rounded-lg border bg-[#111111] transition-all text-left cursor-pointer',
         'border-[#FF4500]/20 hover:border-[#FF4500]/50 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)]',
         'active:scale-[0.98]',
         match.status === 'ongoing' && 'border-yellow-400/40',
         match.status === 'completed' && 'border-green-500/20',
         match.status === 'disputed' && 'border-destructive/40',
-        large && 'p-4 neon-border'
+        large && 'p-3 md:p-4 neon-border'
       )}
     >
       <div className="flex items-center justify-between mb-2">

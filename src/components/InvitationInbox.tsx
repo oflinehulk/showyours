@@ -10,7 +10,7 @@ import {
 } from '@/hooks/useTournaments';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bell, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
+import { Mail, Inbox, Check, X, Loader2, Users, Trophy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';

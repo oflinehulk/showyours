@@ -51,54 +51,50 @@ export default function HomePage() {
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-[80vh] flex items-center">
+      {/* Hero Section — compact on mobile */}
+      <section className="relative overflow-hidden min-h-[45vh] md:min-h-[70vh] flex items-center">
         <CircuitBackground intensity="medium" />
-        {/* Radial glow accents */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-[#FF4500]/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#FF2D00]/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-10 left-5 w-48 h-48 md:w-72 md:h-72 bg-[#FF4500]/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-5 right-5 w-64 h-64 md:w-96 md:h-96 bg-[#FF2D00]/10 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="container mx-auto px-4 py-20 md:py-32 relative z-10">
+        <div className="container mx-auto px-4 py-10 md:py-32 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] text-sm font-semibold mb-6 animate-fade-in tracking-wide">
-              <Trophy className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] text-xs md:text-sm font-semibold mb-4 md:mb-6 animate-fade-in tracking-wide">
+              <Trophy className="w-3.5 h-3.5 md:w-4 md:h-4" />
               <span>MLBB Tournament Platform</span>
             </div>
 
-            {/* Tagline */}
-            <div className="mb-6 animate-slide-up">
-              <p className="font-display text-[#FF4500] text-sm md:text-base tracking-[0.3em] uppercase mb-4 text-neon-subtle">
-                ORGANIZE &middot; COMPETE &middot; CONQUER
-              </p>
-            </div>
-
             {/* Headline */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 animate-slide-up tracking-wide">
+            <h1 className="text-3xl md:text-6xl lg:text-7xl font-display font-bold mb-3 md:mb-6 animate-slide-up tracking-wide">
               Host Tournaments.{' '}
               <span className="text-gradient">Build Legends.</span>
             </h1>
 
-            {/* Subheadline */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            {/* Subheadline — shorter on mobile */}
+            <p className="text-sm md:text-xl text-muted-foreground max-w-2xl mx-auto mb-6 md:mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               Organize tournaments, recruit players, build squads — all in one place.
             </p>
-            <p className="text-base text-muted-foreground/70 max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-              India's premier MLBB esports platform. Create brackets, manage registrations, and run professional tournaments with zero hassle.
-            </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <Button size="lg" className="btn-gaming text-lg px-8 font-display" asChild>
-                <Link to="/create-tournament">
-                  <Trophy className="w-5 h-5 mr-2" />
-                  Host a Tournament
+            {/* CTA Buttons — player-first on mobile */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <Button size="lg" className="btn-gaming text-sm md:text-lg px-4 md:px-8 font-display" asChild>
+                <Link to="/squads">
+                  <Shield className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
+                  Find Squad
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 btn-interactive border-[#FF4500]/30 hover:border-[#FF4500]/50 hover:bg-[#FF4500]/5" asChild>
+              <Button size="lg" variant="outline" className="text-sm md:text-lg px-4 md:px-8 btn-interactive border-[#FF4500]/30 hover:border-[#FF4500]/50 hover:bg-[#FF4500]/5" asChild>
                 <Link to="/tournaments">
-                  Browse Tournaments
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                  <Trophy className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
+                  Tournaments
+                </Link>
+              </Button>
+            </div>
+            <div className="mt-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-[#FF4500] text-xs md:text-sm">
+                <Link to="/create-tournament">
+                  Want to host a tournament? <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Link>
               </Button>
             </div>

@@ -17,9 +17,7 @@ export function BottomTabBar() {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/players', icon: Users, label: 'Players' },
     { to: '/tournaments', icon: Trophy, label: 'Tourneys' },
-    hasSquad
-      ? { to: `/squad/${mySquads[0].id}`, icon: Shield, label: 'My Squad' }
-      : { to: '/squads', icon: Shield, label: 'Squads' },
+    { to: '/squads', icon: Shield, label: 'Squads' },
   ];
 
   const profileTab = {

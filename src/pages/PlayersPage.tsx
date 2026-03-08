@@ -392,19 +392,32 @@ export default function PlayersPage() {
           </GlowCard>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — with actionable guidance */}
         {!isLoading && filteredPlayers.length === 0 && (
-          <GlowCard className="p-12 max-w-md mx-auto text-center">
-            <Users className="w-16 h-16 text-[#FF4500] mx-auto mb-4" />
-            <h3 className="text-lg font-display font-semibold text-foreground mb-2">No players found</h3>
+          <GlowCard className="p-8 md:p-12 max-w-md mx-auto text-center">
+            <Users className="w-12 h-12 md:w-16 md:h-16 text-[#FF4500] mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-foreground mb-2">
+              {profiles?.length === 0 ? 'No players yet' : 'No matches found'}
+            </h3>
             <p className="text-muted-foreground text-sm mb-6">
               {profiles?.length === 0
-                ? "Be the first to create a profile!"
-                : "Try adjusting your filters or search query"}
+                ? "Be the first to join! Create your profile and get discovered by squads."
+                : "Try removing some filters or searching with a different name."}
             </p>
-            <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
-              Clear Filters
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="border-[#FF4500]/20 hover:border-[#FF4500]/40">
+                  <X className="w-4 h-4 mr-1" /> Clear Filters
+                </Button>
+              )}
+              {profiles?.length === 0 && (
+                <Button asChild className="btn-gaming">
+                  <Link to="/create-profile">
+                    <UserPlus className="w-4 h-4 mr-2" /> Create Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
           </GlowCard>
         )}
       </div>

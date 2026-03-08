@@ -299,9 +299,9 @@ export default function HomePage() {
             <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px bg-gradient-to-r from-[#FF4500]/30 via-[#FF4500]/50 to-[#FF4500]/30" />
 
             {[
-              { icon: UserPlus, title: '1. Create Profile', desc: 'Add your rank, role, favorite heroes, and contact info' },
-              { icon: Target, title: '2. Get Discovered', desc: 'Squads browse profiles and find players that match their needs' },
-              { icon: TrendingUp, title: '3. Connect & Rank Up', desc: 'Join your new squad and climb the ranks together' },
+              { icon: Trophy, title: '1. Create Tournament', desc: 'Set up brackets, formats, rules, and prize pools in minutes' },
+              { icon: Target, title: '2. Register & Compete', desc: 'Squads register their rosters and battle through the bracket' },
+              { icon: TrendingUp, title: '3. Rise to Glory', desc: 'Track stats, climb rankings, and prove you\'re the best' },
             ].map((step) => (
               <div key={step.title} className="text-center group relative z-10">
                 <div className="w-16 h-16 rounded-lg bg-[#111111] border border-[#FF4500]/30 flex items-center justify-center mx-auto mb-4 group-hover:border-[#FF4500]/60 group-hover:shadow-[0_0_15px_rgba(255,69,0,0.3)] transition-all duration-300">

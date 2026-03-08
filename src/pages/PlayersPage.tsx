@@ -20,6 +20,7 @@ import { getContactValue } from '@/lib/contacts';
 import { Search, Filter, Trophy, Users, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSEO } from '@/hooks/useSEO';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 type ViewMode = 'grid' | 'rankings';
 type SortOption = 'recent' | 'winrate' | 'rank';

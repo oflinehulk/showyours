@@ -749,7 +749,7 @@ function MultiStageSetup({
   return (
     <div className="space-y-4">
       {/* Reopen / Recapture / Switch to Single-Stage buttons */}
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-end gap-1.5 sm:gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -770,35 +770,40 @@ function MultiStageSetup({
             }
           }}
           disabled={reopenPending || deleteStages.isPending || updateTournament.isPending}
+          className="text-[11px] sm:text-xs min-h-[40px]"
         >
           {deleteStages.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin mr-1" />
           ) : (
             <RotateCcw className="w-3 h-3 mr-1" />
           )}
-          Switch to Single-Stage
+          <span className="sm:hidden">Single</span>
+          <span className="hidden sm:inline">Switch to Single-Stage</span>
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onRecaptureSnapshots}
           disabled={recapturePending}
+          className="text-[11px] sm:text-xs min-h-[40px]"
         >
           {recapturePending ? (
             <Loader2 className="w-3 h-3 animate-spin mr-1" />
           ) : (
             <RefreshCw className="w-3 h-3 mr-1" />
           )}
-          Recapture Rosters
+          <span className="sm:hidden">Rosters</span>
+          <span className="hidden sm:inline">Recapture Rosters</span>
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={onReopenRegistration}
           disabled={reopenPending}
+          className="text-[11px] sm:text-xs min-h-[40px] col-span-2 sm:col-span-1"
         >
           <Play className="w-3 h-3 mr-1" />
-          Reopen Registration
+          Reopen
         </Button>
       </div>
 

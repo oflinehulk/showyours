@@ -95,7 +95,7 @@ describe('useCreateProfile', () => {
   });
 
   it('creates a profile', async () => {
-    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } as any }, error: null });
     mockSupabaseResponse(mockProfiles[0]);
 
     const { result } = renderHook(() => useCreateProfile(), { wrapper: createWrapper() });

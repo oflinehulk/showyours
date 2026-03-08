@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import { Home, Users, Trophy, Shield, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/useProfiles';
-import { useMySquads } from '@/hooks/useSquads';
 
 export function BottomTabBar() {
   const location = useLocation();

@@ -2,6 +2,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
+/**
+ * NOTE: The `squad_availability` and `scheduling_submissions` tables have
+ * SELECT-only RLS policies. All write operations (INSERT/UPDATE/DELETE)
+ * are performed exclusively through SECURITY DEFINER RPC functions
+ * (`rpc_submit_availability`, `rpc_get_scheduling_context`) which bypass
+ * RLS. This is intentional — these tables are only written to via
+ * token-authenticated scheduling flows, not direct client mutations.
+ */
+
 // ---------- Public page hooks (token-based, no auth) ----------
 
 export interface MatchSchedulingInfo {

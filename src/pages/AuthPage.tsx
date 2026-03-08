@@ -113,7 +113,13 @@ export default function AuthPage() {
             toast.error(error.message);
           }
         } else {
-          toast.success('Account created! Please check your email to verify.');
+          toast.success('Account created!', {
+            description: 'Please check your email inbox and click the verification link before signing in.',
+            duration: 8000,
+          });
+          // Switch to login mode so user signs in after verifying
+          setIsLogin(true);
+          setPassword('');
         }
       }
     } catch (err) {

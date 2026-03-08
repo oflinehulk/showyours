@@ -79,14 +79,14 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <Button size="lg" className="btn-gaming text-lg px-8 font-display" asChild>
-                <Link to="/create-profile">
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Create Your Profile
+                <Link to="/create-tournament">
+                  <Trophy className="w-5 h-5 mr-2" />
+                  Host a Tournament
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 btn-interactive border-[#FF4500]/30 hover:border-[#FF4500]/50 hover:bg-[#FF4500]/5" asChild>
-                <Link to="/players">
-                  Browse Players
+                <Link to="/tournaments">
+                  Browse Tournaments
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>

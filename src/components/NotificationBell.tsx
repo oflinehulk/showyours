@@ -12,14 +12,18 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
 } from '@/hooks/useNotifications';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import {
   Bell,
+  BellRing,
+  BellOff,
   CheckCircle,
   XCircle,
   AlertTriangle,
   UserCheck,
   UserX,
   Check,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,6 +54,7 @@ export function NotificationBell() {
   const { data: unreadCount } = useUnreadNotificationCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
 
   const handleNotificationClick = (notification: { id: string; tournament_id: string | null; read: boolean }) => {
     if (!notification.read) {
@@ -80,17 +85,40 @@ export function NotificationBell() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h4 className="text-sm font-semibold">Notifications</h4>
-          {(unreadCount ?? 0) > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs h-auto py-1 px-2 text-muted-foreground hover:text-foreground"
-              onClick={() => markAllRead.mutate()}
-            >
-              <Check className="w-3 h-3 mr-1" />
-              Mark all read
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {isSupported && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'text-xs h-auto py-1 px-2',
+                  isSubscribed ? 'text-green-500 hover:text-destructive' : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={() => isSubscribed ? unsubscribe() : subscribe()}
+                disabled={pushLoading}
+              >
+                {pushLoading ? (
+                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                ) : isSubscribed ? (
+                  <BellRing className="w-3 h-3 mr-1" />
+                ) : (
+                  <BellOff className="w-3 h-3 mr-1" />
+                )}
+                {isSubscribed ? 'Push on' : 'Push off'}
+              </Button>
+            )}
+            {(unreadCount ?? 0) > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-auto py-1 px-2 text-muted-foreground hover:text-foreground"
+                onClick={() => markAllRead.mutate()}
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="max-h-80 overflow-y-auto">

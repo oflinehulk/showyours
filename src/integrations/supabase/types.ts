@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          created_at: string | null
+          key: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          key: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
       group_draws: {
         Row: {
           confirmed: boolean
@@ -253,6 +271,33 @@ export type Database = {
           updated_at?: string
           user_id?: string
           win_rate?: number | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
         }
         Relationships: []
       }

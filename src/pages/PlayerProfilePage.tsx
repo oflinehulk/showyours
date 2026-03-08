@@ -344,7 +344,7 @@ export default function PlayerProfilePage() {
           <div className="lg:col-span-2">
             {/* Profile Header */}
             <GlowCard className="p-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-start gap-6">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                 {/* Avatar */}
                 <div className="relative">
                   <img

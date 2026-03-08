@@ -33,6 +33,17 @@ export default function HomePage() {
     },
   });
 
+  const { data: totalTournaments } = useQuery({
+    queryKey: ['total-tournaments-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('tournaments')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   const recruitingSquads = squads?.filter(s => s.is_recruiting).length || 0;
   const featuredPlayers = profiles?.filter(p => p.looking_for_squad).slice(0, 3) || [];
   const featuredSquads = squads?.slice(0, 2) || [];

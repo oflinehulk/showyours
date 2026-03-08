@@ -257,23 +257,149 @@ export function computeGroupStandings(
     });
   }
 
-  // Sort: points desc, then H2H, then score diff, then score for
-  standings.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    // Head-to-head
-    const h2h = getH2HResult(matches, a.squad_id, b.squad_id);
-    if (h2h !== 0) return h2h;
-    // Score difference
-    const diffA = a.score_for - a.score_against;
-    const diffB = b.score_for - b.score_against;
-    if (diffB !== diffA) return diffB - diffA;
-    // Score for
+  // Sort with proper multi-way tiebreaker
+  return resolveStandingsWithTiebreaker(standings, matches);
+}
+
+/**
+ * Properly resolves standings using multi-way tiebreaker rules:
+ * 1. Points (3 per win)
+ * 2. Mini H2H table among tied teams (wins within the tied subset)
+ * 3. Game difference among tied teams
+ * 4. Overall game difference
+ * 5. Overall games won
+ *
+ * For 3+ way ties, we build a mini-table of only matches between
+ * the tied teams, then recursively resolve sub-ties.
+ */
+function resolveStandingsWithTiebreaker(
+  standings: GroupStanding[],
+  matches: TournamentMatch[]
+): GroupStanding[] {
+  // Group teams by points
+  const pointGroups = new Map<number, GroupStanding[]>();
+  for (const s of standings) {
+    const group = pointGroups.get(s.points) || [];
+    group.push(s);
+    pointGroups.set(s.points, group);
+  }
+
+  // Process each points-tier, highest first
+  const sortedPoints = [...pointGroups.keys()].sort((a, b) => b - a);
+  const result: GroupStanding[] = [];
+
+  for (const pts of sortedPoints) {
+    const tied = pointGroups.get(pts)!;
+    if (tied.length === 1) {
+      result.push(tied[0]);
+    } else {
+      // Resolve this group of tied teams
+      const resolved = resolveTiedGroup(tied, matches);
+      result.push(...resolved);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Resolves a group of teams that are tied on points.
+ * Builds a mini H2H table among just these teams, then sorts by:
+ * 1. Mini H2H wins (within this subset)
+ * 2. Mini H2H game difference
+ * 3. Mini H2H games won
+ * 4. Overall game difference
+ * 5. Overall games won
+ * If still tied after all criteria, recursively resolves sub-ties.
+ */
+function resolveTiedGroup(
+  tiedTeams: GroupStanding[],
+  allMatches: TournamentMatch[]
+): GroupStanding[] {
+  if (tiedTeams.length <= 1) return tiedTeams;
+
+  const tiedIds = new Set(tiedTeams.map(t => t.squad_id));
+
+  // Build mini H2H stats among only the tied teams
+  const miniStats = new Map<string, { wins: number; scoreFor: number; scoreAgainst: number }>();
+  for (const t of tiedTeams) {
+    miniStats.set(t.squad_id, { wins: 0, scoreFor: 0, scoreAgainst: 0 });
+  }
+
+  for (const m of allMatches) {
+    if (m.status !== 'completed' || !m.squad_a_id || !m.squad_b_id) continue;
+    if (!tiedIds.has(m.squad_a_id) || !tiedIds.has(m.squad_b_id)) continue;
+
+    const a = miniStats.get(m.squad_a_id)!;
+    const b = miniStats.get(m.squad_b_id)!;
+    a.scoreFor += m.squad_a_score ?? 0;
+    a.scoreAgainst += m.squad_b_score ?? 0;
+    b.scoreFor += m.squad_b_score ?? 0;
+    b.scoreAgainst += m.squad_a_score ?? 0;
+    if (m.winner_id === m.squad_a_id) a.wins++;
+    else if (m.winner_id === m.squad_b_id) b.wins++;
+  }
+
+  // Score each team
+  type ScoredTeam = GroupStanding & {
+    miniWins: number;
+    miniDiff: number;
+    miniFor: number;
+    overallDiff: number;
+  };
+
+  const scored: ScoredTeam[] = tiedTeams.map(t => {
+    const ms = miniStats.get(t.squad_id)!;
+    return {
+      ...t,
+      miniWins: ms.wins,
+      miniDiff: ms.scoreFor - ms.scoreAgainst,
+      miniFor: ms.scoreFor,
+      overallDiff: t.score_for - t.score_against,
+    };
+  });
+
+  // Sort by mini H2H criteria, then overall
+  scored.sort((a, b) => {
+    if (b.miniWins !== a.miniWins) return b.miniWins - a.miniWins;
+    if (b.miniDiff !== a.miniDiff) return b.miniDiff - a.miniDiff;
+    if (b.miniFor !== a.miniFor) return b.miniFor - a.miniFor;
+    if (b.overallDiff !== a.overallDiff) return b.overallDiff - a.overallDiff;
     return b.score_for - a.score_for;
   });
 
-  return standings;
+  // Check for sub-ties: group teams that are still identical on all criteria
+  const result: GroupStanding[] = [];
+  let i = 0;
+  while (i < scored.length) {
+    let j = i + 1;
+    while (
+      j < scored.length &&
+      scored[j].miniWins === scored[i].miniWins &&
+      scored[j].miniDiff === scored[i].miniDiff &&
+      scored[j].miniFor === scored[i].miniFor &&
+      scored[j].overallDiff === scored[i].overallDiff &&
+      scored[j].score_for === scored[i].score_for
+    ) {
+      j++;
+    }
+
+    if (j - i === 1) {
+      // No sub-tie, just push
+      result.push(scored[i]);
+    } else {
+      // Sub-tie remains — push in current order (all tiebreakers exhausted)
+      for (let k = i; k < j; k++) {
+        result.push(scored[k]);
+      }
+    }
+    i = j;
+  }
+
+  return result;
 }
 
+/** Simple pairwise H2H — kept for backward compatibility */
 function getH2HResult(matches: TournamentMatch[], squadA: string, squadB: string): number {
   let aWins = 0;
   let bWins = 0;
@@ -287,8 +413,8 @@ function getH2HResult(matches: TournamentMatch[], squadA: string, squadB: string
       else if (m.winner_id === squadB) bWins++;
     }
   }
-  if (aWins > bWins) return -1; // A wins H2H, sort A higher
-  if (bWins > aWins) return 1;  // B wins H2H, sort B higher
+  if (aWins > bWins) return -1;
+  if (bWins > aWins) return 1;
   return 0;
 }
 

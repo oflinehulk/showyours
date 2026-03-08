@@ -312,7 +312,7 @@ export default function DocsPage() {
                 <li><strong>Single Elimination</strong> — Lose once, you're out. Standard bracket tree.</li>
                 <li><strong>Double Elimination</strong> — Teams get a second chance through the losers bracket. Final between winners and losers bracket champions.</li>
                 <li><strong>Seeded Double Elimination</strong> — Used when advancing from a group stage. Top teams enter the Upper Bracket and bottom-advancing teams enter the Lower Bracket directly. Includes a Semi-Final round and 3rd-place designation.</li>
-                <li><strong>Round Robin</strong> — Every team plays every other team in their group. Rankings by points (3 per win), with head-to-head and score difference as tiebreakers.</li>
+                <li><strong>Round Robin</strong> — Every team plays every other team in their group. Rankings by points (3 per win). Ties are broken using a mini head-to-head table among tied teams, then game difference within that subset, then overall game difference.</li>
               </ul>
 
               <h4>Best-of Format</h4>
@@ -334,7 +334,7 @@ export default function DocsPage() {
               </p>
               <ul>
                 <li><strong>3 points</strong> per win, 0 per loss</li>
-                <li>Ranked by total points, then head-to-head record, then score difference</li>
+                <li>Ranked by total points. Ties broken by: mini H2H table among tied teams → game difference within tied subset → games won within tied subset → overall game difference → overall games won</li>
                 <li>Teams advancing to the next stage are highlighted: <strong>green</strong> for upper bracket, <strong>orange</strong> for lower bracket</li>
               </ul>
             </DocSection>

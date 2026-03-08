@@ -110,20 +110,20 @@ export default function HomePage() {
       <section className="border-y border-[#FF4500]/10 bg-[#0a0a0a] relative">
         <div className="absolute inset-0 circuit-bg opacity-50" />
         <div className="container mx-auto px-4 py-12 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
              {[
               { icon: Trophy, value: totalTournaments ?? 0, label: 'Tournaments Hosted', color: 'primary' as const },
               { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'secondary' as const },
               { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'accent' as const },
             ].map((stat) => (
-              <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-6 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-4">
-                  <stat.icon className="w-6 h-6" />
+              <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-3 md:p-6 text-center">
+                <div className="inline-flex items-center justify-center w-9 h-9 md:w-12 md:h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-2 md:mb-4">
+                  <stat.icon className="w-4 h-4 md:w-6 md:h-6" />
                 </div>
-                <div className="text-3xl md:text-4xl font-display font-bold text-foreground mb-1">
+                <div className="text-xl md:text-4xl font-display font-bold text-foreground mb-0.5 md:mb-1">
                   {stat.value}
                 </div>
-                <div className="text-muted-foreground text-sm">{stat.label}</div>
+                <div className="text-muted-foreground text-[10px] md:text-sm">{stat.label}</div>
               </GlowCard>
             ))}
           </div>

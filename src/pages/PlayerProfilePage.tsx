@@ -344,7 +344,7 @@ export default function PlayerProfilePage() {
           <div className="lg:col-span-2">
             {/* Profile Header */}
             <GlowCard className="p-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-start gap-6">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                 {/* Avatar */}
                 <div className="relative">
                   <img
@@ -388,19 +388,19 @@ export default function PlayerProfilePage() {
                 </div>
 
                 {/* Win Rate */}
-                <div className="text-center sm:text-right">
-                  <div className="flex items-center gap-2 justify-center sm:justify-end mb-1">
-                    <TrendingUp className="w-5 h-5 text-[#FF4500]" />
-                    <span className="text-3xl font-display font-bold text-[#FF4500]">{player.win_rate || '—'}%</span>
+                <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 sm:text-right">
+                  <div className="flex items-center gap-1.5 sm:gap-2 sm:justify-end">
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF4500]" />
+                    <span className="text-xl sm:text-3xl font-display font-bold text-[#FF4500]">{player.win_rate || '—'}%</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Win Rate</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Win Rate</p>
                 </div>
               </div>
 
               {/* Owner Controls */}
               {isOwner && (
                 <div className="mt-6 pt-6 border-t border-[#FF4500]/10">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-3">
                       <Switch
                         id="lookingForSquad"

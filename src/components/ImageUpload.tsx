@@ -266,7 +266,7 @@ export function MultiImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
         onChange={handleUpload}
         className="hidden"
         disabled={uploading}

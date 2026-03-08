@@ -8,9 +8,6 @@ export function BottomTabBar() {
   const location = useLocation();
   const { user } = useAuth();
   const { data: myProfile } = useMyProfile();
-  const { data: mySquads } = useMySquads();
-
-  const hasSquad = mySquads && mySquads.length > 0;
 
   const tabs = [
     { to: '/', icon: Home, label: 'Home' },

@@ -18,7 +18,7 @@ import { QueryErrorState } from '@/components/QueryErrorState';
 import { useProfiles } from '@/hooks/useProfiles';
 import { RANKS, ROLES, HERO_CLASSES, INDIAN_STATES } from '@/lib/constants';
 import { getContactValue } from '@/lib/contacts';
-import { Search, Filter, Trophy, Users, X } from 'lucide-react';
+import { Search, Filter, Trophy, Users, X, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSEO } from '@/hooks/useSEO';
 import { PullToRefresh } from '@/components/PullToRefresh';

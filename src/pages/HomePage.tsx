@@ -382,7 +382,6 @@ export default function HomePage() {
                 Start Hosting
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Link>
-              </Link>
             </Button>
           </GlowCard>
         </div>

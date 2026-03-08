@@ -100,10 +100,10 @@ export default function HomePage() {
         <div className="absolute inset-0 circuit-bg opacity-50" />
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'primary' as const },
-              { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'secondary' as const },
-              { icon: UserPlus, value: recruitingSquads, label: 'Squads Available', color: 'accent' as const },
+             {[
+              { icon: Trophy, value: totalTournaments ?? 0, label: 'Tournaments Hosted', color: 'primary' as const },
+              { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'secondary' as const },
+              { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'accent' as const },
             ].map((stat) => (
               <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-6 text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-4">

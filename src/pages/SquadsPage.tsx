@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { SquadCard } from '@/components/SquadCard';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
   Select,

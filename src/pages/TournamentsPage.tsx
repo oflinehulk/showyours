@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { TournamentCard } from '@/components/TournamentCard';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GlowCard } from '@/components/tron/GlowCard';

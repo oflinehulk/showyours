@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
   Select,

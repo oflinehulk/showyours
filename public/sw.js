@@ -1,4 +1,4 @@
-const CACHE_NAME = 'showyours-v4';
+const CACHE_NAME = 'showyours-v5';
 const OFFLINE_URL = '/';
 
 // Precache essential shell assets on install
@@ -27,6 +27,52 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Push notification handler
+self.addEventListener('push', (event) => {
+  let data = { title: 'ShowYours', body: 'You have a new notification', type: 'general', url: '/' };
+
+  try {
+    if (event.data) {
+      data = { ...data, ...event.data.json() };
+    }
+  } catch (e) {
+    // Use defaults
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    tag: data.type || 'general',
+    renotify: true,
+    data: { url: data.url || '/' },
+    actions: [{ action: 'open', title: 'View' }],
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus existing window if available
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      // Open new window
+      return clients.openWindow(url);
+    })
+  );
+});
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -46,7 +92,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Let API calls and auth go through normally
-  if (url.pathname.includes('/rest/') || url.pathname.includes('/auth/') || url.pathname.includes('/realtime/')) {
+  if (url.pathname.includes('/rest/') || url.pathname.includes('/auth/') || url.pathname.includes('/realtime/') || url.pathname.includes('/functions/')) {
     return;
   }
 

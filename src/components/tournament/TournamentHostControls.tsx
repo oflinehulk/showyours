@@ -271,10 +271,10 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
   };
 
   return (
-    <div className="glass-card p-6 mb-6 border-secondary/30">
-      <div className="flex items-center gap-2 mb-4">
-        <Settings className="w-5 h-5 text-secondary" />
-        <h3 className="text-lg font-semibold text-foreground">Host Controls</h3>
+    <div className="glass-card p-3 md:p-6 mb-4 md:mb-6 border-secondary/30">
+      <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+        <Settings className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
+        <h3 className="text-sm md:text-lg font-semibold text-foreground">Host Controls</h3>
         {isMultiStage && (
           <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-[#FF4500]/10 text-[#FF4500] border border-[#FF4500]/20">
             Multi-Stage

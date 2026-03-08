@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';

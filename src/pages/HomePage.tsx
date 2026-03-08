@@ -70,10 +70,10 @@ export default function HomePage() {
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              Recruit players, host tournaments effortlessly.
+              Organize tournaments, recruit players, build squads — all in one place.
             </p>
             <p className="text-base text-muted-foreground/70 max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-              India's premier MLBB recruitment platform. Showcase your skills, connect with players from your state, and join squads that match your playstyle.
+              India's premier MLBB esports platform. Create brackets, manage registrations, and run professional tournaments with zero hassle.
             </p>
 
             {/* CTA Buttons */}

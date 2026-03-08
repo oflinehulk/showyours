@@ -64,8 +64,8 @@ export default function HomePage() {
 
             {/* Headline */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 animate-slide-up tracking-wide">
-              Where Champions{' '}
-              <span className="text-gradient">Find Their Squad</span>
+              Host Tournaments.{' '}
+              <span className="text-gradient">Build Legends.</span>
             </h1>
 
             {/* Subheadline */}

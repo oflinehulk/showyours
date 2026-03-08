@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { HERO_CLASSES, type HeroClassId } from '@/lib/constants';
 import { Shield, Swords, Skull, Sparkles, Target, Heart, HelpCircle } from 'lucide-react';

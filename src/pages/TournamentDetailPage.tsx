@@ -667,15 +667,15 @@ export default function TournamentDetailPage() {
                     { icon: Swords, label: 'Format', value: tournament.format ? TOURNAMENT_FORMAT_LABELS[tournament.format] : 'TBD', color: 'text-[#FF4500]' },
                     { icon: Globe, label: 'Region', value: tournament.region || '—', color: 'text-sky-400' },
                   ].map((item, i) => (
-                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-3 sm:p-4 relative overflow-hidden group hover:border-[#FF4500]/40 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)] transition-all duration-300">
+                    <div key={i} className="bg-[#111111] border border-[#FF4500]/20 rounded-lg p-2.5 md:p-4 relative overflow-hidden group hover:border-[#FF4500]/40 transition-all duration-300">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#FF4500]/40 to-transparent" />
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
-                          <item.icon className={cn('w-4.5 h-4.5', item.color)} />
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-[#FF4500]/10 flex items-center justify-center shrink-0">
+                          <item.icon className={cn('w-3.5 h-3.5 md:w-4.5 md:h-4.5', item.color)} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-display">{item.label}</p>
-                          <p className="text-sm font-display font-bold text-foreground truncate">{item.value}</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-display">{item.label}</p>
+                          <p className="text-xs md:text-sm font-display font-bold text-foreground truncate">{item.value}</p>
                         </div>
                       </div>
                     </div>

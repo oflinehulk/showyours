@@ -303,7 +303,7 @@ export default function PlayersPage() {
 
         {/* Loading state — skeleton cards */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-56 rounded-lg bg-[#111111]" />
             ))}
@@ -316,7 +316,7 @@ export default function PlayersPage() {
         {/* Grid View */}
         {!isLoading && viewMode === 'grid' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredPlayers.slice(0, visibleCount).map((player) => (
                 <PlayerCard key={player.id} player={player} />
               ))}

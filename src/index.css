@@ -101,6 +101,20 @@
     @apply border-border;
   }
 
+  /* Global focus-visible for keyboard accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove focus-visible from elements that handle it themselves */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply rounded-sm;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Rajdhani', 'Inter', system-ui, sans-serif;

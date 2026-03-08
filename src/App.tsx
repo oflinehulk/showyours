@@ -2,16 +2,14 @@ import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { getUserFriendlyMessage } from "@/lib/error-utils";
-import { Sentry } from "@/lib/sentry";
+import { queryClient } from "@/lib/query-client";
 
 // Lazy-loaded pages for code splitting
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -31,24 +29,7 @@ const DocsPage = lazy(() => import("./pages/DocsPage"));
 const ScheduleAvailabilityPage = lazy(() => import("./pages/ScheduleAvailabilityPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000,      // 2 min — avoid refetching unchanged data
-      gcTime: 10 * 60 * 1000,         // 10 min garbage collection
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      onError: (error) => {
-        toast.error('Action failed', { description: getUserFriendlyMessage(error) });
-        Sentry.captureException(error);
-      },
-    },
-  },
-});
-
-// Export queryClient for auth signOut cache clearing
+// Re-export for consumers that imported from App
 export { queryClient };
 
 function PageLoader() {

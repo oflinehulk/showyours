@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { PlayerTournamentStats } from '@/components/PlayerTournamentStats';
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ProfileCompleteness } from '@/components/ProfileCompleteness';
@@ -508,6 +509,9 @@ export default function PlayerProfilePage() {
                 </div>
               </GlowCard>
             )}
+
+            {/* Tournament Stats */}
+            <PlayerTournamentStats userId={player.user_id} />
           </div>
 
           {/* Sidebar - Contact Info */}

@@ -110,7 +110,7 @@ export default function HomePage() {
       <section className="border-y border-[#FF4500]/10 bg-[#0a0a0a] relative">
         <div className="absolute inset-0 circuit-bg opacity-50" />
         <div className="container mx-auto px-4 py-12 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
              {[
               { icon: Trophy, value: totalTournaments ?? 0, label: 'Tournaments Hosted', color: 'primary' as const },
               { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'secondary' as const },

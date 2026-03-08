@@ -116,14 +116,14 @@ export default function HomePage() {
               { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'secondary' as const },
               { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'accent' as const },
             ].map((stat) => (
-              <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-6 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-4">
-                  <stat.icon className="w-6 h-6" />
+              <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-3 md:p-6 text-center">
+                <div className="inline-flex items-center justify-center w-9 h-9 md:w-12 md:h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-2 md:mb-4">
+                  <stat.icon className="w-4 h-4 md:w-6 md:h-6" />
                 </div>
-                <div className="text-3xl md:text-4xl font-display font-bold text-foreground mb-1">
+                <div className="text-xl md:text-4xl font-display font-bold text-foreground mb-0.5 md:mb-1">
                   {stat.value}
                 </div>
-                <div className="text-muted-foreground text-sm">{stat.label}</div>
+                <div className="text-muted-foreground text-[10px] md:text-sm">{stat.label}</div>
               </GlowCard>
             ))}
           </div>

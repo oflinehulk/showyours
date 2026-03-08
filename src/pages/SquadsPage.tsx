@@ -74,9 +74,12 @@ export default function SquadsPage() {
     setRoleFilter('all');
   };
 
+  const handleRefresh = useCallback(() => refetch(), [refetch]);
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">

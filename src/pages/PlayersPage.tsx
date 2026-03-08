@@ -108,9 +108,12 @@ export default function PlayersPage() {
     setStateFilter('all');
   };
 
+  const handleRefresh = useCallback(() => refetch(), [refetch]);
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 flex items-center justify-center">

@@ -253,7 +253,7 @@ export function InvitationSection() {
   return (
     <div className="glass-card p-6">
       <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-        <Bell className="w-5 h-5 text-primary" />
+        <Mail className="w-5 h-5 text-primary" />
         Pending Invitations
         <span className="ml-auto text-sm font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           {count}

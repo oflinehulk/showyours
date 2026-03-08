@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { ROLES, type RoleId } from '@/lib/constants';
 import { Target, Swords, Crosshair, Shield, Trees, HelpCircle } from 'lucide-react';
@@ -26,23 +26,25 @@ const roleColors: Record<string, string> = {
   jungle: 'text-green-400',
 };
 
-export const RoleIcon = memo(function RoleIcon({ role, size = 'md', showName = true, className }: RoleIconProps) {
-  const roleData = ROLES.find(r => r.id === role);
-  
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6',
-  };
+export const RoleIcon = memo(forwardRef<HTMLSpanElement, RoleIconProps>(
+  function RoleIcon({ role, size = 'md', showName = true, className }, ref) {
+    const roleData = ROLES.find(r => r.id === role);
+    
+    const sizeClasses = {
+      sm: 'w-4 h-4',
+      md: 'w-5 h-5',
+      lg: 'w-6 h-6',
+    };
 
-  return (
-    <span className={cn('inline-flex items-center gap-1.5', className)}>
-      <span className={cn(sizeClasses[size], roleColors[role] || 'text-muted-foreground')}>
-        {roleIcons[role] || <HelpCircle className="w-full h-full" />}
+    return (
+      <span ref={ref} className={cn('inline-flex items-center gap-1.5', className)}>
+        <span className={cn(sizeClasses[size], roleColors[role] || 'text-muted-foreground')}>
+          {roleIcons[role] || <HelpCircle className="w-full h-full" />}
+        </span>
+        {showName && (
+          <span className="text-muted-foreground">{roleData?.name || role}</span>
+        )}
       </span>
-      {showName && (
-        <span className="text-muted-foreground">{roleData?.name || role}</span>
-      )}
-    </span>
-  );
-});
+    );
+  }
+));

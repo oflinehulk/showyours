@@ -136,23 +136,23 @@ export function StageConfigurator({
         </div>
         <div className="space-y-2">
           {existingStages.map((stage, i) => (
-            <div key={stage.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
-              <div className="w-7 h-7 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/30 flex items-center justify-center text-xs font-bold text-[#FF4500]">
+            <div key={stage.id} className="flex items-start gap-2 sm:gap-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/30 flex items-center justify-center text-[10px] sm:text-xs font-bold text-[#FF4500] shrink-0 mt-0.5">
                 {i + 1}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{stage.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {TOURNAMENT_FORMAT_LABELS[stage.format]} &middot; Bo{stage.best_of}
-                  {stage.group_count > 0 && ` \u00B7 ${stage.group_count} groups`}
-                  {stage.advance_per_group > 0 && ` \u00B7 Top ${stage.advance_per_group}/group`}
-                  {stage.advance_to_lower_per_group > 0 && ` \u00B7 ${stage.advance_to_lower_per_group}/group to LB`}
-                  {stage.advance_best_remaining > 0 && ` + ${stage.advance_best_remaining} best`}
-                  {stage.finals_best_of && ` \u00B7 Finals Bo${stage.finals_best_of}`}
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <p className="text-xs sm:text-sm font-medium truncate">{stage.name}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed break-words">
+                  {TOURNAMENT_FORMAT_LABELS[stage.format]} · Bo{stage.best_of}
+                  {stage.group_count > 0 && ` · ${stage.group_count} grp`}
+                  {stage.advance_per_group > 0 && ` · Top ${stage.advance_per_group}`}
+                  {stage.advance_to_lower_per_group > 0 && ` · ${stage.advance_to_lower_per_group} LB`}
+                  {stage.advance_best_remaining > 0 && ` +${stage.advance_best_remaining}`}
+                  {stage.finals_best_of && ` · Final Bo${stage.finals_best_of}`}
                 </p>
               </div>
               <span className={cn(
-                'text-xs font-medium px-2 py-0.5 rounded',
+                'text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 rounded shrink-0 whitespace-nowrap',
                 stage.status === 'completed' && 'bg-green-500/10 text-green-500',
                 stage.status === 'ongoing' && 'bg-yellow-500/10 text-yellow-500',
                 stage.status === 'configuring' && 'bg-blue-500/10 text-blue-500',

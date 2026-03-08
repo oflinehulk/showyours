@@ -96,7 +96,7 @@ describe('hasContactType', () => {
   });
 
   it('returns false for missing type', () => {
-    expect(hasContactType(contacts, 'game_id')).toBe(false);
+    expect(hasContactType(contacts, 'game-id')).toBe(false);
   });
 
   it('returns false for null contacts', () => {

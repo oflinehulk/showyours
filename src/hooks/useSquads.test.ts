@@ -93,7 +93,7 @@ describe('useCreateSquad', () => {
 
   it('creates a squad', async () => {
     // useCreateSquad calls supabase.auth.getUser() first
-    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } as any }, error: null });
     // Mock response for all chained queries (existing squads check, membership check, profile check, insert)
     mockSupabaseResponse(mockSquads[0]);
 

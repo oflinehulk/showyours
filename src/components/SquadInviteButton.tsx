@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMySquads } from '@/hooks/useSquads';
@@ -12,7 +12,7 @@ interface SquadInviteButtonProps {
   size?: 'sm' | 'default';
 }
 
-export function SquadInviteButton({ player, size = 'sm' }: SquadInviteButtonProps) {
+export const SquadInviteButton = forwardRef<HTMLButtonElement, SquadInviteButtonProps>(function SquadInviteButton({ player, size = 'sm' }, ref) {
   const { user } = useAuth();
   const { data: mySquads } = useMySquads();
   const sendInvite = useSendInvitation();
@@ -64,4 +64,4 @@ export function SquadInviteButton({ player, size = 'sm' }: SquadInviteButtonProp
       <span className="text-xs">Invite</span>
     </Button>
   );
-}
+});

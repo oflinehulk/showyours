@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { PlayerTournamentStats } from '@/components/PlayerTournamentStats';
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ProfileCompleteness } from '@/components/ProfileCompleteness';

@@ -509,6 +509,9 @@ export default function PlayerProfilePage() {
                 </div>
               </GlowCard>
             )}
+
+            {/* Tournament Stats */}
+            <PlayerTournamentStats userId={player.user_id} />
           </div>
 
           {/* Sidebar - Contact Info */}

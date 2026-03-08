@@ -11,8 +11,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <Logo className="mb-4" />
             <p className="text-sm text-muted-foreground max-w-md">
-              The ultimate platform for Mobile Legends: Bang Bang players to find their perfect teammate
-              and showcase their skills to the community.
+              India's premier MLBB esports platform — host tournaments, recruit players, and build championship squads.
             </p>
           </div>
           <div>

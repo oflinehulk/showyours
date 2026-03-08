@@ -334,7 +334,7 @@ export default function DocsPage() {
               </p>
               <ul>
                 <li><strong>3 points</strong> per win, 0 per loss</li>
-                <li>Ranked by total points, then head-to-head record, then score difference</li>
+                <li>Ranked by total points. Ties broken by: mini H2H table among tied teams → game difference within tied subset → games won within tied subset → overall game difference → overall games won</li>
                 <li>Teams advancing to the next stage are highlighted: <strong>green</strong> for upper bracket, <strong>orange</strong> for lower bracket</li>
               </ul>
             </DocSection>

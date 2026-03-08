@@ -36,7 +36,7 @@ export function GlowCard({
         'bg-[#111111] rounded-lg',
         !noBorder && 'border',
         !noBorder && glowColorMap[glowColor],
-        hoverable && 'transition-all duration-300 hover:-translate-y-0.5',
+        hoverable && 'transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01]',
         hoverable && glowShadowMap[glowColor],
         className
       )}

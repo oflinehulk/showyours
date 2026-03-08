@@ -175,8 +175,11 @@ export function MultiImageUpload({
       const file = event.target.files?.[0];
       if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+      const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast.error('Invalid file type', {
+          description: 'Only JPEG, PNG, GIF, WebP, and SVG images are allowed.',
+        });
         return;
       }
 
@@ -184,6 +187,12 @@ export function MultiImageUpload({
         toast.error('Image must be less than 5MB');
         return;
       }
+
+      const extMap: Record<string, string> = {
+        'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+        'image/webp': 'webp', 'image/svg+xml': 'svg',
+      };
+      const safeExt = extMap[file.type] || 'jpg';
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {

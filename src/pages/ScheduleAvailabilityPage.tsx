@@ -8,8 +8,18 @@ import { Loader2, Check, ChevronLeft, ChevronRight, Swords, CalendarCheck, Clock
 import { useSchedulingContext, useSubmitAvailability, type MatchSchedulingInfo } from '@/hooks/useScheduling';
 import { toast } from 'sonner';
 
-const TIME_SLOTS = ['21:00', '21:30', '22:00', '22:30', '23:00', '23:30'];
-const SLOT_LABELS = ['9 PM', '9:30', '10 PM', '10:30', '11 PM', '11:30'];
+const TIME_SLOTS = [
+  '16:00', '16:30', '17:00', '17:30',
+  '18:00', '18:30', '19:00', '19:30',
+  '20:00', '20:30', '21:00', '21:30',
+  '22:00', '22:30', '23:00', '23:30',
+];
+const SLOT_LABELS = [
+  '4 PM', '4:30', '5 PM', '5:30',
+  '6 PM', '6:30', '7 PM', '7:30',
+  '8 PM', '8:30', '9 PM', '9:30',
+  '10 PM', '10:30', '11 PM', '11:30',
+];
 
 function getNextDays(count: number): string[] {
   const days: string[] = [];

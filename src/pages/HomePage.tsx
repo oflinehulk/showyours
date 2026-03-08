@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, isToday, isTomorrow } from 'date-fns';
 
 export default function HomePage() {
-  useSEO({ title: 'ShowYours', description: 'MLBB recruitment platform — find players, build squads, host tournaments effortlessly.', path: '/' });
+  useSEO({ title: 'ShowYours', description: 'Host MLBB tournaments, build squads, and recruit players — India\'s premier esports platform.', path: '/' });
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
   const { data: squads, isLoading: squadsLoading } = useSquads();
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { SquadCard } from '@/components/SquadCard';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { Search, Filter, Shield, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 export default function SquadsPage() {
   useSEO({ title: 'Find Squads', description: 'Browse MLBB squads actively recruiting new members.', path: '/squads' });
@@ -73,9 +74,12 @@ export default function SquadsPage() {
     setRoleFilter('all');
   };
 
+  const handleRefresh = useCallback(() => refetch(), [refetch]);
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
@@ -232,6 +236,7 @@ export default function SquadsPage() {
           </GlowCard>
         )}
       </div>
+      </PullToRefresh>
     </Layout>
   );
 }

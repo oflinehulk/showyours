@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { TournamentCard } from '@/components/TournamentCard';
@@ -12,6 +12,7 @@ import { useTournaments } from '@/hooks/useTournaments';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Plus, Trophy, Calendar, Users } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 export default function TournamentsPage() {
   useSEO({ title: 'Tournaments', description: 'Compete in MLBB tournaments and win prizes.', path: '/tournaments' });
@@ -52,9 +53,12 @@ export default function TournamentsPage() {
     return list;
   }, [tournaments, searchQuery, activeTab]);
 
+  const handleRefresh = useCallback(() => refetch(), [refetch]);
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <PullToRefresh onRefresh={handleRefresh}>
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
@@ -160,6 +164,7 @@ export default function TournamentsPage() {
           </GlowCard>
         )}
       </div>
+      </PullToRefresh>
     </Layout>
   );
 }

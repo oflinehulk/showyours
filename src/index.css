@@ -316,3 +316,51 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* ===== Mobile-Native App Feel ===== */
+@media (max-width: 767px) {
+  /* Disable long-press text selection for app-like feel */
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Minimum tap targets — 44px per Apple HIG */
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Tighter container padding on mobile */
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  /* Cards go full-width on mobile */
+  .card,
+  [class*="GlowCard"],
+  [data-slot="card"] {
+    border-radius: 0.5rem;
+  }
+
+  /* Smoother scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Larger text inputs for mobile */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+
+  /* Bottom nav spacing */
+  main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

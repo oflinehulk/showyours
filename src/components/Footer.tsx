@@ -17,10 +17,10 @@ export function Footer() {
           <div>
             <h4 className="font-display font-semibold text-foreground mb-3 text-sm tracking-wider uppercase">Quick Links</h4>
             <ul className="space-y-2 text-sm">
+              <li><Link to="/tournaments" className="text-muted-foreground hover:text-neon transition-colors">Tournaments</Link></li>
+              <li><Link to="/create-tournament" className="text-muted-foreground hover:text-neon transition-colors">Host Tournament</Link></li>
               <li><Link to="/players" className="text-muted-foreground hover:text-neon transition-colors">Find Players</Link></li>
-              <li><Link to="/squads" className="text-muted-foreground hover:text-neon transition-colors">Squad Listings</Link></li>
-              <li><Link to="/create-profile" className="text-muted-foreground hover:text-neon transition-colors">Create Profile</Link></li>
-              <li><Link to="/create-squad" className="text-muted-foreground hover:text-neon transition-colors">Post Squad Listing</Link></li>
+              <li><Link to="/squads" className="text-muted-foreground hover:text-neon transition-colors">Find Squads</Link></li>
             </ul>
           </div>
           <div>

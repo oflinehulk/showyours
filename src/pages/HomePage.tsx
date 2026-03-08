@@ -372,16 +372,16 @@ export default function HomePage() {
           <GlowCard className="p-8 md:p-12 text-center max-w-3xl mx-auto animate-neon-pulse">
             <Trophy className="w-10 h-10 text-[#FF4500] mx-auto mb-4" />
             <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4 tracking-wide">
-              Ready to Find Your Squad?
+              Ready to Host Your Tournament?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-              Join MLBB players who've already found their perfect teammates.
-              Create your profile now — it's free!
+              Set up your tournament in minutes — brackets, schedules, and registrations all handled for you. It's free to get started!
             </p>
             <Button size="lg" className="btn-gaming text-lg px-8 font-display" asChild>
-              <Link to="/create-profile">
-                Get Started Now
+              <Link to="/create-tournament">
+                Start Hosting
                 <ChevronRight className="w-5 h-5 ml-2" />
+              </Link>
               </Link>
             </Button>
           </GlowCard>

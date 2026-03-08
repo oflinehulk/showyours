@@ -200,8 +200,7 @@ export function MultiImageUpload({
         return;
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${safeExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)

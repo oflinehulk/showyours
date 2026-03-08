@@ -879,13 +879,13 @@ function MatchCard({
     <div
       onClick={onClick}
       className={cn(
-        'w-full p-3 rounded-lg border bg-[#111111] transition-all text-left cursor-pointer',
+        'w-full p-2.5 md:p-3 rounded-lg border bg-[#111111] transition-all text-left cursor-pointer',
         'border-[#FF4500]/20 hover:border-[#FF4500]/50 hover:shadow-[0_0_10px_rgba(255,69,0,0.15)]',
         'active:scale-[0.98]',
         match.status === 'ongoing' && 'border-yellow-400/40',
         match.status === 'completed' && 'border-green-500/20',
         match.status === 'disputed' && 'border-destructive/40',
-        large && 'p-4 neon-border'
+        large && 'p-3 md:p-4 neon-border'
       )}
     >
       <div className="flex items-center justify-between mb-2">

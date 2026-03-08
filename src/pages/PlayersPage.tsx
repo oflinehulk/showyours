@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { PlayerCard } from '@/components/PlayerCard';
 import { RankBadge } from '@/components/RankBadge';

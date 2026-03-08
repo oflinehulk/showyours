@@ -285,7 +285,7 @@ export function StageConfigurator({
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {/* Format */}
                 <div>
                   <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Format</label>
@@ -293,7 +293,7 @@ export function StageConfigurator({
                     value={stage.format}
                     onValueChange={(v) => updateStage(index, { format: v as TournamentFormat })}
                   >
-                    <SelectTrigger className="h-8 text-xs mt-0.5">
+                    <SelectTrigger className="h-8 text-[10px] sm:text-xs mt-0.5 px-1.5 sm:px-3">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

@@ -656,7 +656,7 @@ export default function TournamentDetailPage() {
                     </Button>
                   </div>
                 )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
                   {[
                     { icon: Calendar, label: 'Date', value: format(new Date(tournament.date_time), 'MMM d, yyyy'), color: 'text-[#FF4500]' },
                     { icon: Clock, label: 'Time', value: format(new Date(tournament.date_time), 'h:mm a'), color: 'text-[#FF4500]' },

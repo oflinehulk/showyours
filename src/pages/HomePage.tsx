@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { format, isToday, isTomorrow } from 'date-fns';
 
 export default function HomePage() {
-  useSEO({ title: 'ShowYours', description: 'MLBB recruitment platform — find players, build squads, host tournaments effortlessly.', path: '/' });
+  useSEO({ title: 'ShowYours', description: 'Host MLBB tournaments, build squads, and recruit players — India\'s premier esports platform.', path: '/' });
   const { data: profiles, isLoading: profilesLoading } = useProfiles();
   const { data: squads, isLoading: squadsLoading } = useSquads();
 
@@ -27,6 +27,17 @@ export default function HomePage() {
     queryFn: async () => {
       const { count, error } = await supabase
         .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const { data: totalTournaments } = useQuery({
+    queryKey: ['total-tournaments-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('tournaments')
         .select('*', { count: 'exact', head: true });
       if (error) throw error;
       return count || 0;
@@ -51,42 +62,42 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] text-sm font-semibold mb-6 animate-fade-in tracking-wide">
-              <Zap className="w-4 h-4" />
-              <span>MLBB Esports Platform</span>
+              <Trophy className="w-4 h-4" />
+              <span>MLBB Tournament Platform</span>
             </div>
 
             {/* Tagline */}
             <div className="mb-6 animate-slide-up">
               <p className="font-display text-[#FF4500] text-sm md:text-base tracking-[0.3em] uppercase mb-4 text-neon-subtle">
-                DOMINATE &middot; ORGANIZE &middot; CONQUER
+                ORGANIZE &middot; COMPETE &middot; CONQUER
               </p>
             </div>
 
             {/* Headline */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 animate-slide-up tracking-wide">
-              Where Champions{' '}
-              <span className="text-gradient">Find Their Squad</span>
+              Host Tournaments.{' '}
+              <span className="text-gradient">Build Legends.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-2 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              Recruit players, host tournaments effortlessly.
+              Organize tournaments, recruit players, build squads — all in one place.
             </p>
             <p className="text-base text-muted-foreground/70 max-w-2xl mx-auto mb-8 animate-fade-in" style={{ animationDelay: '0.15s' }}>
-              India's premier MLBB recruitment platform. Showcase your skills, connect with players from your state, and join squads that match your playstyle.
+              India's premier MLBB esports platform. Create brackets, manage registrations, and run professional tournaments with zero hassle.
             </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <Button size="lg" className="btn-gaming text-lg px-8 font-display" asChild>
-                <Link to="/create-profile">
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Create Your Profile
+                <Link to="/create-tournament">
+                  <Trophy className="w-5 h-5 mr-2" />
+                  Host a Tournament
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 btn-interactive border-[#FF4500]/30 hover:border-[#FF4500]/50 hover:bg-[#FF4500]/5" asChild>
-                <Link to="/players">
-                  Browse Players
+                <Link to="/tournaments">
+                  Browse Tournaments
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -100,10 +111,10 @@ export default function HomePage() {
         <div className="absolute inset-0 circuit-bg opacity-50" />
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'primary' as const },
-              { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'secondary' as const },
-              { icon: UserPlus, value: recruitingSquads, label: 'Squads Available', color: 'accent' as const },
+             {[
+              { icon: Trophy, value: totalTournaments ?? 0, label: 'Tournaments Hosted', color: 'primary' as const },
+              { icon: Users, value: totalPlayers ?? 0, label: 'Total Players', color: 'secondary' as const },
+              { icon: Shield, value: squads?.length || 0, label: 'Total Squads', color: 'accent' as const },
             ].map((stat) => (
               <GlowCard key={stat.label} glowColor={stat.color} hoverable className="p-6 text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-[#FF4500]/10 border border-[#FF4500]/20 text-[#FF4500] mb-4">
@@ -299,9 +310,9 @@ export default function HomePage() {
             <div className="hidden md:block absolute top-8 left-[20%] right-[20%] h-px bg-gradient-to-r from-[#FF4500]/30 via-[#FF4500]/50 to-[#FF4500]/30" />
 
             {[
-              { icon: UserPlus, title: '1. Create Profile', desc: 'Add your rank, role, favorite heroes, and contact info' },
-              { icon: Target, title: '2. Get Discovered', desc: 'Squads browse profiles and find players that match their needs' },
-              { icon: TrendingUp, title: '3. Connect & Rank Up', desc: 'Join your new squad and climb the ranks together' },
+              { icon: Trophy, title: '1. Create Tournament', desc: 'Set up brackets, formats, rules, and prize pools in minutes' },
+              { icon: Target, title: '2. Register & Compete', desc: 'Squads register their rosters and battle through the bracket' },
+              { icon: TrendingUp, title: '3. Rise to Glory', desc: 'Track stats, climb rankings, and prove you\'re the best' },
             ].map((step) => (
               <div key={step.title} className="text-center group relative z-10">
                 <div className="w-16 h-16 rounded-lg bg-[#111111] border border-[#FF4500]/30 flex items-center justify-center mx-auto mb-4 group-hover:border-[#FF4500]/60 group-hover:shadow-[0_0_15px_rgba(255,69,0,0.3)] transition-all duration-300">
@@ -372,15 +383,14 @@ export default function HomePage() {
           <GlowCard className="p-8 md:p-12 text-center max-w-3xl mx-auto animate-neon-pulse">
             <Trophy className="w-10 h-10 text-[#FF4500] mx-auto mb-4" />
             <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4 tracking-wide">
-              Ready to Find Your Squad?
+              Ready to Host Your Tournament?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-              Join MLBB players who've already found their perfect teammates.
-              Create your profile now — it's free!
+              Set up your tournament in minutes — brackets, schedules, and registrations all handled for you. It's free to get started!
             </p>
             <Button size="lg" className="btn-gaming text-lg px-8 font-display" asChild>
-              <Link to="/create-profile">
-                Get Started Now
+              <Link to="/create-tournament">
+                Start Hosting
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>

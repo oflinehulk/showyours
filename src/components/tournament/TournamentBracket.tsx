@@ -446,6 +446,7 @@ function GroupStageView({
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
   const { data: registrations } = useTournamentRegistrations(tournament.id);
   const createTiebreaker = useCreateTiebreakerMatch();
+  const deleteTiebreaker = useDeleteTiebreakerMatch();
   const [swapTarget, setSwapTarget] = useState<{
     groupId: string;
     squadId: string;

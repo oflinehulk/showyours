@@ -579,8 +579,33 @@ function isTiebreakerFullyResolved(
   }
 
   if (deadlockedIds.length === 3) {
-    // Need 2 completed tiebreaker matches for full resolution
-    return completedTBs.length >= 2;
+    // Mini round-robin: need 3 completed tiebreaker matches for full resolution
+    // Check if all 3 matches resolve to unique rankings
+    if (completedTBs.length < 3) return false;
+    // Verify the results produce a unique ordering (no sub-tie in tiebreaker RR)
+    const tbStats = new Map<string, { wins: number; scoreFor: number; scoreAgainst: number }>();
+    for (const id of deadlockedIds) {
+      tbStats.set(id, { wins: 0, scoreFor: 0, scoreAgainst: 0 });
+    }
+    for (const m of completedTBs) {
+      const a = tbStats.get(m.squad_a_id!)!;
+      const b = tbStats.get(m.squad_b_id!)!;
+      a.scoreFor += m.squad_a_score ?? 0;
+      a.scoreAgainst += m.squad_b_score ?? 0;
+      b.scoreFor += m.squad_b_score ?? 0;
+      b.scoreAgainst += m.squad_a_score ?? 0;
+      if (m.winner_id === m.squad_a_id) a.wins++;
+      else if (m.winner_id === m.squad_b_id) b.wins++;
+    }
+    // Check unique win counts or game diff
+    const vals = [...tbStats.values()];
+    const winCounts = vals.map(v => v.wins);
+    const uniqueWins = new Set(winCounts);
+    if (uniqueWins.size === deadlockedIds.length) return true;
+    // Fall back to game diff uniqueness
+    const diffs = vals.map(v => v.scoreFor - v.scoreAgainst);
+    const uniqueDiffs = new Set(diffs);
+    return uniqueDiffs.size === deadlockedIds.length;
   }
 
   // For 4+ way ties, check if enough matches to create a unique ordering
@@ -620,9 +645,12 @@ export function getTiebreakerProgress(
   const completedTBs = relevantTBs.filter(m => m.status === 'completed');
   const pendingTBs = relevantTBs.filter(m => m.status !== 'completed');
 
-  const totalSteps = deadlockedIds.length - 1; // For 3-way = 2 matches
+  // For 3-way ties: mini round-robin needs 3 matches total
+  const totalSteps = deadlockedIds.length === 3 ? 3 : deadlockedIds.length - 1;
   const currentStep = completedTBs.length + pendingTBs.length + 1;
-  const isFullyResolved = completedTBs.length >= totalSteps;
+  const isFullyResolved = deadlockedIds.length === 3
+    ? completedTBs.length >= 3
+    : completedTBs.length >= totalSteps;
 
   const progress: TiebreakerProgress = {
     totalTeams: deadlockedIds.length,
@@ -632,21 +660,6 @@ export function getTiebreakerProgress(
     totalSteps,
     isFullyResolved,
   };
-
-  // For 3-way ties, suggest the next match
-  if (deadlockedIds.length === 3 && completedTBs.length === 1 && pendingTBs.length === 0) {
-    const firstMatch = completedTBs[0];
-    const winnerId = firstMatch.winner_id;
-    if (winnerId) {
-      // Find the team that didn't play in Match 1
-      const playedIds = new Set([firstMatch.squad_a_id, firstMatch.squad_b_id]);
-      const byeTeamId = deadlockedIds.find(id => !playedIds.has(id));
-      if (byeTeamId) {
-        progress.suggestedNextMatch = { squadAId: winnerId, squadBId: byeTeamId };
-        progress.byeTeamId = byeTeamId;
-      }
-    }
-  }
 
   return progress;
 }

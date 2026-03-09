@@ -508,6 +508,9 @@ function GroupStageView({
                   squadAId,
                   squadBId,
                   bestOf: stage.best_of as 1 | 3 | 5,
+                }, {
+                  onSuccess: () => toast.success('Tiebreaker match created! Enter the result after the match is played.'),
+                  onError: (err) => toast.error(`Failed to create tiebreaker: ${err.message}`),
                 });
               } : undefined}
               isTiebreakerPending={createTiebreaker.isPending}

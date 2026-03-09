@@ -319,7 +319,8 @@ function resolveStandingsWithTiebreaker(
  */
 function resolveTiedGroup(
   tiedTeams: GroupStanding[],
-  allMatches: TournamentMatch[]
+  allMatches: TournamentMatch[],
+  tiebreakerMatches: TournamentMatch[] = []
 ): GroupStanding[] {
   if (tiedTeams.length <= 1) return tiedTeams;
 
@@ -393,15 +394,70 @@ function resolveTiedGroup(
       // No sub-tie, just push
       result.push(scored[i]);
     } else {
-      // Sub-tie remains — push in current order (all tiebreakers exhausted)
-      for (let k = i; k < j; k++) {
-        result.push(scored[k]);
-      }
+      // Sub-tie remains — try tiebreaker matches (round 99) as final criterion
+      const subGroup = scored.slice(i, j) as GroupStanding[];
+      const resolved = resolveTiedGroupByTiebreakerMatches(subGroup, tiebreakerMatches);
+      result.push(...resolved);
     }
     i = j;
   }
 
   return result;
+}
+
+/**
+ * Uses completed tiebreaker matches (round 99) to resolve a deadlocked sub-group.
+ * For 3-way ties with 2 tiebreaker matches:
+ *   Match 1: A vs B → Winner W1
+ *   Match 2: W1 vs C → Winner W2
+ *   Rank 1 = W2 (won the final), Rank 3 = Loser of Match 2, Rank 2 = other
+ */
+function resolveTiedGroupByTiebreakerMatches(
+  tiedTeams: GroupStanding[],
+  tiebreakerMatches: TournamentMatch[]
+): GroupStanding[] {
+  if (tiebreakerMatches.length === 0) return tiedTeams;
+
+  const tiedIds = new Set(tiedTeams.map(t => t.squad_id));
+
+  // Collect completed tiebreaker matches involving these teams
+  const relevantTBs = tiebreakerMatches.filter(
+    m => m.status === 'completed' && m.squad_a_id && m.squad_b_id &&
+      tiedIds.has(m.squad_a_id) && tiedIds.has(m.squad_b_id)
+  );
+
+  if (relevantTBs.length === 0) return tiedTeams;
+
+  // Build tiebreaker H2H stats
+  const tbStats = new Map<string, { wins: number; losses: number; scoreFor: number; scoreAgainst: number }>();
+  for (const t of tiedTeams) {
+    tbStats.set(t.squad_id, { wins: 0, losses: 0, scoreFor: 0, scoreAgainst: 0 });
+  }
+
+  for (const m of relevantTBs) {
+    const a = tbStats.get(m.squad_a_id!)!;
+    const b = tbStats.get(m.squad_b_id!)!;
+    a.scoreFor += m.squad_a_score ?? 0;
+    a.scoreAgainst += m.squad_b_score ?? 0;
+    b.scoreFor += m.squad_b_score ?? 0;
+    b.scoreAgainst += m.squad_a_score ?? 0;
+    if (m.winner_id === m.squad_a_id) { a.wins++; b.losses++; }
+    else if (m.winner_id === m.squad_b_id) { b.wins++; a.losses++; }
+  }
+
+  // Sort by: tiebreaker wins desc, then tiebreaker game diff, then tiebreaker losses asc
+  const sorted = [...tiedTeams].sort((a, b) => {
+    const sa = tbStats.get(a.squad_id)!;
+    const sb = tbStats.get(b.squad_id)!;
+    if (sb.wins !== sa.wins) return sb.wins - sa.wins;
+    const diffA = sa.scoreFor - sa.scoreAgainst;
+    const diffB = sb.scoreFor - sb.scoreAgainst;
+    if (diffB !== diffA) return diffB - diffA;
+    if (sa.losses !== sb.losses) return sa.losses - sb.losses;
+    return 0;
+  });
+
+  return sorted;
 }
 
 /**

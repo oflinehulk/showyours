@@ -32,6 +32,7 @@ import {
   useStageMatches,
   useTournamentRegistrations,
   useCreateTiebreakerMatch,
+  useDeleteTiebreakerMatch,
 } from '@/hooks/useTournaments';
 import { computeGroupStandings } from '@/lib/bracket-utils';
 import {

@@ -645,9 +645,12 @@ export function getTiebreakerProgress(
   const completedTBs = relevantTBs.filter(m => m.status === 'completed');
   const pendingTBs = relevantTBs.filter(m => m.status !== 'completed');
 
-  const totalSteps = deadlockedIds.length - 1; // For 3-way = 2 matches
+  // For 3-way ties: mini round-robin needs 3 matches total
+  const totalSteps = deadlockedIds.length === 3 ? 3 : deadlockedIds.length - 1;
   const currentStep = completedTBs.length + pendingTBs.length + 1;
-  const isFullyResolved = completedTBs.length >= totalSteps;
+  const isFullyResolved = deadlockedIds.length === 3
+    ? completedTBs.length >= 3
+    : completedTBs.length >= totalSteps;
 
   const progress: TiebreakerProgress = {
     totalTeams: deadlockedIds.length,
@@ -657,21 +660,6 @@ export function getTiebreakerProgress(
     totalSteps,
     isFullyResolved,
   };
-
-  // For 3-way ties, suggest the next match
-  if (deadlockedIds.length === 3 && completedTBs.length === 1 && pendingTBs.length === 0) {
-    const firstMatch = completedTBs[0];
-    const winnerId = firstMatch.winner_id;
-    if (winnerId) {
-      // Find the team that didn't play in Match 1
-      const playedIds = new Set([firstMatch.squad_a_id, firstMatch.squad_b_id]);
-      const byeTeamId = deadlockedIds.find(id => !playedIds.has(id));
-      if (byeTeamId) {
-        progress.suggestedNextMatch = { squadAId: winnerId, squadBId: byeTeamId };
-        progress.byeTeamId = byeTeamId;
-      }
-    }
-  }
 
   return progress;
 }

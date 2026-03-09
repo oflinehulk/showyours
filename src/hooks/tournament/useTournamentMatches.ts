@@ -303,6 +303,74 @@ export function useCreateTiebreakerMatch() {
   });
 }
 
+// Create all 3 mini round-robin tiebreaker matches at once for a 3-way tie
+export function useCreateMiniRRTiebreaker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stageId,
+      groupId,
+      squadIds,
+      bestOf = 1,
+    }: {
+      tournamentId: string;
+      stageId: string;
+      groupId: string;
+      squadIds: [string, string, string]; // exactly 3 teams
+      bestOf?: 1 | 3 | 5;
+    }) => {
+      // Get the max match_number for this group
+      const { data: existing, error: fetchErr } = await supabase
+        .from('tournament_matches')
+        .select('match_number')
+        .eq('tournament_id', tournamentId)
+        .eq('group_id', groupId)
+        .order('match_number', { ascending: false })
+        .limit(1);
+
+      if (fetchErr) throw new Error(fetchErr.message);
+
+      let nextMatchNumber = (existing?.[0]?.match_number ?? 0) + 1;
+
+      // Generate all 3 pairings: A vs B, A vs C, B vs C
+      const pairs: [string, string][] = [];
+      for (let i = 0; i < squadIds.length; i++) {
+        for (let j = i + 1; j < squadIds.length; j++) {
+          pairs.push([squadIds[i], squadIds[j]]);
+        }
+      }
+
+      const inserts = pairs.map((pair) => ({
+        tournament_id: tournamentId,
+        stage_id: stageId,
+        group_id: groupId,
+        round: 99,
+        match_number: nextMatchNumber++,
+        squad_a_id: pair[0],
+        squad_b_id: pair[1],
+        best_of: bestOf,
+        status: 'pending' as MatchStatus,
+        bracket_type: 'winners',
+        squad_a_score: 0,
+        squad_b_score: 0,
+      }));
+
+      const { error } = await supabase
+        .from('tournament_matches')
+        .insert(inserts);
+
+      if (error) throw new Error(error.message);
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+    },
+  });
+}
+
 // Delete a tiebreaker match (round 99 only)
 export function useDeleteTiebreakerMatch() {
   const queryClient = useQueryClient();

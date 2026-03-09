@@ -399,6 +399,92 @@ function resolveTiedGroup(
   return result;
 }
 
+/**
+ * Detects teams that are in a perfect deadlock after all tiebreakers are exhausted.
+ * Returns arrays of squad_ids that are still tied (groups of 2+ teams).
+ */
+export function detectDeadlockedTeams(
+  standings: GroupStanding[],
+  matches: TournamentMatch[]
+): string[][] {
+  // Group teams by points
+  const pointGroups = new Map<number, GroupStanding[]>();
+  for (const s of standings) {
+    const group = pointGroups.get(s.points) || [];
+    group.push(s);
+    pointGroups.set(s.points, group);
+  }
+
+  const deadlocks: string[][] = [];
+
+  for (const [, tied] of pointGroups) {
+    if (tied.length < 2) continue;
+
+    // Build mini H2H stats
+    const tiedIds = new Set(tied.map(t => t.squad_id));
+    const miniStats = new Map<string, { wins: number; scoreFor: number; scoreAgainst: number }>();
+    for (const t of tied) {
+      miniStats.set(t.squad_id, { wins: 0, scoreFor: 0, scoreAgainst: 0 });
+    }
+
+    for (const m of matches) {
+      if (m.status !== 'completed' || !m.squad_a_id || !m.squad_b_id) continue;
+      if (!tiedIds.has(m.squad_a_id) || !tiedIds.has(m.squad_b_id)) continue;
+      const a = miniStats.get(m.squad_a_id)!;
+      const b = miniStats.get(m.squad_b_id)!;
+      a.scoreFor += m.squad_a_score ?? 0;
+      a.scoreAgainst += m.squad_b_score ?? 0;
+      b.scoreFor += m.squad_b_score ?? 0;
+      b.scoreAgainst += m.squad_a_score ?? 0;
+      if (m.winner_id === m.squad_a_id) a.wins++;
+      else if (m.winner_id === m.squad_b_id) b.wins++;
+    }
+
+    // Score each team
+    const scored = tied.map(t => {
+      const ms = miniStats.get(t.squad_id)!;
+      return {
+        squadId: t.squad_id,
+        miniWins: ms.wins,
+        miniDiff: ms.scoreFor - ms.scoreAgainst,
+        miniFor: ms.scoreFor,
+        overallDiff: t.score_for - t.score_against,
+        overallFor: t.score_for,
+      };
+    });
+
+    // Find sub-groups that are identical on all criteria
+    scored.sort((a, b) => {
+      if (b.miniWins !== a.miniWins) return b.miniWins - a.miniWins;
+      if (b.miniDiff !== a.miniDiff) return b.miniDiff - a.miniDiff;
+      if (b.miniFor !== a.miniFor) return b.miniFor - a.miniFor;
+      if (b.overallDiff !== a.overallDiff) return b.overallDiff - a.overallDiff;
+      return b.overallFor - a.overallFor;
+    });
+
+    let i = 0;
+    while (i < scored.length) {
+      let j = i + 1;
+      while (
+        j < scored.length &&
+        scored[j].miniWins === scored[i].miniWins &&
+        scored[j].miniDiff === scored[i].miniDiff &&
+        scored[j].miniFor === scored[i].miniFor &&
+        scored[j].overallDiff === scored[i].overallDiff &&
+        scored[j].overallFor === scored[i].overallFor
+      ) {
+        j++;
+      }
+      if (j - i >= 2) {
+        deadlocks.push(scored.slice(i, j).map(s => s.squadId));
+      }
+      i = j;
+    }
+  }
+
+  return deadlocks;
+}
+
 /** Simple pairwise H2H — kept for backward compatibility */
 function getH2HResult(matches: TournamentMatch[], squadA: string, squadB: string): number {
   let aWins = 0;

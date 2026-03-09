@@ -462,13 +462,19 @@ function resolveTiedGroupByTiebreakerMatches(
 
 /**
  * Detects teams that are in a perfect deadlock after all tiebreakers are exhausted.
+ * Excludes tiebreaker matches (round 99) from analysis, but checks if completed
+ * tiebreaker matches already resolve the deadlock.
  * Returns arrays of squad_ids that are still tied (groups of 2+ teams).
  */
 export function detectDeadlockedTeams(
   standings: GroupStanding[],
   matches: TournamentMatch[]
 ): string[][] {
-  // Group teams by points
+  // Exclude tiebreaker matches from deadlock detection
+  const regularMatches = matches.filter(m => m.round !== 99);
+  const tiebreakerMatches = matches.filter(m => m.round === 99);
+
+  // Group teams by points (from standings which already exclude round 99)
   const pointGroups = new Map<number, GroupStanding[]>();
   for (const s of standings) {
     const group = pointGroups.get(s.points) || [];
@@ -481,14 +487,14 @@ export function detectDeadlockedTeams(
   for (const [, tied] of pointGroups) {
     if (tied.length < 2) continue;
 
-    // Build mini H2H stats
+    // Build mini H2H stats from regular matches only
     const tiedIds = new Set(tied.map(t => t.squad_id));
     const miniStats = new Map<string, { wins: number; scoreFor: number; scoreAgainst: number }>();
     for (const t of tied) {
       miniStats.set(t.squad_id, { wins: 0, scoreFor: 0, scoreAgainst: 0 });
     }
 
-    for (const m of matches) {
+    for (const m of regularMatches) {
       if (m.status !== 'completed' || !m.squad_a_id || !m.squad_b_id) continue;
       if (!tiedIds.has(m.squad_a_id) || !tiedIds.has(m.squad_b_id)) continue;
       const a = miniStats.get(m.squad_a_id)!;
@@ -537,7 +543,12 @@ export function detectDeadlockedTeams(
         j++;
       }
       if (j - i >= 2) {
-        deadlocks.push(scored.slice(i, j).map(s => s.squadId));
+        const deadlockedIds = scored.slice(i, j).map(s => s.squadId);
+        
+        // Check if completed tiebreaker matches fully resolve this deadlock
+        if (!isTiebreakerFullyResolved(deadlockedIds, tiebreakerMatches)) {
+          deadlocks.push(deadlockedIds);
+        }
       }
       i = j;
     }
@@ -546,6 +557,99 @@ export function detectDeadlockedTeams(
   return deadlocks;
 }
 
+/**
+ * Checks if tiebreaker matches fully resolve a deadlock.
+ * For a 3-way tie, needs 2 completed tiebreaker matches.
+ * For a 2-way tie, needs 1 completed tiebreaker match.
+ */
+function isTiebreakerFullyResolved(
+  deadlockedIds: string[],
+  tiebreakerMatches: TournamentMatch[]
+): boolean {
+  const idSet = new Set(deadlockedIds);
+  
+  // Get completed tiebreaker matches involving these teams
+  const completedTBs = tiebreakerMatches.filter(
+    m => m.status === 'completed' && m.squad_a_id && m.squad_b_id &&
+      idSet.has(m.squad_a_id) && idSet.has(m.squad_b_id)
+  );
+
+  if (deadlockedIds.length === 2) {
+    return completedTBs.length >= 1;
+  }
+
+  if (deadlockedIds.length === 3) {
+    // Need 2 completed tiebreaker matches for full resolution
+    return completedTBs.length >= 2;
+  }
+
+  // For 4+ way ties, check if enough matches to create a unique ordering
+  // (conservative: need n-1 completed matches)
+  return completedTBs.length >= deadlockedIds.length - 1;
+}
+
+/**
+ * Analyzes the tiebreaker progress for a group of deadlocked teams.
+ * Returns info about what step we're on and what match to create next.
+ */
+export interface TiebreakerProgress {
+  totalTeams: number;
+  completedMatches: TournamentMatch[];
+  pendingMatches: TournamentMatch[];
+  /** Step 1 = first match needed, Step 2 = second match needed, etc. */
+  currentStep: number;
+  totalSteps: number;
+  isFullyResolved: boolean;
+  /** For 3-way ties: the suggested next match (winner of last match vs remaining team) */
+  suggestedNextMatch?: { squadAId: string; squadBId: string };
+  /** The team sitting out the current step */
+  byeTeamId?: string;
+}
+
+export function getTiebreakerProgress(
+  deadlockedIds: string[],
+  groupMatches: TournamentMatch[]
+): TiebreakerProgress {
+  const idSet = new Set(deadlockedIds);
+  const tiebreakerMatches = groupMatches.filter(m => m.round === 99);
+  
+  const relevantTBs = tiebreakerMatches.filter(
+    m => m.squad_a_id && m.squad_b_id && idSet.has(m.squad_a_id) && idSet.has(m.squad_b_id)
+  );
+  
+  const completedTBs = relevantTBs.filter(m => m.status === 'completed');
+  const pendingTBs = relevantTBs.filter(m => m.status !== 'completed');
+
+  const totalSteps = deadlockedIds.length - 1; // For 3-way = 2 matches
+  const currentStep = completedTBs.length + pendingTBs.length + 1;
+  const isFullyResolved = completedTBs.length >= totalSteps;
+
+  const progress: TiebreakerProgress = {
+    totalTeams: deadlockedIds.length,
+    completedMatches: completedTBs,
+    pendingMatches: pendingTBs,
+    currentStep: Math.min(currentStep, totalSteps + 1),
+    totalSteps,
+    isFullyResolved,
+  };
+
+  // For 3-way ties, suggest the next match
+  if (deadlockedIds.length === 3 && completedTBs.length === 1 && pendingTBs.length === 0) {
+    const firstMatch = completedTBs[0];
+    const winnerId = firstMatch.winner_id;
+    if (winnerId) {
+      // Find the team that didn't play in Match 1
+      const playedIds = new Set([firstMatch.squad_a_id, firstMatch.squad_b_id]);
+      const byeTeamId = deadlockedIds.find(id => !playedIds.has(id));
+      if (byeTeamId) {
+        progress.suggestedNextMatch = { squadAId: winnerId, squadBId: byeTeamId };
+        progress.byeTeamId = byeTeamId;
+      }
+    }
+  }
+
+  return progress;
+}
 /** Simple pairwise H2H — kept for backward compatibility */
 function getH2HResult(matches: TournamentMatch[], squadA: string, squadB: string): number {
   let aWins = 0;

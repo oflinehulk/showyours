@@ -216,8 +216,12 @@ export function computeGroupStandings(
     stats.set(squadId, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 });
   }
 
-  // Process completed matches
-  for (const m of matches) {
+  // Separate regular matches from tiebreaker matches (round 99)
+  const regularMatches = matches.filter(m => m.round !== 99);
+  const tiebreakerMatches = matches.filter(m => m.round === 99);
+
+  // Process completed regular matches only
+  for (const m of regularMatches) {
     if (m.status !== 'completed' || !m.squad_a_id || !m.squad_b_id) continue;
 
     const a = stats.get(m.squad_a_id);
@@ -257,8 +261,8 @@ export function computeGroupStandings(
     });
   }
 
-  // Sort with proper multi-way tiebreaker
-  return resolveStandingsWithTiebreaker(standings, matches);
+  // Sort with proper multi-way tiebreaker, passing tiebreaker matches as final fallback
+  return resolveStandingsWithTiebreaker(standings, regularMatches, tiebreakerMatches);
 }
 
 /**

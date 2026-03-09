@@ -242,3 +242,63 @@ export function useResetMatchResult() {
     },
   });
 }
+
+// Create a tiebreaker match between two tied teams in a group
+export function useCreateTiebreakerMatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      stageId,
+      groupId,
+      squadAId,
+      squadBId,
+      bestOf = 1,
+    }: {
+      tournamentId: string;
+      stageId: string;
+      groupId: string;
+      squadAId: string;
+      squadBId: string;
+      bestOf?: 1 | 3 | 5;
+    }) => {
+      // Get the max match_number for this group to assign next number
+      const { data: existing, error: fetchErr } = await supabase
+        .from('tournament_matches')
+        .select('match_number')
+        .eq('tournament_id', tournamentId)
+        .eq('group_id', groupId)
+        .order('match_number', { ascending: false })
+        .limit(1);
+
+      if (fetchErr) throw new Error(fetchErr.message);
+
+      const nextMatchNumber = (existing?.[0]?.match_number ?? 0) + 1;
+
+      const { error } = await supabase
+        .from('tournament_matches')
+        .insert({
+          tournament_id: tournamentId,
+          stage_id: stageId,
+          group_id: groupId,
+          round: 99, // Special round number for tiebreakers
+          match_number: nextMatchNumber,
+          squad_a_id: squadAId,
+          squad_b_id: squadBId,
+          best_of: bestOf,
+          status: 'pending' as MatchStatus,
+          bracket_type: 'winners',
+          squad_a_score: 0,
+          squad_b_score: 0,
+        });
+
+      if (error) throw new Error(error.message);
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+    },
+  });
+}

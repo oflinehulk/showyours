@@ -31,6 +31,7 @@ import {
   useTournamentGroupTeams,
   useStageMatches,
   useTournamentRegistrations,
+  useCreateTiebreakerMatch,
 } from '@/hooks/useTournaments';
 import { computeGroupStandings } from '@/lib/bracket-utils';
 import {
@@ -443,6 +444,7 @@ function GroupStageView({
   const { data: groups } = useTournamentGroups(stage.id);
   const { data: groupTeams } = useTournamentGroupTeams(stage.id);
   const { data: registrations } = useTournamentRegistrations(tournament.id);
+  const createTiebreaker = useCreateTiebreakerMatch();
   const [swapTarget, setSwapTarget] = useState<{
     groupId: string;
     squadId: string;
@@ -497,6 +499,21 @@ function GroupStageView({
               onSwapTeam={stage.status === 'ongoing' ? (squadId, squadName) => {
                 setSwapTarget({ groupId: group.id, squadId, squadName });
               } : undefined}
+              groupMatches={groupMatches}
+              onCreateTiebreaker={isHost && stage.status === 'ongoing' ? (squadAId, squadBId) => {
+                createTiebreaker.mutate({
+                  tournamentId: tournament.id,
+                  stageId: stage.id,
+                  groupId: group.id,
+                  squadAId,
+                  squadBId,
+                  bestOf: stage.best_of as 1 | 3 | 5,
+                }, {
+                  onSuccess: () => toast.success('Tiebreaker match created! Enter the result after the match is played.'),
+                  onError: (err) => toast.error(`Failed to create tiebreaker: ${err.message}`),
+                });
+              } : undefined}
+              isTiebreakerPending={createTiebreaker.isPending}
             />
 
             {/* Group Matches */}

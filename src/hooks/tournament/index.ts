@@ -37,6 +37,7 @@ export {
   useUpdateMatchCheckIn,
   useForfeitMatch,
   useResetMatchResult,
+  useCreateTiebreakerMatch,
 } from './useTournamentMatches';
 
 // Bracket generation & reset

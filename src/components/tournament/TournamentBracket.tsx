@@ -499,6 +499,18 @@ function GroupStageView({
               onSwapTeam={stage.status === 'ongoing' ? (squadId, squadName) => {
                 setSwapTarget({ groupId: group.id, squadId, squadName });
               } : undefined}
+              groupMatches={groupMatches}
+              onCreateTiebreaker={isHost && stage.status === 'ongoing' ? (squadAId, squadBId) => {
+                createTiebreaker.mutate({
+                  tournamentId: tournament.id,
+                  stageId: stage.id,
+                  groupId: group.id,
+                  squadAId,
+                  squadBId,
+                  bestOf: stage.best_of as 1 | 3 | 5,
+                });
+              } : undefined}
+              isTiebreakerPending={createTiebreaker.isPending}
             />
 
             {/* Group Matches */}

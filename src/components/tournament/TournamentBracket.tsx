@@ -526,21 +526,56 @@ function GroupStageView({
                 </p>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {groupMatches
-                    .sort((a, b) => a.match_number - b.match_number)
+                    .sort((a, b) => {
+                      // Show tiebreaker matches (round 99) at the end
+                      if (a.round === 99 && b.round !== 99) return 1;
+                      if (a.round !== 99 && b.round === 99) return -1;
+                      return a.match_number - b.match_number;
+                    })
                     .map((match) => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onClick={() => onMatchClick(match)}
-                        onDispute={() => onDispute(match)}
-                        onResolve={() => onResolve(match)}
-                        onToss={onToss ? () => onToss(match) : undefined}
-                        isHost={isHost}
-                        tournamentId={tournamentId}
-                        tournamentName={tournamentName}
-                        tournamentStatus={tournamentStatus}
-                        userSquadIds={userSquadIds}
-                      />
+                      <div key={match.id} className="relative">
+                        {match.round === 99 && (
+                          <div className="flex items-center justify-between mb-1">
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-400 border-amber-500/30">
+                              ⚔️ Tiebreaker
+                            </Badge>
+                            {isHost && match.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 px-1.5 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deleteTiebreaker.isPending}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm('Remove this tiebreaker match?')) {
+                                    deleteTiebreaker.mutate(
+                                      { matchId: match.id, tournamentId: tournament.id },
+                                      {
+                                        onSuccess: () => toast.success('Tiebreaker match removed'),
+                                        onError: (err) => toast.error(`Failed: ${err.message}`),
+                                      }
+                                    );
+                                  }
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                        <MatchCard
+                          match={match}
+                          onClick={() => onMatchClick(match)}
+                          onDispute={() => onDispute(match)}
+                          onResolve={() => onResolve(match)}
+                          onToss={onToss ? () => onToss(match) : undefined}
+                          isHost={isHost}
+                          tournamentId={tournamentId}
+                          tournamentName={tournamentName}
+                          tournamentStatus={tournamentStatus}
+                          userSquadIds={userSquadIds}
+                        />
+                      </div>
                     ))}
                 </div>
               </div>

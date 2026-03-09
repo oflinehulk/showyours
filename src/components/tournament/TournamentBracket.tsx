@@ -514,11 +514,23 @@ function GroupStageView({
                   squadBId,
                   bestOf: stage.best_of as 1 | 3 | 5,
                 }, {
-                  onSuccess: () => toast.success('Tiebreaker match created! Enter the result after the match is played.'),
+                  onSuccess: () => toast.success('Tiebreaker match created!'),
                   onError: (err) => toast.error(`Failed to create tiebreaker: ${err.message}`),
                 });
               } : undefined}
-              isTiebreakerPending={createTiebreaker.isPending}
+              onCreateMiniRR={isHost && stage.status === 'ongoing' ? (squadIds) => {
+                createMiniRR.mutate({
+                  tournamentId: tournament.id,
+                  stageId: stage.id,
+                  groupId: group.id,
+                  squadIds,
+                  bestOf: stage.best_of as 1 | 3 | 5,
+                }, {
+                  onSuccess: () => toast.success('3 tiebreaker matches created! Enter results for each match.'),
+                  onError: (err) => toast.error(`Failed to create tiebreaker matches: ${err.message}`),
+                });
+              } : undefined}
+              isTiebreakerPending={createTiebreaker.isPending || createMiniRR.isPending}
             />
 
             {/* Group Matches */}

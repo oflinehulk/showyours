@@ -302,3 +302,25 @@ export function useCreateTiebreakerMatch() {
     },
   });
 }
+
+// Delete a tiebreaker match (round 99 only)
+export function useDeleteTiebreakerMatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ matchId, tournamentId }: { matchId: string; tournamentId: string }) => {
+      const { error } = await supabase
+        .from('tournament_matches')
+        .delete()
+        .eq('id', matchId)
+        .eq('round', 99); // Safety: only delete tiebreaker matches
+
+      if (error) throw new Error(error.message);
+      return tournamentId;
+    },
+    onSuccess: (tournamentId) => {
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+    },
+  });
+}

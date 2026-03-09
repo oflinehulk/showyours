@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,10 +18,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { ArrowRightLeft, Swords, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowRightLeft, Swords, AlertTriangle, Loader2, CheckCircle2, Trophy, Circle } from 'lucide-react';
 import type { GroupStanding } from '@/lib/tournament-types';
 import type { TournamentMatch } from '@/lib/tournament-types';
-import { detectDeadlockedTeams } from '@/lib/bracket-utils';
+import { detectDeadlockedTeams, getTiebreakerProgress, type TiebreakerProgress } from '@/lib/bracket-utils';
 
 interface GroupStandingsProps {
   standings: GroupStanding[];
@@ -67,6 +67,12 @@ export function GroupStandings({
   const deadlockedTeams = deadlockedGroups[0] || [];
   const deadlockedStandings = standings.filter(s => deadlockedTeams.includes(s.squad_id));
 
+  // Tiebreaker progress
+  const tiebreakerProgress: TiebreakerProgress | null = useMemo(() => {
+    if (!groupMatches || deadlockedTeams.length < 2) return null;
+    return getTiebreakerProgress(deadlockedTeams, groupMatches);
+  }, [deadlockedTeams, groupMatches]);
+
   const handleCreateTiebreaker = () => {
     if (selectedTeamA && selectedTeamB && onCreateTiebreaker) {
       onCreateTiebreaker(selectedTeamA, selectedTeamB);
@@ -75,6 +81,26 @@ export function GroupStandings({
       setSelectedTeamB('');
     }
   };
+
+  const handleAutoCreateNext = () => {
+    if (tiebreakerProgress?.suggestedNextMatch && onCreateTiebreaker) {
+      onCreateTiebreaker(
+        tiebreakerProgress.suggestedNextMatch.squadAId,
+        tiebreakerProgress.suggestedNextMatch.squadBId
+      );
+      setShowTiebreakerDialog(false);
+    }
+  };
+
+  const getTeamName = (squadId: string) => {
+    return standings.find(s => s.squad_id === squadId)?.squad.name || 'Unknown';
+  };
+
+  // Determine dialog state
+  const hasExistingPendingTB = tiebreakerProgress && tiebreakerProgress.pendingMatches.length > 0;
+  const needsNextMatch = tiebreakerProgress && tiebreakerProgress.completedMatches.length > 0 && 
+    tiebreakerProgress.pendingMatches.length === 0 && !tiebreakerProgress.isFullyResolved;
+  const isStep1 = !tiebreakerProgress || (tiebreakerProgress.completedMatches.length === 0 && tiebreakerProgress.pendingMatches.length === 0);
 
   return (
     <>
@@ -243,7 +269,14 @@ export function GroupStandings({
               }}
             >
               <Swords className="w-3.5 h-3.5 mr-1.5" />
-              Create Tiebreaker Match
+              {needsNextMatch 
+                ? `Create Final Tiebreaker (Step ${tiebreakerProgress!.currentStep} of ${tiebreakerProgress!.totalSteps})`
+                : hasExistingPendingTB
+                  ? 'Tiebreaker Match Pending — Enter Result'
+                  : deadlockedTeams.length === 3
+                    ? '3-Way Tiebreaker (2 Matches Needed)'
+                    : 'Create Tiebreaker Match'
+              }
             </Button>
           </div>
         )}
@@ -255,10 +288,16 @@ export function GroupStandings({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Swords className="w-5 h-5 text-amber-400" />
-              Tiebreaker Match — Group {groupLabel}
+              {deadlockedTeams.length === 3 
+                ? `3-Way Tiebreaker — Group ${groupLabel}`
+                : `Tiebreaker Match — Group ${groupLabel}`
+              }
             </DialogTitle>
             <DialogDescription>
-              These teams are deadlocked on all tiebreaker criteria. Create a tiebreaker match to decide their final ranking.
+              {deadlockedTeams.length === 3
+                ? 'Standard 3-way tiebreaker: 2 matches needed. Pick 2 teams for the semi-final, winner plays the 3rd team in the final.'
+                : 'These teams are deadlocked on all criteria. Create a tiebreaker match to decide their ranking.'
+              }
             </DialogDescription>
           </DialogHeader>
 
@@ -272,63 +311,192 @@ export function GroupStandings({
               ))}
             </div>
 
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground font-medium">Team A</label>
-                <Select value={selectedTeamA} onValueChange={setSelectedTeamA}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {deadlockedStandings
-                      .filter(s => s.squad_id !== selectedTeamB)
-                      .map(s => (
-                        <SelectItem key={s.squad_id} value={s.squad_id}>
-                          {s.squad.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Progress stepper for 3-way ties */}
+            {deadlockedTeams.length === 3 && tiebreakerProgress && (
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 space-y-2">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Tiebreaker Progress
+                </div>
+                
+                {/* Step 1 */}
+                <div className="flex items-start gap-2">
+                  {tiebreakerProgress.completedMatches.length >= 1 ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                  ) : tiebreakerProgress.pendingMatches.length >= 1 ? (
+                    <Circle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0 animate-pulse" />
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
+                  <div className="text-xs">
+                    <span className="font-medium text-foreground">Semi-final: </span>
+                    {tiebreakerProgress.completedMatches.length >= 1 ? (
+                      <span className="text-green-400">
+                        {getTeamName(tiebreakerProgress.completedMatches[0].squad_a_id!)} vs {getTeamName(tiebreakerProgress.completedMatches[0].squad_b_id!)}
+                        {' → '}
+                        <Trophy className="w-3 h-3 inline" /> {getTeamName(tiebreakerProgress.completedMatches[0].winner_id!)}
+                      </span>
+                    ) : tiebreakerProgress.pendingMatches.length >= 1 ? (
+                      <span className="text-amber-400">
+                        {getTeamName(tiebreakerProgress.pendingMatches[0].squad_a_id!)} vs {getTeamName(tiebreakerProgress.pendingMatches[0].squad_b_id!)}
+                        {' — awaiting result'}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Pick 2 teams below</span>
+                    )}
+                  </div>
+                </div>
 
-              <span className="text-xs text-muted-foreground font-bold pb-2">VS</span>
+                {/* Step 2 */}
+                <div className="flex items-start gap-2">
+                  {tiebreakerProgress.completedMatches.length >= 2 ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                  ) : needsNextMatch ? (
+                    <Circle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0 animate-pulse" />
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
+                  <div className="text-xs">
+                    <span className="font-medium text-foreground">Final: </span>
+                    {tiebreakerProgress.completedMatches.length >= 2 ? (
+                      <span className="text-green-400">Completed</span>
+                    ) : needsNextMatch && tiebreakerProgress.suggestedNextMatch ? (
+                      <span className="text-amber-400">
+                        {getTeamName(tiebreakerProgress.suggestedNextMatch.squadAId)} vs {getTeamName(tiebreakerProgress.suggestedNextMatch.squadBId)}
+                        {' — ready to create'}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Winner of semi-final vs 3rd team</span>
+                    )}
+                  </div>
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground font-medium">Team B</label>
-                <Select value={selectedTeamB} onValueChange={setSelectedTeamB}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {deadlockedStandings
-                      .filter(s => s.squad_id !== selectedTeamA)
-                      .map(s => (
-                        <SelectItem key={s.squad_id} value={s.squad_id}>
-                          {s.squad.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                {/* Ranking explanation */}
+                <div className="text-[10px] text-muted-foreground mt-1 pt-1 border-t border-border/30">
+                  🏆 Final winner = Rank 1 · Final loser = Rank 3 · Semi-final loser = Rank 2
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Pending match notice */}
+            {hasExistingPendingTB && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                <p className="text-xs text-amber-400">
+                  ⏳ A tiebreaker match is already pending. Enter the result in the match card below, then come back to create the next match.
+                </p>
+              </div>
+            )}
+
+            {/* Auto-create next match for 3-way Step 2 */}
+            {needsNextMatch && tiebreakerProgress?.suggestedNextMatch && (
+              <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3 space-y-2">
+                <p className="text-xs text-green-400 font-medium">
+                  ✅ Semi-final complete! Create the final tiebreaker match:
+                </p>
+                <div className="flex items-center justify-center gap-3 py-1">
+                  <span className="text-sm font-bold text-foreground">
+                    {getTeamName(tiebreakerProgress.suggestedNextMatch.squadAId)}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-bold">VS</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {getTeamName(tiebreakerProgress.suggestedNextMatch.squadBId)}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Manual team selection — only for Step 1 or non-3-way ties */}
+            {!hasExistingPendingTB && !needsNextMatch && isStep1 && (
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground font-medium">
+                    {deadlockedTeams.length === 3 ? 'Semi-final Team A' : 'Team A'}
+                  </label>
+                  <Select value={selectedTeamA} onValueChange={setSelectedTeamA}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deadlockedStandings
+                        .filter(s => s.squad_id !== selectedTeamB)
+                        .map(s => (
+                          <SelectItem key={s.squad_id} value={s.squad_id}>
+                            {s.squad.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <span className="text-xs text-muted-foreground font-bold pb-2">VS</span>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-muted-foreground font-medium">
+                    {deadlockedTeams.length === 3 ? 'Semi-final Team B' : 'Team B'}
+                  </label>
+                  <Select value={selectedTeamB} onValueChange={setSelectedTeamB}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deadlockedStandings
+                        .filter(s => s.squad_id !== selectedTeamA)
+                        .map(s => (
+                          <SelectItem key={s.squad_id} value={s.squad_id}>
+                            {s.squad.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Show the bye team for 3-way */}
+                {deadlockedTeams.length === 3 && selectedTeamA && selectedTeamB && (
+                  <div className="col-span-3 text-center text-[11px] text-muted-foreground mt-1">
+                    🎯 <span className="font-medium text-foreground">
+                      {getTeamName(deadlockedTeams.find(id => id !== selectedTeamA && id !== selectedTeamB)!)}
+                    </span> will play the winner in the final
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTiebreakerDialog(false)}>
-              Cancel
+              {hasExistingPendingTB ? 'Close' : 'Cancel'}
             </Button>
-            <Button
-              onClick={handleCreateTiebreaker}
-              disabled={!selectedTeamA || !selectedTeamB || isTiebreakerPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
-            >
-              {isTiebreakerPending ? (
-                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-              ) : (
-                <Swords className="w-4 h-4 mr-1.5" />
-              )}
-              Create Match
-            </Button>
+            
+            {/* Step 2: Auto-create final match */}
+            {needsNextMatch && tiebreakerProgress?.suggestedNextMatch && (
+              <Button
+                onClick={handleAutoCreateNext}
+                disabled={isTiebreakerPending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isTiebreakerPending ? (
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Trophy className="w-4 h-4 mr-1.5" />
+                )}
+                Create Final Match
+              </Button>
+            )}
+
+            {/* Step 1: Create semi-final */}
+            {!hasExistingPendingTB && !needsNextMatch && isStep1 && (
+              <Button
+                onClick={handleCreateTiebreaker}
+                disabled={!selectedTeamA || !selectedTeamB || isTiebreakerPending}
+                className="bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                {isTiebreakerPending ? (
+                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Swords className="w-4 h-4 mr-1.5" />
+                )}
+                {deadlockedTeams.length === 3 ? 'Create Semi-Final' : 'Create Match'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

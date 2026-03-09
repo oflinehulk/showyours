@@ -278,7 +278,8 @@ export function computeGroupStandings(
  */
 function resolveStandingsWithTiebreaker(
   standings: GroupStanding[],
-  matches: TournamentMatch[]
+  matches: TournamentMatch[],
+  tiebreakerMatches: TournamentMatch[] = []
 ): GroupStanding[] {
   // Group teams by points
   const pointGroups = new Map<number, GroupStanding[]>();
@@ -298,7 +299,7 @@ function resolveStandingsWithTiebreaker(
       result.push(tied[0]);
     } else {
       // Resolve this group of tied teams
-      const resolved = resolveTiedGroup(tied, matches);
+      const resolved = resolveTiedGroup(tied, matches, tiebreakerMatches);
       result.push(...resolved);
     }
   }

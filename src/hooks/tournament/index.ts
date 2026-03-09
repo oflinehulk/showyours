@@ -38,6 +38,7 @@ export {
   useForfeitMatch,
   useResetMatchResult,
   useCreateTiebreakerMatch,
+  useCreateMiniRRTiebreaker,
   useDeleteTiebreakerMatch,
 } from './useTournamentMatches';
 

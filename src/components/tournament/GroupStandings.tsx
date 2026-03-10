@@ -341,6 +341,23 @@ export function GroupStandings({
           )}
         </div>
       )}
+
+      {/* Skipped tiebreaker undo */}
+      {isHost && tiebreakerSkipped && rawHasDeadlock && onUnskipTiebreaker && (
+        <div className="px-3 py-2 border-t border-border/30 bg-muted/20 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">
+            Tiebreaker skipped — using current standings order
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+            onClick={onUnskipTiebreaker}
+          >
+            Undo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

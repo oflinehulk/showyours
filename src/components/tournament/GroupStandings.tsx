@@ -100,6 +100,12 @@ export function GroupStandings({
             Tiebreaker needed
           </Badge>
         )}
+        {tiebreakerSkipped && rawHasDeadlock && (
+          <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 bg-muted text-muted-foreground border-border/50">
+            <SkipForward className="w-3 h-3 mr-1" />
+            Tiebreaker skipped
+          </Badge>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">

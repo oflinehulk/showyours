@@ -3,7 +3,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowRightLeft, Swords, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowRightLeft, Swords, AlertTriangle, Loader2, CheckCircle2, SkipForward } from 'lucide-react';
 import type { GroupStanding } from '@/lib/tournament-types';
 import type { TournamentMatch } from '@/lib/tournament-types';
 import { detectDeadlockedTeams, getTiebreakerProgress, type TiebreakerProgress } from '@/lib/bracket-utils';
@@ -21,6 +21,10 @@ interface GroupStandingsProps {
   onCreateTiebreaker?: (squadAId: string, squadBId: string) => void;
   onCreateMiniRR?: (squadIds: [string, string, string]) => void;
   isTiebreakerPending?: boolean;
+  // Skip tiebreaker
+  tiebreakerSkipped?: boolean;
+  onSkipTiebreaker?: () => void;
+  onUnskipTiebreaker?: () => void;
 }
 
 export function GroupStandings({

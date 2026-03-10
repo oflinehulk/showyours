@@ -3,7 +3,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ArrowRightLeft, Swords, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowRightLeft, Swords, AlertTriangle, Loader2, CheckCircle2, SkipForward } from 'lucide-react';
 import type { GroupStanding } from '@/lib/tournament-types';
 import type { TournamentMatch } from '@/lib/tournament-types';
 import { detectDeadlockedTeams, getTiebreakerProgress, type TiebreakerProgress } from '@/lib/bracket-utils';
@@ -21,6 +21,10 @@ interface GroupStandingsProps {
   onCreateTiebreaker?: (squadAId: string, squadBId: string) => void;
   onCreateMiniRR?: (squadIds: [string, string, string]) => void;
   isTiebreakerPending?: boolean;
+  // Skip tiebreaker
+  tiebreakerSkipped?: boolean;
+  onSkipTiebreaker?: () => void;
+  onUnskipTiebreaker?: () => void;
 }
 
 export function GroupStandings({
@@ -35,6 +39,9 @@ export function GroupStandings({
   onCreateTiebreaker,
   onCreateMiniRR,
   isTiebreakerPending,
+  tiebreakerSkipped,
+  onSkipTiebreaker,
+  onUnskipTiebreaker,
 }: GroupStandingsProps) {
   const showActions = isHost && onSwapTeam && withdrawnSquadIds && withdrawnSquadIds.size > 0;
 
@@ -43,8 +50,9 @@ export function GroupStandings({
     ? detectDeadlockedTeams(standings, groupMatches)
     : [];
 
-  const hasDeadlock = deadlockedGroups.length > 0;
-  const deadlockedIds = new Set(deadlockedGroups.flat());
+  const hasDeadlock = deadlockedGroups.length > 0 && !tiebreakerSkipped;
+  const deadlockedIds = tiebreakerSkipped ? new Set<string>() : new Set(deadlockedGroups.flat());
+  const rawHasDeadlock = deadlockedGroups.length > 0; // true even if skipped, for showing undo
 
   // Get the first deadlock group
   const deadlockedTeams = deadlockedGroups[0] || [];
@@ -90,6 +98,12 @@ export function GroupStandings({
           <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse">
             <AlertTriangle className="w-3 h-3 mr-1" />
             Tiebreaker needed
+          </Badge>
+        )}
+        {tiebreakerSkipped && rawHasDeadlock && (
+          <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 bg-muted text-muted-foreground border-border/50">
+            <SkipForward className="w-3 h-3 mr-1" />
+            Tiebreaker skipped
           </Badge>
         )}
       </div>
@@ -294,24 +308,54 @@ export function GroupStandings({
 
           {/* Create button — only show if no tiebreaker matches exist yet */}
           {!hasTBMatches && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-              disabled={isTiebreakerPending}
-              onClick={deadlockedTeams.length === 3 ? handleCreateMiniRR : handleCreate2WayTiebreaker}
-            >
-              {isTiebreakerPending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Swords className="w-3.5 h-3.5 mr-1.5" />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                disabled={isTiebreakerPending}
+                onClick={deadlockedTeams.length === 3 ? handleCreateMiniRR : handleCreate2WayTiebreaker}
+              >
+                {isTiebreakerPending ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Swords className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {deadlockedTeams.length === 3
+                  ? 'Create Mini RR (3 Matches)'
+                  : 'Create Tiebreaker Match'
+                }
+              </Button>
+              {onSkipTiebreaker && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={onSkipTiebreaker}
+                >
+                  <SkipForward className="w-3.5 h-3.5 mr-1" />
+                  Skip
+                </Button>
               )}
-              {deadlockedTeams.length === 3
-                ? 'Create Mini Round-Robin (3 Matches)'
-                : 'Create Tiebreaker Match'
-              }
-            </Button>
+            </div>
           )}
+        </div>
+      )}
+
+      {/* Skipped tiebreaker undo */}
+      {isHost && tiebreakerSkipped && rawHasDeadlock && onUnskipTiebreaker && (
+        <div className="px-3 py-2 border-t border-border/30 bg-muted/20 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">
+            Tiebreaker skipped — using current standings order
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+            onClick={onUnskipTiebreaker}
+          >
+            Undo
+          </Button>
         </div>
       )}
     </div>

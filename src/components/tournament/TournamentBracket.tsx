@@ -532,6 +532,18 @@ function GroupStageView({
                 });
               } : undefined}
               isTiebreakerPending={createTiebreaker.isPending || createMiniRR.isPending}
+              tiebreakerSkipped={skippedTiebreakers.has(group.id)}
+              onSkipTiebreaker={isHost && stage.status === 'ongoing' ? () => {
+                setSkippedTiebreakers(prev => new Set(prev).add(group.id));
+                toast.success(`Tiebreaker skipped for Group ${group.label} — using current order`);
+              } : undefined}
+              onUnskipTiebreaker={isHost ? () => {
+                setSkippedTiebreakers(prev => {
+                  const next = new Set(prev);
+                  next.delete(group.id);
+                  return next;
+                });
+              } : undefined}
             />
 
             {/* Group Matches */}

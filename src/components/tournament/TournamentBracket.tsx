@@ -285,6 +285,7 @@ function MultiStageBracket({
   const [disputeMatch, setDisputeMatch] = useState<TournamentMatch | null>(null);
   const [resolveMatch, setResolveMatch] = useState<TournamentMatch | null>(null);
   const [tossMatch, setTossMatch] = useState<TournamentMatch | null>(null);
+  const [skippedTiebreakers, setSkippedTiebreakers] = useState<Set<string>>(new Set());
 
   // Auto-select the latest active stage when stages first load
   useEffect(() => {

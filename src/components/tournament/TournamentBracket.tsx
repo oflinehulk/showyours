@@ -456,6 +456,7 @@ function GroupStageView({
     squadId: string;
     squadName: string;
   } | null>(null);
+  const [skippedTiebreakers, setSkippedTiebreakers] = useState<Set<string>>(new Set());
 
   // Build set of withdrawn squad IDs
   const withdrawnSquadIds = new Set(

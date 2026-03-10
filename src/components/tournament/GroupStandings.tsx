@@ -39,6 +39,9 @@ export function GroupStandings({
   onCreateTiebreaker,
   onCreateMiniRR,
   isTiebreakerPending,
+  tiebreakerSkipped,
+  onSkipTiebreaker,
+  onUnskipTiebreaker,
 }: GroupStandingsProps) {
   const showActions = isHost && onSwapTeam && withdrawnSquadIds && withdrawnSquadIds.size > 0;
 

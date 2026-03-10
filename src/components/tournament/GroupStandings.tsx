@@ -50,8 +50,9 @@ export function GroupStandings({
     ? detectDeadlockedTeams(standings, groupMatches)
     : [];
 
-  const hasDeadlock = deadlockedGroups.length > 0;
-  const deadlockedIds = new Set(deadlockedGroups.flat());
+  const hasDeadlock = deadlockedGroups.length > 0 && !tiebreakerSkipped;
+  const deadlockedIds = tiebreakerSkipped ? new Set<string>() : new Set(deadlockedGroups.flat());
+  const rawHasDeadlock = deadlockedGroups.length > 0; // true even if skipped, for showing undo
 
   // Get the first deadlock group
   const deadlockedTeams = deadlockedGroups[0] || [];

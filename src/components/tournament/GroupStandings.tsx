@@ -308,23 +308,36 @@ export function GroupStandings({
 
           {/* Create button — only show if no tiebreaker matches exist yet */}
           {!hasTBMatches && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-              disabled={isTiebreakerPending}
-              onClick={deadlockedTeams.length === 3 ? handleCreateMiniRR : handleCreate2WayTiebreaker}
-            >
-              {isTiebreakerPending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Swords className="w-3.5 h-3.5 mr-1.5" />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                disabled={isTiebreakerPending}
+                onClick={deadlockedTeams.length === 3 ? handleCreateMiniRR : handleCreate2WayTiebreaker}
+              >
+                {isTiebreakerPending ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Swords className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                {deadlockedTeams.length === 3
+                  ? 'Create Mini RR (3 Matches)'
+                  : 'Create Tiebreaker Match'
+                }
+              </Button>
+              {onSkipTiebreaker && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={onSkipTiebreaker}
+                >
+                  <SkipForward className="w-3.5 h-3.5 mr-1" />
+                  Skip
+                </Button>
               )}
-              {deadlockedTeams.length === 3
-                ? 'Create Mini Round-Robin (3 Matches)'
-                : 'Create Tiebreaker Match'
-              }
-            </Button>
+            </div>
           )}
         </div>
       )}

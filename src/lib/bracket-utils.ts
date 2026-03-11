@@ -235,9 +235,8 @@ export function computeGroupStandings(
   for (const m of regularMatches) {
     if (m.status !== 'completed' || !m.squad_a_id || !m.squad_b_id) continue;
 
-    const a = stats.get(m.squad_a_id);
-    const b = stats.get(m.squad_b_id);
-    if (!a || !b) continue;
+    const a = stats.get(m.squad_a_id) ?? stats.set(m.squad_a_id, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 }).get(m.squad_a_id)!;
+    const b = stats.get(m.squad_b_id) ?? stats.set(m.squad_b_id, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 }).get(m.squad_b_id)!;
 
     a.played++;
     b.played++;

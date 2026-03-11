@@ -720,7 +720,7 @@ function EliminationStageView({
                     onDispute={() => onDispute(match)}
                     onResolve={() => onResolve(match)}
                     large
-                    matchLabel={gn ? `UB Final Loser vs LB Winner` : undefined}
+                    
                     {...sharedProps}
                   />
                 </div>

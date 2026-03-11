@@ -166,6 +166,16 @@ export function useResetStageBracket() {
           .eq('id', tournamentId);
 
         if (tournErr) throw new Error(tournErr.message);
+      } else {
+        // Revert the previous stage back to "ongoing" so the
+        // "Complete & Start Next Stage" flow works after re-entering results
+        const { error: prevErr } = await supabase
+          .from('tournament_stages')
+          .update({ status: 'ongoing' as StageStatus })
+          .eq('tournament_id', tournamentId)
+          .eq('stage_number', stageNumber - 1);
+
+        if (prevErr) throw new Error(prevErr.message);
       }
 
       return { tournamentId, stageId };

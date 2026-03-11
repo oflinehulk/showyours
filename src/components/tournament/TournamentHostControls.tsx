@@ -1420,7 +1420,6 @@ function PendingStageActions({
   registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
 }) {
   const generateStageBracket = useGenerateStageBracket();
-  const updateStage = useUpdateStage();
   const prevStage = stages.find(s => s.stage_number === currentStage.stage_number - 1);
   const { data: prevStageMatches } = useStageMatches(prevStage?.id);
   const { data: groups } = useTournamentGroups(prevStage?.id);

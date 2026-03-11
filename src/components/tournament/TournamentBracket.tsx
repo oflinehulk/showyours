@@ -91,12 +91,21 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
     );
   }
 
-  // Single-stage fallback — original behavior
-  const winnersMatches = matches.filter(m => m.bracket_type === 'winners');
-  const losersMatches = matches.filter(m => m.bracket_type === 'losers');
-  const semiFinalsMatches = matches.filter(m => m.bracket_type === 'semi_finals');
-  const finalsMatches = matches.filter(m => m.bracket_type === 'finals');
-  const maxRound = Math.max(...matches.map(m => m.round), 0);
+  // Single-stage fallback — use same M6-style view
+  const singleStageView = {
+    tournament,
+    stage: { format: tournament.format, group_count: 0 } as TournamentStage,
+    stageMatches: matches,
+    onMatchClick: (m: TournamentMatch) => setSelectedMatch(m),
+    onDispute: (m: TournamentMatch) => setDisputeMatch(m),
+    onResolve: (m: TournamentMatch) => setResolveMatch(m),
+    isHost,
+    tournamentId: tournament.id,
+    tournamentName: tournament.name,
+    tournamentStatus: tournament.status,
+    userSquadIds,
+    onToss: (match: TournamentMatch) => setTossMatch(match),
+  };
 
   if (matches.length === 0) {
     return (
@@ -109,15 +118,6 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
       </GlowCard>
     );
   }
-
-  const sharedProps = {
-    isHost,
-    tournamentId: tournament.id,
-    tournamentName: tournament.name,
-    tournamentStatus: tournament.status,
-    userSquadIds,
-    onToss: (match: TournamentMatch) => setTossMatch(match),
-  };
 
   return (
     <div className="space-y-6">
@@ -133,96 +133,21 @@ export function TournamentBracket({ tournament, matches, isHost, userSquadIds = 
                 onClick={() => setSelectedMatch(match)}
                 onDispute={() => setDisputeMatch(match)}
                 onResolve={() => setResolveMatch(match)}
-                {...sharedProps}
+                isHost={isHost}
+                tournamentId={tournament.id}
+                tournamentName={tournament.name}
+                tournamentStatus={tournament.status}
+                userSquadIds={userSquadIds}
+                onToss={(m: TournamentMatch) => setTossMatch(m)}
               />
             ))}
           </div>
         </GlowCard>
       )}
 
-      {/* Elimination Bracket View */}
+      {/* Elimination Bracket View — M6 style */}
       {tournament.format !== 'round_robin' && (
-        <>
-          {winnersMatches.length > 0 && (
-            <GlowCard className="p-6">
-              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-                <Trophy className="w-5 h-5 text-[#FF4500]" />
-                {tournament.format === 'double_elimination' ? 'Winners Bracket' : 'Bracket'}
-              </h3>
-              <BracketView
-                matches={winnersMatches}
-                maxRound={maxRound}
-                onMatchClick={(match) => setSelectedMatch(match)}
-                onDispute={(match) => setDisputeMatch(match)}
-                onResolve={(match) => setResolveMatch(match)}
-                {...sharedProps}
-              />
-            </GlowCard>
-          )}
-
-          {losersMatches.length > 0 && (
-            <GlowCard glowColor="secondary" className="p-6">
-              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-                <Users className="w-5 h-5 text-[#FF6B35]" />
-                Losers Bracket
-              </h3>
-              <BracketView
-                matches={losersMatches}
-                maxRound={maxRound}
-                onMatchClick={(match) => setSelectedMatch(match)}
-                onDispute={(match) => setDisputeMatch(match)}
-                onResolve={(match) => setResolveMatch(match)}
-                {...sharedProps}
-              />
-            </GlowCard>
-          )}
-
-          {semiFinalsMatches.length > 0 && (
-            <GlowCard glowColor="accent" className="p-6">
-              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-                <Trophy className="w-5 h-5 text-orange-400" />
-                Semi-Final
-              </h3>
-              <div className="flex justify-center">
-                {semiFinalsMatches.map((match) => (
-                  <div key={match.id} className="flex flex-col items-center gap-1">
-                    <MatchCard
-                      match={match}
-                      onClick={() => setSelectedMatch(match)}
-                      onDispute={() => setDisputeMatch(match)}
-                      onResolve={() => setResolveMatch(match)}
-                      large
-                      {...sharedProps}
-                    />
-                    <span className="text-[10px] text-muted-foreground">Loser finishes 3rd place</span>
-                  </div>
-                ))}
-              </div>
-            </GlowCard>
-          )}
-
-          {finalsMatches.length > 0 && (
-            <GlowCard glowColor="accent" className="p-6 neon-border">
-              <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                Grand Finals
-              </h3>
-              <div className="flex justify-center">
-                {finalsMatches.map((match) => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    onClick={() => setSelectedMatch(match)}
-                    onDispute={() => setDisputeMatch(match)}
-                    onResolve={() => setResolveMatch(match)}
-                    large
-                    {...sharedProps}
-                  />
-                ))}
-              </div>
-            </GlowCard>
-          )}
-        </>
+        <EliminationStageView {...singleStageView} />
       )}
 
       {/* Score Edit Sheet */}

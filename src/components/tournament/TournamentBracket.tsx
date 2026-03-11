@@ -1008,17 +1008,16 @@ function BracketConnectors({
               <>
                 {/* Top match → right + down */}
                 <div className={cn(
-                  'flex-1 border-t-2 border-r-2 rounded-tr-sm',
-                  topIsBye ? 'border-transparent' : lineColor,
-                  // Keep right border if either is real
-                  !topIsBye && `border-r-2 ${lineColor}`,
-                )} style={topIsBye ? { borderTopColor: 'transparent', borderRightColor: `var(--connector-color, rgba(255,69,0,0.3))` } : undefined} />
+                  'flex-1 rounded-tr-sm',
+                  topIsBye ? '' : `border-t-2 ${lineColor}`,
+                  `border-r-2 ${lineColor}`,
+                )} />
                 {/* Bottom match → right + up */}
                 <div className={cn(
-                  'flex-1 border-b-2 border-r-2 rounded-br-sm',
-                  botIsBye ? 'border-transparent' : lineColor,
-                  !botIsBye && `border-r-2 ${lineColor}`,
-                )} style={botIsBye ? { borderBottomColor: 'transparent', borderRightColor: `var(--connector-color, rgba(255,69,0,0.3))` } : undefined} />
+                  'flex-1 rounded-br-sm',
+                  botIsBye ? '' : `border-b-2 ${lineColor}`,
+                  `border-r-2 ${lineColor}`,
+                )} />
               </>
             )}
           </div>

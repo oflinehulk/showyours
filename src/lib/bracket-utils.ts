@@ -1058,7 +1058,8 @@ export function determineSplitAdvancingTeams(
   groups: GroupData[],
   advancePerGroup: number,
   advanceToLowerPerGroup: number,
-  advanceBestRemaining: number
+  advanceBestRemaining: number,
+  excludeSquadIds?: Set<string>
 ): SplitAdvancementResult {
   const ub: AdvancingTeam[] = [];
   const lb: AdvancingTeam[] = [];

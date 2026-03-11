@@ -1005,6 +1005,16 @@ function MultiStageOngoing({
         />
       )}
 
+      {/* Pending stage that needs bracket generation (previous stage already completed) */}
+      {currentStage?.status === 'pending' && currentStage.stage_number > 1 && (
+        <PendingStageActions
+          tournament={tournament}
+          currentStage={currentStage}
+          stages={stages}
+          registrations={registrations}
+        />
+      )}
+
       {/* Complete Tournament (when all stages done) */}
       {allStagesComplete && (
         <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">

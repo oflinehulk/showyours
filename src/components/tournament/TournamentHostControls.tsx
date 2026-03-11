@@ -1069,9 +1069,19 @@ function CurrentStageActions({
             const squad = squadMap.get(tid);
             if (squad) groupSquadMap.set(tid, squad);
           }
+          // Also include teams from matches that might not be in group_teams (data inconsistency fix)
+          const groupMatches = (stageMatches || []).filter(m => m.group_id === group.id);
+          for (const m of groupMatches) {
+            if (m.squad_a_id && m.squad_a && !groupSquadMap.has(m.squad_a_id)) {
+              groupSquadMap.set(m.squad_a_id, m.squad_a as typeof squadMap extends Map<string, infer V> ? V : never);
+            }
+            if (m.squad_b_id && m.squad_b && !groupSquadMap.has(m.squad_b_id)) {
+              groupSquadMap.set(m.squad_b_id, m.squad_b as typeof squadMap extends Map<string, infer V> ? V : never);
+            }
+          }
           return {
             label: group.label,
-            matches: (stageMatches || []).filter(m => m.group_id === group.id),
+            matches: groupMatches,
             squadMap: groupSquadMap,
           };
         });

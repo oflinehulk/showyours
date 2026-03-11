@@ -1200,40 +1200,48 @@ function CurrentStageActions({
         </>
       )}
 
-      {/* Reset Stage Bracket — only for first stage with no results */}
-      {currentStage.stage_number === 1 && !hasResults && (
-        <div className="mt-3 pt-3 border-t border-border">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={resetStageBracket.isPending}
-                className="text-xs"
+      {/* Reset Stage Bracket */}
+      <div className="mt-3 pt-3 border-t border-border">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resetStageBracket.isPending}
+              className="text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              {resetStageBracket.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+              ) : (
+                <RotateCcw className="w-3 h-3 mr-1" />
+              )}
+              Reset {currentStage.name} Bracket
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                Reset {currentStage.name}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {hasResults
+                  ? 'WARNING: This will delete ALL matches and results for this stage. Match scores, coin tosses, and bracket progress will be permanently lost. This cannot be undone.'
+                  : 'This will delete all matches for this stage and return to the setup step. Group assignments are preserved.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleResetStage}
+                className={hasResults ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
               >
-                {resetStageBracket.isPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <RotateCcw className="w-3 h-3 mr-1" />
-                )}
-                Reset Stage Bracket
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reset {currentStage.name}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will delete all matches for this stage and return to the group/bracket setup step. Group assignments are preserved.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleResetStage}>Reset Stage</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      )}
+                {hasResults ? 'Delete All & Reset' : 'Reset Stage'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

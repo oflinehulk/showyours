@@ -725,7 +725,8 @@ export function determineAdvancingTeams(
 
   // Collect top N from each group
   for (const group of groups) {
-    const standings = computeGroupStandings(group.matches, group.squadMap);
+    const standings = computeGroupStandings(group.matches, group.squadMap)
+      .filter(s => !excludeSquadIds || !excludeSquadIds.has(s.squad_id));
 
     for (let i = 0; i < standings.length; i++) {
       if (i < advancePerGroup) {

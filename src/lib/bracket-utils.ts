@@ -216,6 +216,17 @@ export function computeGroupStandings(
     stats.set(squadId, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 });
   }
 
+  // Also initialize any team IDs found in matches but missing from squadMap
+  // (handles data inconsistencies where a team plays in a group but isn't in tournament_group_teams)
+  for (const m of matches) {
+    if (m.squad_a_id && !stats.has(m.squad_a_id)) {
+      stats.set(m.squad_a_id, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 });
+    }
+    if (m.squad_b_id && !stats.has(m.squad_b_id)) {
+      stats.set(m.squad_b_id, { played: 0, wins: 0, losses: 0, score_for: 0, score_against: 0 });
+    }
+  }
+
   // Separate regular matches from tiebreaker matches (round 99)
   const regularMatches = matches.filter(m => m.round !== 99);
   const tiebreakerMatches = matches.filter(m => m.round === 99);

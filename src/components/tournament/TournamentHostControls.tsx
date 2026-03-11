@@ -1517,6 +1517,7 @@ function PendingStageActions({
             groupData,
             prevStage.advance_per_group,
             prevStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const advancingSquadIds = advancing.map(a => a.squadId);

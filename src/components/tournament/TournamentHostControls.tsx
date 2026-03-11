@@ -1108,6 +1108,7 @@ function CurrentStageActions({
             currentStage.advance_per_group,
             currentStage.advance_to_lower_per_group,
             currentStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           // Build group map for same-group avoidance (squadId → groupLabel)

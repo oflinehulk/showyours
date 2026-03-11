@@ -768,6 +768,15 @@ function EliminationStageView({
   );
 }
 
+// ========== Bye Detection ==========
+
+function isByeMatch(match: TournamentMatch): boolean {
+  return (
+    (!match.squad_a_id || !match.squad_b_id) &&
+    (match.status === 'completed' || match.status === 'pending')
+  );
+}
+
 // ========== M6-Style Global Match Numbering ==========
 
 interface GlobalMatchInfo {
@@ -784,16 +793,18 @@ function buildGlobalMatchMap(
   const map = new Map<string, GlobalMatchInfo>();
   let num = 1;
 
-  // WB matches sorted by round then match_number
+  // WB matches sorted by round then match_number — skip byes
   const sortedWB = [...winners].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedWB) {
+    if (isByeMatch(m)) continue;
     map.set(m.id, { globalNumber: num });
     num++;
   }
 
-  // LB matches
+  // LB matches — skip byes
   const sortedLB = [...losers].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedLB) {
+    if (isByeMatch(m)) continue;
     map.set(m.id, { globalNumber: num });
     num++;
   }

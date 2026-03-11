@@ -1064,10 +1064,12 @@ function CurrentStageActions({
 
       // If there is a next stage and this is a group stage, compute advancing teams and generate next stage
       if (nextStage && isGroupStage && groups && groupTeams && stageMatches) {
+        const approvedRegs = registrations.filter(r => r.status === 'approved');
+        const withdrawnSquadIds = new Set(
+          registrations.filter(r => r.status === 'withdrawn').map(r => r.tournament_squad_id)
+        );
         const squadMap = new Map(
-          registrations
-            .filter(r => r.status === 'approved')
-            .map(r => [r.tournament_squad_id, r.tournament_squads])
+          approvedRegs.map(r => [r.tournament_squad_id, r.tournament_squads])
         );
 
         const groupData = groups.map(group => {
@@ -1106,6 +1108,7 @@ function CurrentStageActions({
             currentStage.advance_per_group,
             currentStage.advance_to_lower_per_group,
             currentStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           // Build group map for same-group avoidance (squadId → groupLabel)
@@ -1136,6 +1139,7 @@ function CurrentStageActions({
             groupData,
             currentStage.advance_per_group,
             currentStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const advancingSquadIds = advancing.map(a => a.squadId);
@@ -1442,6 +1446,9 @@ function PendingStageActions({
     setGenerating(true);
     try {
       if (isPrevGroupStage && groups && groupTeams && prevStageMatches) {
+        const withdrawnSquadIds = new Set(
+          registrations.filter(r => r.status === 'withdrawn').map(r => r.tournament_squad_id)
+        );
         const squadMap = new Map(
           registrations
             .filter(r => r.status === 'approved')
@@ -1482,6 +1489,7 @@ function PendingStageActions({
             prevStage.advance_per_group,
             prevStage.advance_to_lower_per_group,
             prevStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const groupLabelMap = new Map<string, string>();
@@ -1509,6 +1517,7 @@ function PendingStageActions({
             groupData,
             prevStage.advance_per_group,
             prevStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const advancingSquadIds = advancing.map(a => a.squadId);

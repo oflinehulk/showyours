@@ -1088,18 +1088,28 @@ function CurrentStageActions({
             currentStage.advance_best_remaining,
           );
 
-          const ubSquadIds = splitResult.upperBracket.map(a => a.squadId);
-          const lbSquadIds = splitResult.lowerBracket.map(a => a.squadId);
+          // Build group map for same-group avoidance (squadId → groupLabel)
+          const groupLabelMap = new Map<string, string>();
+          for (const team of [...splitResult.upperBracket, ...splitResult.lowerBracket]) {
+            groupLabelMap.set(team.squadId, team.groupLabel);
+          }
+
+          // Apply standard seeding placement (1v16, 8v9, etc.) then same-group avoidance
+          const ubSeeded = splitResult.upperBracket.map(a => a.squadId);
+          const lbSeeded = splitResult.lowerBracket.map(a => a.squadId);
+
+          const ubBracketOrder = avoidSameGroupInR1(applyStandardSeeding(ubSeeded), groupLabelMap);
+          const lbBracketOrder = avoidSameGroupInR1(applyStandardSeeding(lbSeeded), groupLabelMap);
 
           await generateStageBracket.mutateAsync({
             tournamentId: tournament.id,
             stageId: nextStage.id,
             stage: nextStage,
-            ubSquadIds,
-            lbSquadIds,
+            ubSquadIds: ubBracketOrder as string[],
+            lbSquadIds: lbBracketOrder as string[],
           });
 
-          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${ubSquadIds.length} UB + ${lbSquadIds.length} LB teams.`);
+          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${ubSeeded.length} UB + ${lbSeeded.length} LB teams.`);
         } else {
           // Flat advancement
           const advancing = determineAdvancingTeams(

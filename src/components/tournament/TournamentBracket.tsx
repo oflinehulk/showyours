@@ -880,7 +880,7 @@ function M6BracketView({
     return getLBRoundLabel(round, totalLBRounds);
   };
 
-  // Group matches by round
+  // Group matches by round, keeping byes as placeholders for spacing
   const roundMatches = rounds.map(r =>
     matches.filter(m => m.round === r).sort((a, b) => a.match_number - b.match_number)
   );
@@ -892,6 +892,12 @@ function M6BracketView({
           const roundNum = rounds[ri];
           const gap = Math.pow(2, ri) * (MATCH_H + BASE_GAP) - MATCH_H;
           const topPad = (Math.pow(2, ri) - 1) * (MATCH_H + BASE_GAP) / 2;
+
+          // Check if ALL matches in this round are byes — skip the whole round column
+          const realMatches = rMatches.filter(m => !isByeMatch(m));
+          const allByes = realMatches.length === 0 && rMatches.length > 0;
+
+          if (allByes) return null;
 
           return (
             <div key={roundNum} className="flex items-stretch">
@@ -905,6 +911,17 @@ function M6BracketView({
                   style={{ gap: `${gap}px`, paddingTop: `${topPad}px` }}
                 >
                   {rMatches.map((match) => {
+                    const bye = isByeMatch(match);
+                    if (bye) {
+                      // Render an invisible placeholder to maintain spacing
+                      return (
+                        <div
+                          key={match.id}
+                          style={{ height: `${MATCH_H}px` }}
+                          className="opacity-0 pointer-events-none"
+                        />
+                      );
+                    }
                     const gn = globalMatchMap.get(match.id);
                     return (
                       <CompactMatchCard
@@ -927,6 +944,7 @@ function M6BracketView({
                   matchCount={rMatches.length}
                   roundIndex={ri}
                   bracketType={bracketType}
+                  matchByes={rMatches.map(m => isByeMatch(m))}
                 />
               )}
             </div>

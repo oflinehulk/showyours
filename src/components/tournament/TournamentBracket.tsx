@@ -768,6 +768,15 @@ function EliminationStageView({
   );
 }
 
+// ========== Bye Detection ==========
+
+function isByeMatch(match: TournamentMatch): boolean {
+  return (
+    (!match.squad_a_id || !match.squad_b_id) &&
+    (match.status === 'completed' || match.status === 'pending')
+  );
+}
+
 // ========== M6-Style Global Match Numbering ==========
 
 interface GlobalMatchInfo {
@@ -784,16 +793,18 @@ function buildGlobalMatchMap(
   const map = new Map<string, GlobalMatchInfo>();
   let num = 1;
 
-  // WB matches sorted by round then match_number
+  // WB matches sorted by round then match_number — skip byes
   const sortedWB = [...winners].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedWB) {
+    if (isByeMatch(m)) continue;
     map.set(m.id, { globalNumber: num });
     num++;
   }
 
-  // LB matches
+  // LB matches — skip byes
   const sortedLB = [...losers].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedLB) {
+    if (isByeMatch(m)) continue;
     map.set(m.id, { globalNumber: num });
     num++;
   }
@@ -869,7 +880,7 @@ function M6BracketView({
     return getLBRoundLabel(round, totalLBRounds);
   };
 
-  // Group matches by round
+  // Group matches by round, keeping byes as placeholders for spacing
   const roundMatches = rounds.map(r =>
     matches.filter(m => m.round === r).sort((a, b) => a.match_number - b.match_number)
   );
@@ -881,6 +892,12 @@ function M6BracketView({
           const roundNum = rounds[ri];
           const gap = Math.pow(2, ri) * (MATCH_H + BASE_GAP) - MATCH_H;
           const topPad = (Math.pow(2, ri) - 1) * (MATCH_H + BASE_GAP) / 2;
+
+          // Check if ALL matches in this round are byes — skip the whole round column
+          const realMatches = rMatches.filter(m => !isByeMatch(m));
+          const allByes = realMatches.length === 0 && rMatches.length > 0;
+
+          if (allByes) return null;
 
           return (
             <div key={roundNum} className="flex items-stretch">
@@ -894,6 +911,17 @@ function M6BracketView({
                   style={{ gap: `${gap}px`, paddingTop: `${topPad}px` }}
                 >
                   {rMatches.map((match) => {
+                    const bye = isByeMatch(match);
+                    if (bye) {
+                      // Render an invisible placeholder to maintain spacing
+                      return (
+                        <div
+                          key={match.id}
+                          style={{ height: `${MATCH_H}px` }}
+                          className="opacity-0 pointer-events-none"
+                        />
+                      );
+                    }
                     const gn = globalMatchMap.get(match.id);
                     return (
                       <CompactMatchCard
@@ -916,6 +944,7 @@ function M6BracketView({
                   matchCount={rMatches.length}
                   roundIndex={ri}
                   bracketType={bracketType}
+                  matchByes={rMatches.map(m => isByeMatch(m))}
                 />
               )}
             </div>
@@ -931,10 +960,12 @@ function BracketConnectors({
   matchCount,
   roundIndex,
   bracketType,
+  matchByes,
 }: {
   matchCount: number;
   roundIndex: number;
   bracketType: string;
+  matchByes?: boolean[];
 }) {
   const pairCount = Math.floor(matchCount / 2);
   const gap = Math.pow(2, roundIndex) * (MATCH_H + BASE_GAP) - MATCH_H;
@@ -953,28 +984,52 @@ function BracketConnectors({
       className="flex flex-col w-6 md:w-8"
       style={{ paddingTop: `${topPad}px` }}
     >
-      {Array.from({ length: pairCount }, (_, i) => (
-        <div
-          key={i}
-          className="flex flex-col"
-          style={{
-            height: `${pairHeight}px`,
-            marginBottom: i < pairCount - 1 || hasOddMatch ? `${pairGap}px` : '0',
-          }}
-        >
-          {/* Top match → right + down */}
-          <div className={cn('flex-1 border-t-2 border-r-2 rounded-tr-sm', lineColor)} />
-          {/* Bottom match → right + up */}
-          <div className={cn('flex-1 border-b-2 border-r-2 rounded-br-sm', lineColor)} />
-        </div>
-      ))}
+      {Array.from({ length: pairCount }, (_, i) => {
+        // Check if both matches in this pair are byes — hide the connector
+        const topIsBye = matchByes?.[i * 2] ?? false;
+        const botIsBye = matchByes?.[i * 2 + 1] ?? false;
+        const bothByes = topIsBye && botIsBye;
+
+        return (
+          <div
+            key={i}
+            className="flex flex-col"
+            style={{
+              height: `${pairHeight}px`,
+              marginBottom: i < pairCount - 1 || hasOddMatch ? `${pairGap}px` : '0',
+            }}
+          >
+            {bothByes ? (
+              <>
+                <div className="flex-1" />
+                <div className="flex-1" />
+              </>
+            ) : (
+              <>
+                {/* Top match → right + down */}
+                <div className={cn(
+                  'flex-1 rounded-tr-sm',
+                  topIsBye ? '' : `border-t-2 ${lineColor}`,
+                  `border-r-2 ${lineColor}`,
+                )} />
+                {/* Bottom match → right + up */}
+                <div className={cn(
+                  'flex-1 rounded-br-sm',
+                  botIsBye ? '' : `border-b-2 ${lineColor}`,
+                  `border-r-2 ${lineColor}`,
+                )} />
+              </>
+            )}
+          </div>
+        );
+      })}
       {/* Odd match - just a horizontal line */}
       {hasOddMatch && (
         <div
           style={{ height: `${MATCH_H}px` }}
           className="flex items-center"
         >
-          <div className={cn('w-full border-t-2', lineColor)} />
+          <div className={cn('w-full border-t-2', matchByes?.[matchCount - 1] ? 'border-transparent' : lineColor)} />
         </div>
       )}
     </div>

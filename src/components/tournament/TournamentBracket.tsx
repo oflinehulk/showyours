@@ -781,7 +781,6 @@ function isByeMatch(match: TournamentMatch): boolean {
 
 interface GlobalMatchInfo {
   globalNumber: number;
-  sourceLabel?: string; // e.g. "Match 1 Winner", "Match 5 Loser"
 }
 
 function buildGlobalMatchMap(
@@ -793,41 +792,25 @@ function buildGlobalMatchMap(
   const map = new Map<string, GlobalMatchInfo>();
   let num = 1;
 
-  // WB matches sorted by round then match_number — skip byes
   const sortedWB = [...winners].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedWB) {
     if (isByeMatch(m)) continue;
-    map.set(m.id, { globalNumber: num });
-    num++;
+    map.set(m.id, { globalNumber: num++ });
   }
 
-  // LB matches — skip byes
   const sortedLB = [...losers].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
   for (const m of sortedLB) {
     if (isByeMatch(m)) continue;
-    map.set(m.id, { globalNumber: num });
-    num++;
+    map.set(m.id, { globalNumber: num++ });
   }
 
-  // Semi-finals
-  for (const m of semis) {
-    map.set(m.id, { globalNumber: num });
-    num++;
-  }
-
-  // Grand Finals
-  for (const m of finals) {
-    map.set(m.id, { globalNumber: num });
-    num++;
-  }
+  for (const m of semis) { map.set(m.id, { globalNumber: num++ }); }
+  for (const m of finals) { map.set(m.id, { globalNumber: num++ }); }
 
   return map;
 }
 
 // ========== M6-Style Bracket Visualization ==========
-
-const MATCH_H = 52; // compact match card height in px
-const BASE_GAP = 6; // gap between R1 matches in px
 
 function getWBRoundLabel(round: number, totalRounds: number): string {
   if (totalRounds <= 1) return 'Final';
@@ -872,6 +855,7 @@ function M6BracketView({
   userSquadIds: string[];
   onToss?: (m: TournamentMatch) => void;
 }) {
+  const isMobile = useIsMobile();
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
   const totalLBRounds = bracketType === 'losers' ? Math.max(...rounds, 0) : 0;
 
@@ -880,10 +864,92 @@ function M6BracketView({
     return getLBRoundLabel(round, totalLBRounds);
   };
 
-  // Group matches by round, keeping byes as placeholders for spacing
   const roundMatches = rounds.map(r =>
     matches.filter(m => m.round === r).sort((a, b) => a.match_number - b.match_number)
   );
+
+  // ===== MOBILE: Vertical round-by-round list =====
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {roundMatches.map((rMatches, ri) => {
+          const roundNum = rounds[ri];
+          const realMatches = rMatches.filter(m => !isByeMatch(m));
+          const byeMatches = rMatches.filter(m => isByeMatch(m));
+
+          return (
+            <div key={roundNum} className="space-y-2">
+              {/* Round header */}
+              <div className="flex items-center gap-2 sticky top-0 z-10 bg-card/95 backdrop-blur-sm py-2 px-1 -mx-1 rounded">
+                <div className={cn(
+                  'w-1.5 h-6 rounded-full shrink-0',
+                  bracketType === 'winners' ? 'bg-[#FF4500]' : 'bg-[#FF6B35]',
+                )} />
+                <span className="text-xs font-display font-bold text-foreground uppercase tracking-wider">
+                  {getRoundLabel(roundNum)}
+                </span>
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {realMatches.length} match{realMatches.length !== 1 ? 'es' : ''}
+                  {byeMatches.length > 0 && ` · ${byeMatches.length} bye${byeMatches.length !== 1 ? 's' : ''}`}
+                </span>
+              </div>
+
+              {/* Bye matches summary */}
+              {byeMatches.length > 0 && (
+                <div className="bg-[#111] border border-dashed border-muted-foreground/20 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/30 text-muted-foreground border-muted-foreground/20">
+                      BYE
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">
+                      {byeMatches.length === 1 ? '1 team advances automatically' : `${byeMatches.length} teams advance automatically`}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {byeMatches.map(m => {
+                      const advancingTeam = m.squad_a || m.squad_b;
+                      return (
+                        <div key={m.id} className="flex items-center gap-1.5 bg-[#0a0a0a] rounded px-2 py-1">
+                          <Avatar className="h-4 w-4 shrink-0">
+                            {advancingTeam?.logo_url && <AvatarImage src={advancingTeam.logo_url} />}
+                            <AvatarFallback className="text-[7px] bg-[#1a1a1a] text-muted-foreground">
+                              {advancingTeam?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[11px] text-muted-foreground">{advancingTeam?.name || 'TBD'}</span>
+                          <CheckCircle className="w-3 h-3 text-green-500/60" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Real matches */}
+              <div className="space-y-2">
+                {realMatches.map((match) => {
+                  const gn = globalMatchMap.get(match.id);
+                  return (
+                    <MobileMatchCard
+                      key={match.id}
+                      match={match}
+                      globalNumber={gn?.globalNumber}
+                      onClick={() => onMatchClick(match)}
+                      bracketType={bracketType}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ===== DESKTOP: Horizontal bracket with connectors =====
+  const MATCH_H = 60;
+  const BASE_GAP = 8;
 
   return (
     <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide">
@@ -893,17 +959,11 @@ function M6BracketView({
           const gap = Math.pow(2, ri) * (MATCH_H + BASE_GAP) - MATCH_H;
           const topPad = (Math.pow(2, ri) - 1) * (MATCH_H + BASE_GAP) / 2;
 
-          // Check if ALL matches in this round are byes — skip the whole round column
-          const realMatches = rMatches.filter(m => !isByeMatch(m));
-          const allByes = realMatches.length === 0 && rMatches.length > 0;
-
-          if (allByes) return null;
-
           return (
             <div key={roundNum} className="flex items-stretch">
               {/* Round column */}
-              <div className="flex flex-col min-w-[180px] md:min-w-[200px]">
-                <div className="text-[10px] font-display font-semibold text-muted-foreground text-center uppercase tracking-wider mb-2 sticky top-0 z-10 bg-card/90 backdrop-blur-sm py-1 rounded">
+              <div className="flex flex-col min-w-[210px]">
+                <div className="text-[10px] font-display font-semibold text-muted-foreground text-center uppercase tracking-wider mb-3 sticky top-0 z-10 bg-card/90 backdrop-blur-sm py-1 rounded">
                   {getRoundLabel(roundNum)}
                 </div>
                 <div
@@ -913,13 +973,26 @@ function M6BracketView({
                   {rMatches.map((match) => {
                     const bye = isByeMatch(match);
                     if (bye) {
-                      // Render an invisible placeholder to maintain spacing
+                      const advancingTeam = match.squad_a || match.squad_b;
                       return (
                         <div
                           key={match.id}
                           style={{ height: `${MATCH_H}px` }}
-                          className="opacity-0 pointer-events-none"
-                        />
+                          className="rounded border border-dashed border-muted-foreground/15 bg-[#0a0a0a] flex items-center justify-between px-3 opacity-60"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Avatar className="h-4 w-4 shrink-0">
+                              {advancingTeam?.logo_url && <AvatarImage src={advancingTeam.logo_url} />}
+                              <AvatarFallback className="text-[7px] bg-[#1a1a1a] text-muted-foreground">
+                                {advancingTeam?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[11px] text-muted-foreground truncate">{advancingTeam?.name || 'TBD'}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/20 text-muted-foreground shrink-0">
+                            BYE
+                          </Badge>
+                        </div>
                       );
                     }
                     const gn = globalMatchMap.get(match.id);
@@ -932,6 +1005,7 @@ function M6BracketView({
                         isHost={isHost}
                         tournamentId={tournamentId}
                         tournamentStatus={tournamentStatus}
+                        matchHeight={MATCH_H}
                       />
                     );
                   })}
@@ -940,11 +1014,12 @@ function M6BracketView({
 
               {/* Connector lines to next round */}
               {ri < roundMatches.length - 1 && (
-                <BracketConnectors
+                <DesktopBracketConnectors
                   matchCount={rMatches.length}
                   roundIndex={ri}
                   bracketType={bracketType}
-                  matchByes={rMatches.map(m => isByeMatch(m))}
+                  matchHeight={MATCH_H}
+                  baseGap={BASE_GAP}
                 />
               )}
             </div>
@@ -955,18 +1030,163 @@ function M6BracketView({
   );
 }
 
-// Bracket connector lines between rounds
-function BracketConnectors({
+// ===== Mobile Match Card =====
+function MobileMatchCard({
+  match,
+  globalNumber,
+  onClick,
+  bracketType,
+}: {
+  match: TournamentMatch;
+  globalNumber?: number;
+  onClick: () => void;
+  bracketType: string;
+}) {
+  const isCompleted = match.status === 'completed';
+  const isOngoing = match.status === 'ongoing';
+  const isDisputed = match.status === 'disputed';
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        'rounded-lg border bg-[#111] cursor-pointer transition-all active:scale-[0.98] overflow-hidden',
+        isCompleted && 'border-green-500/20',
+        isOngoing && 'border-yellow-400/40',
+        isDisputed && 'border-destructive/40',
+        !isCompleted && !isOngoing && !isDisputed && 'border-border/30',
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[#0a0a0a] border-b border-[#222]">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            'text-[10px] font-display font-bold uppercase tracking-wider',
+            bracketType === 'winners' ? 'text-[#FF4500]' : 'text-[#FF6B35]',
+          )}>
+            {globalNumber ? `M${globalNumber}` : `#${match.match_number}`}
+          </span>
+          <span className="text-[10px] text-muted-foreground">Bo{match.best_of}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {match.scheduled_time && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" />
+              {format(new Date(match.scheduled_time), 'MMM d, h:mm a')}
+            </span>
+          )}
+          {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-green-400" />}
+          {isOngoing && <AlertCircle className="w-3.5 h-3.5 text-yellow-400" />}
+          {isDisputed && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
+          {match.is_forfeit && <Flag className="w-3.5 h-3.5 text-destructive" />}
+        </div>
+      </div>
+
+      {/* Teams */}
+      <div className="divide-y divide-[#1a1a1a]">
+        <MobileTeamRow
+          squad={match.squad_a}
+          score={match.squad_a_score}
+          isWinner={match.winner_id === match.squad_a_id}
+        />
+        <MobileTeamRow
+          squad={match.squad_b}
+          score={match.squad_b_score}
+          isWinner={match.winner_id === match.squad_b_id}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MobileTeamRow({
+  squad,
+  score,
+  isWinner,
+}: {
+  squad: TournamentSquad | null | undefined;
+  score: number;
+  isWinner: boolean;
+}) {
+  return (
+    <div className={cn(
+      'flex items-center justify-between px-3 py-2.5 min-h-[44px]',
+      isWinner && 'bg-green-500/10',
+      !squad && 'opacity-40',
+    )}>
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <Avatar className="h-6 w-6 shrink-0">
+          {squad?.logo_url && <AvatarImage src={squad.logo_url} alt={squad.name} />}
+          <AvatarFallback className="text-[9px] bg-[#1a1a1a] text-muted-foreground">
+            {squad?.name?.charAt(0)?.toUpperCase() || '?'}
+          </AvatarFallback>
+        </Avatar>
+        <span className={cn(
+          'text-sm truncate',
+          isWinner ? 'font-semibold text-foreground' : 'text-muted-foreground',
+        )}>
+          {squad?.name || 'TBD'}
+        </span>
+        {isWinner && <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />}
+      </div>
+      <span className={cn(
+        'text-sm font-display font-bold ml-2 shrink-0 min-w-[20px] text-right',
+        isWinner && 'text-green-400',
+      )}>
+        {score}
+      </span>
+    </div>
+  );
+}
+
+// ===== Desktop Bracket Connectors =====
+function DesktopBracketConnectors({
   matchCount,
   roundIndex,
   bracketType,
-  matchByes,
+  matchHeight,
+  baseGap,
 }: {
   matchCount: number;
   roundIndex: number;
   bracketType: string;
-  matchByes?: boolean[];
+  matchHeight: number;
+  baseGap: number;
 }) {
+  const lineColor = bracketType === 'winners' ? 'border-[#FF4500]/30' : 'border-[#FF6B35]/30';
+  const gap = Math.pow(2, roundIndex) * (matchHeight + baseGap) - matchHeight;
+  const topPad = (Math.pow(2, roundIndex) - 1) * (matchHeight + baseGap) / 2;
+  const pairs = Math.floor(matchCount / 2);
+  const hasOddMatch = matchCount % 2 === 1;
+  const pairHeight = matchHeight * 2 + gap;
+
+  return (
+    <div
+      className="flex flex-col w-8 shrink-0"
+      style={{ paddingTop: `${topPad}px`, gap: `${gap}px` }}
+    >
+      {Array.from({ length: pairs }).map((_, pi) => (
+        <div
+          key={pi}
+          className="flex flex-col"
+          style={{ height: `${pairHeight}px` }}
+        >
+          {/* Top match → right + down */}
+          <div className={cn('flex-1 rounded-tr-sm border-t-2 border-r-2', lineColor)} />
+          {/* Bottom match → right + up */}
+          <div className={cn('flex-1 rounded-br-sm border-b-2 border-r-2', lineColor)} />
+        </div>
+      ))}
+      {hasOddMatch && (
+        <div
+          style={{ height: `${matchHeight}px` }}
+          className="flex items-center"
+        >
+          <div className={cn('w-full border-t-2', lineColor)} />
+        </div>
+      )}
+    </div>
+  );
   const pairCount = Math.floor(matchCount / 2);
   const gap = Math.pow(2, roundIndex) * (MATCH_H + BASE_GAP) - MATCH_H;
   const topPad = (Math.pow(2, roundIndex) - 1) * (MATCH_H + BASE_GAP) / 2;

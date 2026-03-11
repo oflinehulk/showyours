@@ -1054,6 +1054,12 @@ function CurrentStageActions({
 
       // If there is a next stage and this is a group stage, compute advancing teams and generate next stage
       if (nextStage && isGroupStage && groups && groupTeams && stageMatches) {
+        // Build set of withdrawn squad IDs to exclude from advancement
+        const withdrawnSquadIds = new Set(
+          registrations
+            .filter(r => r.status === 'withdrawn')
+            .map(r => r.tournament_squad_id)
+        );
         const squadMap = new Map(
           registrations
             .filter(r => r.status === 'approved')

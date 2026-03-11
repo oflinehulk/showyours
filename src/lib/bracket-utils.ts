@@ -717,7 +717,8 @@ export type GroupData = { label: string; matches: TournamentMatch[]; squadMap: M
 export function determineAdvancingTeams(
   groups: GroupData[],
   advancePerGroup: number,
-  advanceBestRemaining: number
+  advanceBestRemaining: number,
+  excludeSquadIds?: Set<string>
 ): AdvancingTeam[] {
   const advancing: AdvancingTeam[] = [];
   const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];

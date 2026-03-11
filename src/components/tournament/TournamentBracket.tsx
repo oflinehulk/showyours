@@ -1152,12 +1152,14 @@ function DesktopBracketConnectors({
   bracketType,
   matchHeight,
   baseGap,
+  headerHeight = 34,
 }: {
   matchCount: number;
   roundIndex: number;
   bracketType: string;
   matchHeight: number;
   baseGap: number;
+  headerHeight?: number;
 }) {
   const lineColor = bracketType === 'winners' ? 'border-[#FF4500]/30' : 'border-[#FF6B35]/30';
   const gap = Math.pow(2, roundIndex) * (matchHeight + baseGap) - matchHeight;
@@ -1167,30 +1169,34 @@ function DesktopBracketConnectors({
   const pairHeight = matchHeight * 2 + gap;
 
   return (
-    <div
-      className="flex flex-col w-8 shrink-0"
-      style={{ paddingTop: `${topPad}px`, gap: `${gap}px` }}
-    >
-      {Array.from({ length: pairs }).map((_, pi) => (
-        <div
-          key={pi}
-          className="flex flex-col"
-          style={{ height: `${pairHeight}px` }}
-        >
-          {/* Top match → right + down */}
-          <div className={cn('flex-1 rounded-tr-sm border-t-2 border-r-2', lineColor)} />
-          {/* Bottom match → right + up */}
-          <div className={cn('flex-1 rounded-br-sm border-b-2 border-r-2', lineColor)} />
-        </div>
-      ))}
-      {hasOddMatch && (
-        <div
-          style={{ height: `${matchHeight}px` }}
-          className="flex items-center"
-        >
-          <div className={cn('w-full border-t-2', lineColor)} />
-        </div>
-      )}
+    <div className="flex flex-col w-8 shrink-0">
+      {/* Spacer matching the round header height */}
+      <div style={{ height: `${headerHeight}px` }} className="shrink-0" />
+      <div
+        className="flex flex-col"
+        style={{ paddingTop: `${topPad}px`, gap: `${gap}px` }}
+      >
+        {Array.from({ length: pairs }).map((_, pi) => (
+          <div
+            key={pi}
+            className="flex flex-col"
+            style={{ height: `${pairHeight}px` }}
+          >
+            {/* Top match → right + down */}
+            <div className={cn('flex-1 rounded-tr-sm border-t-2 border-r-2', lineColor)} />
+            {/* Bottom match → right + up */}
+            <div className={cn('flex-1 rounded-br-sm border-b-2 border-r-2', lineColor)} />
+          </div>
+        ))}
+        {hasOddMatch && (
+          <div
+            style={{ height: `${matchHeight}px` }}
+            className="flex items-center"
+          >
+            <div className={cn('w-full border-t-2', lineColor)} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -815,15 +815,20 @@ function buildGlobalMatchMap(
 
 // ========== M6-Style Bracket Visualization ==========
 
+const MATCH_H = 52; // compact match card height in px
+const BASE_GAP = 6; // gap between R1 matches in px
+
 function getWBRoundLabel(round: number, totalRounds: number): string {
   if (totalRounds <= 1) return 'Final';
   if (round === totalRounds) return 'UB Final';
   if (round === totalRounds - 1) return 'UB Semi-Final';
+  if (round === totalRounds - 2 && totalRounds > 3) return 'UB Quarter-Final';
   return `UB Round ${round}`;
 }
 
 function getLBRoundLabel(round: number, totalLBRounds: number): string {
   if (round === totalLBRounds) return 'LB Final';
+  if (round === totalLBRounds - 1) return 'LB Semi-Final';
   return `LB Round ${round}`;
 }
 
@@ -857,104 +862,228 @@ function M6BracketView({
   onToss?: (m: TournamentMatch) => void;
 }) {
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
-  const isMobile = useIsMobile();
   const totalLBRounds = bracketType === 'losers' ? Math.max(...rounds, 0) : 0;
-
-  const matchCardProps = (match: TournamentMatch) => ({
-    key: match.id,
-    match,
-    onClick: () => onMatchClick(match),
-    onDispute: () => onDispute(match),
-    onResolve: () => onResolve(match),
-    onToss: onToss ? () => onToss(match) : undefined,
-    isHost,
-    tournamentId,
-    tournamentName,
-    tournamentStatus,
-    userSquadIds,
-  });
 
   const getRoundLabel = (round: number) => {
     if (bracketType === 'winners') return getWBRoundLabel(round, totalWBRounds);
     return getLBRoundLabel(round, totalLBRounds);
   };
 
-  if (isMobile) {
-    return (
-      <div className="overflow-x-auto -mx-3 px-3 scrollbar-hide">
-        <div className="flex gap-2 min-w-max py-1">
-          {rounds.map((round, roundIndex) => (
-            <div key={round} className="flex items-stretch">
-              <div className="flex flex-col gap-2 min-w-[155px]">
-                <h4 className="text-[10px] font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-card py-1 z-10">
-                  {getRoundLabel(round)}
-                </h4>
-                {matches
-                  .filter(m => m.round === round)
-                  .sort((a, b) => a.match_number - b.match_number)
-                  .map((match) => {
-                    const gn = globalMatchMap.get(match.id);
-                    return (
-                      <div key={match.id} className="flex flex-col gap-0.5">
-                        {gn && (
-                          <span className="text-[9px] font-display font-bold text-[#FF6B35] uppercase tracking-wider text-center">
-                            Match {gn.globalNumber}
-                          </span>
-                        )}
-                        <MatchCard {...matchCardProps(match)} />
-                      </div>
-                    );
-                  })}
-              </div>
-              {roundIndex < rounds.length - 1 && (
-                <div className="flex items-center px-1">
-                  <div className="w-4 h-px bg-[#FF4500]/30" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Group matches by round
+  const roundMatches = rounds.map(r =>
+    matches.filter(m => m.round === r).sort((a, b) => a.match_number - b.match_number)
+  );
 
   return (
-    <div className="overflow-x-auto">
-      <div className="flex gap-2 min-w-max py-4">
-        {rounds.map((round, roundIndex) => (
-          <div key={round} className="flex items-stretch">
-            <div className="flex flex-col gap-4 min-w-[220px]">
-              <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider">
-                {getRoundLabel(round)}
-              </h4>
-              {matches
-                .filter(m => m.round === round)
-                .sort((a, b) => a.match_number - b.match_number)
-                .map((match) => {
-                  const gn = globalMatchMap.get(match.id);
-                  return (
-                    <div key={match.id} className="flex flex-col gap-0.5">
-                      {gn && (
-                        <span className="text-[10px] font-display font-bold text-[#FF6B35] uppercase tracking-wider text-center">
-                          Match {gn.globalNumber}
-                        </span>
-                      )}
-                      <MatchCard {...matchCardProps(match)} />
-                    </div>
-                  );
-                })}
-            </div>
-            {roundIndex < rounds.length - 1 && (
-              <div className="flex items-center px-1">
+    <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide">
+      <div className="flex items-stretch min-w-max py-2">
+        {roundMatches.map((rMatches, ri) => {
+          const roundNum = rounds[ri];
+          const gap = Math.pow(2, ri) * (MATCH_H + BASE_GAP) - MATCH_H;
+          const topPad = (Math.pow(2, ri) - 1) * (MATCH_H + BASE_GAP) / 2;
+
+          return (
+            <div key={roundNum} className="flex items-stretch">
+              {/* Round column */}
+              <div className="flex flex-col min-w-[180px] md:min-w-[200px]">
+                <div className="text-[10px] font-display font-semibold text-muted-foreground text-center uppercase tracking-wider mb-2 sticky top-0 z-10 bg-card/90 backdrop-blur-sm py-1 rounded">
+                  {getRoundLabel(roundNum)}
+                </div>
                 <div
-                  className="w-6 h-px bg-[#FF4500]/40"
-                  style={{ boxShadow: '0 0 4px rgba(255,69,0,0.3)' }}
-                />
+                  className="flex flex-col"
+                  style={{ gap: `${gap}px`, paddingTop: `${topPad}px` }}
+                >
+                  {rMatches.map((match) => {
+                    const gn = globalMatchMap.get(match.id);
+                    return (
+                      <CompactMatchCard
+                        key={match.id}
+                        match={match}
+                        globalNumber={gn?.globalNumber}
+                        onClick={() => onMatchClick(match)}
+                        isHost={isHost}
+                        tournamentId={tournamentId}
+                        tournamentStatus={tournamentStatus}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Connector lines to next round */}
+              {ri < roundMatches.length - 1 && (
+                <BracketConnectors
+                  matchCount={rMatches.length}
+                  roundIndex={ri}
+                  bracketType={bracketType}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+// Bracket connector lines between rounds
+function BracketConnectors({
+  matchCount,
+  roundIndex,
+  bracketType,
+}: {
+  matchCount: number;
+  roundIndex: number;
+  bracketType: string;
+}) {
+  const pairCount = Math.floor(matchCount / 2);
+  const gap = Math.pow(2, roundIndex) * (MATCH_H + BASE_GAP) - MATCH_H;
+  const topPad = (Math.pow(2, roundIndex) - 1) * (MATCH_H + BASE_GAP) / 2;
+  const pairHeight = 2 * MATCH_H + gap;
+  const nextGap = Math.pow(2, roundIndex + 1) * (MATCH_H + BASE_GAP) - MATCH_H;
+  const pairGap = nextGap - pairHeight + MATCH_H;
+
+  const lineColor = bracketType === 'losers' ? 'border-[#FF6B35]/30' : 'border-[#FF4500]/30';
+
+  // If matchCount is odd (last match has no pair), handle separately
+  const hasOddMatch = matchCount % 2 === 1;
+
+  return (
+    <div
+      className="flex flex-col w-6 md:w-8"
+      style={{ paddingTop: `${topPad}px` }}
+    >
+      {Array.from({ length: pairCount }, (_, i) => (
+        <div
+          key={i}
+          className="flex flex-col"
+          style={{
+            height: `${pairHeight}px`,
+            marginBottom: i < pairCount - 1 || hasOddMatch ? `${pairGap}px` : '0',
+          }}
+        >
+          {/* Top match → right + down */}
+          <div className={cn('flex-1 border-t-2 border-r-2 rounded-tr-sm', lineColor)} />
+          {/* Bottom match → right + up */}
+          <div className={cn('flex-1 border-b-2 border-r-2 rounded-br-sm', lineColor)} />
+        </div>
+      ))}
+      {/* Odd match - just a horizontal line */}
+      {hasOddMatch && (
+        <div
+          style={{ height: `${MATCH_H}px` }}
+          className="flex items-center"
+        >
+          <div className={cn('w-full border-t-2', lineColor)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Compact M6-style match card (team A on top, team B on bottom)
+function CompactMatchCard({
+  match,
+  globalNumber,
+  onClick,
+  isHost,
+  tournamentId,
+  tournamentStatus,
+}: {
+  match: TournamentMatch;
+  globalNumber?: number;
+  onClick: () => void;
+  isHost: boolean;
+  tournamentId: string;
+  tournamentStatus: string;
+}) {
+  const isCompleted = match.status === 'completed';
+  const isDisputed = match.status === 'disputed';
+  const isOngoing = match.status === 'ongoing';
+
+  return (
+    <div
+      onClick={onClick}
+      style={{ height: `${MATCH_H}px` }}
+      className={cn(
+        'rounded border bg-[#111] cursor-pointer transition-all flex flex-col overflow-hidden',
+        'hover:border-[#FF4500]/50 hover:shadow-[0_0_8px_rgba(255,69,0,0.15)]',
+        'active:scale-[0.98]',
+        isCompleted && 'border-green-500/20',
+        isOngoing && 'border-yellow-400/40',
+        isDisputed && 'border-destructive/40',
+        !isCompleted && !isOngoing && !isDisputed && 'border-[#FF4500]/15',
+      )}
+    >
+      {/* Header with match number and status */}
+      <div className="flex items-center justify-between px-2 py-0.5 bg-[#0a0a0a] border-b border-[#222]">
+        <span className="text-[9px] font-display font-bold text-[#FF6B35] uppercase tracking-wider">
+          {globalNumber ? `M${globalNumber}` : `#${match.match_number}`}
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-[8px] text-muted-foreground">Bo{match.best_of}</span>
+          {isCompleted && <CheckCircle className="w-2.5 h-2.5 text-green-400" />}
+          {isOngoing && <AlertCircle className="w-2.5 h-2.5 text-yellow-400" />}
+          {isDisputed && <AlertTriangle className="w-2.5 h-2.5 text-destructive" />}
+          {match.is_forfeit && <Flag className="w-2.5 h-2.5 text-destructive" />}
+        </div>
+      </div>
+
+      {/* Team A */}
+      <CompactTeamRow
+        squad={match.squad_a}
+        score={match.squad_a_score}
+        isWinner={match.winner_id === match.squad_a_id}
+        hasBorder
+      />
+
+      {/* Team B */}
+      <CompactTeamRow
+        squad={match.squad_b}
+        score={match.squad_b_score}
+        isWinner={match.winner_id === match.squad_b_id}
+        hasBorder={false}
+      />
+    </div>
+  );
+}
+
+function CompactTeamRow({
+  squad,
+  score,
+  isWinner,
+  hasBorder,
+}: {
+  squad: TournamentSquad | null | undefined;
+  score: number;
+  isWinner: boolean;
+  hasBorder: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between px-2 flex-1 min-h-0',
+        hasBorder && 'border-b border-[#222]',
+        isWinner && 'bg-green-500/10',
+        !squad && 'opacity-40',
+      )}
+    >
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <Avatar className="h-3.5 w-3.5 shrink-0">
+          {squad?.logo_url ? (
+            <AvatarImage src={squad.logo_url} alt={squad.name} />
+          ) : null}
+          <AvatarFallback className="text-[7px] bg-[#1a1a1a] text-muted-foreground">
+            {squad?.name?.charAt(0)?.toUpperCase() || '?'}
+          </AvatarFallback>
+        </Avatar>
+        <span className={cn('text-[11px] truncate', isWinner ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
+          {squad?.name || 'TBD'}
+        </span>
+      </div>
+      <span className={cn('text-[11px] font-display font-bold ml-1 shrink-0', isWinner && 'text-green-400')}>
+        {score}
+      </span>
     </div>
   );
 }

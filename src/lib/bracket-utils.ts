@@ -717,14 +717,19 @@ export type GroupData = { label: string; matches: TournamentMatch[]; squadMap: M
 export function determineAdvancingTeams(
   groups: GroupData[],
   advancePerGroup: number,
-  advanceBestRemaining: number
+  advanceBestRemaining: number,
+  excludeSquadIds?: Set<string>
 ): AdvancingTeam[] {
   const advancing: AdvancingTeam[] = [];
   const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];
 
   // Collect top N from each group
   for (const group of groups) {
-    const standings = computeGroupStandings(group.matches, group.squadMap);
+    const allStandings = computeGroupStandings(group.matches, group.squadMap);
+    // Filter out withdrawn/excluded teams before determining advancement
+    const standings = excludeSquadIds?.size
+      ? allStandings.filter(s => !excludeSquadIds.has(s.squad_id))
+      : allStandings;
 
     for (let i = 0; i < standings.length; i++) {
       if (i < advancePerGroup) {

@@ -950,6 +950,8 @@ function M6BracketView({
   // ===== DESKTOP: Horizontal bracket with connectors =====
   const MATCH_H = 60;
   const BASE_GAP = 8;
+  // Header height: text ~14px + py-1 (4+4) + mb-3 (12) = ~34px
+  const HEADER_H = 34;
 
   return (
     <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide">
@@ -963,7 +965,10 @@ function M6BracketView({
             <div key={roundNum} className="flex items-stretch">
               {/* Round column */}
               <div className="flex flex-col min-w-[210px]">
-                <div className="text-[10px] font-display font-semibold text-muted-foreground text-center uppercase tracking-wider mb-3 sticky top-0 z-10 bg-card/90 backdrop-blur-sm py-1 rounded">
+                <div
+                  className="text-[10px] font-display font-semibold text-muted-foreground text-center uppercase tracking-wider sticky top-0 z-10 bg-card/90 backdrop-blur-sm rounded flex items-center justify-center"
+                  style={{ height: `${HEADER_H}px` }}
+                >
                   {getRoundLabel(roundNum)}
                 </div>
                 <div
@@ -1020,6 +1025,7 @@ function M6BracketView({
                   bracketType={bracketType}
                   matchHeight={MATCH_H}
                   baseGap={BASE_GAP}
+                  headerHeight={HEADER_H}
                 />
               )}
             </div>

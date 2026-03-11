@@ -44,7 +44,8 @@ import { StageConfigurator } from '@/components/tournament/StageConfigurator';
 import { GroupAssignment } from '@/components/tournament/GroupAssignment';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
 import { HostAddSquad } from '@/components/tournament/HostAddSquad';
-import { computeGroupStandings, determineAdvancingTeams, determineSplitAdvancingTeams } from '@/lib/bracket-utils';
+import { computeGroupStandings, determineAdvancingTeams, determineSplitAdvancingTeams, avoidSameGroupInR1 } from '@/lib/bracket-utils';
+import { applyStandardSeeding } from '@/hooks/tournament/useBracketSeeding';
 import {
   Settings,
   Play,

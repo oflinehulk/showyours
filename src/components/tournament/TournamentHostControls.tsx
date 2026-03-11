@@ -1133,6 +1133,7 @@ function CurrentStageActions({
             groupData,
             currentStage.advance_per_group,
             currentStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const advancingSquadIds = advancing.map(a => a.squadId);

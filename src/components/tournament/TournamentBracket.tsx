@@ -1196,6 +1196,7 @@ function CompactMatchCard({
   isHost,
   tournamentId,
   tournamentStatus,
+  matchHeight = 60,
 }: {
   match: TournamentMatch;
   globalNumber?: number;
@@ -1203,6 +1204,7 @@ function CompactMatchCard({
   isHost: boolean;
   tournamentId: string;
   tournamentStatus: string;
+  matchHeight?: number;
 }) {
   const isCompleted = match.status === 'completed';
   const isDisputed = match.status === 'disputed';
@@ -1211,7 +1213,7 @@ function CompactMatchCard({
   return (
     <div
       onClick={onClick}
-      style={{ height: `${MATCH_H}px` }}
+      style={{ height: `${matchHeight}px` }}
       className={cn(
         'rounded border bg-[#111] cursor-pointer transition-all flex flex-col overflow-hidden',
         'hover:border-[#FF4500]/50 hover:shadow-[0_0_8px_rgba(255,69,0,0.15)]',

@@ -1174,7 +1174,13 @@ function CurrentStageActions({
           {isGroupStage && groups && groupTeams && stageMatches && (
             <div className="mb-3">
               <p className="text-xs text-green-400 mb-2">
-                All matches done. {nextStage ? `${currentStage.advance_per_group * currentStage.group_count + currentStage.advance_best_remaining} teams will advance to ${nextStage.name}.` : ''}
+                All matches done. {nextStage ? (() => {
+                  const ubCount = currentStage.advance_per_group * currentStage.group_count + currentStage.advance_best_remaining;
+                  const lbCount = (currentStage.advance_to_lower_per_group || 0) * currentStage.group_count;
+                  return lbCount > 0
+                    ? `~${ubCount} UB + ~${lbCount} LB teams will advance to ${nextStage.name}.`
+                    : `${ubCount} teams will advance to ${nextStage.name}.`;
+                })() : ''}
               </p>
             </div>
           )}

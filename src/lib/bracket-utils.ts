@@ -960,6 +960,59 @@ export function generateSeededDoubleEliminationBracket(
   return matches;
 }
 
+// ========== Same-Group Avoidance ==========
+
+/**
+ * Rearranges a bracket-ordered array so that Round 1 opponents are not
+ * from the same group.  Uses greedy pair-swapping: when a conflict is found
+ * (indices i and i+1 share a group), we look for another pair where swapping
+ * one element resolves both matchups without creating a new conflict.
+ *
+ * Best-effort — if no valid swap exists for a conflict it is left as-is.
+ */
+export function avoidSameGroupInR1(
+  bracketOrderIds: (string | null)[],
+  groupMap: Map<string, string> // squadId → groupLabel
+): (string | null)[] {
+  const result = [...bracketOrderIds];
+
+  for (let i = 0; i < result.length; i += 2) {
+    const idA = result[i], idB = result[i + 1];
+    if (!idA || !idB) continue;
+    const gA = groupMap.get(idA), gB = groupMap.get(idB);
+    if (!gA || !gB || gA !== gB) continue;
+
+    // Conflict found — try swapping idB with someone from another pair
+    let resolved = false;
+    for (let j = 0; j < result.length; j += 2) {
+      if (j === i) continue;
+      for (const slot of [j, j + 1]) {
+        const candidate = result[slot];
+        if (!candidate) continue;
+        const gCandidate = groupMap.get(candidate);
+        if (!gCandidate || gCandidate === gA) continue; // would still conflict
+
+        // Check swapping result[i+1] ↔ result[slot] doesn't break slot's pair
+        const partnerSlot = slot % 2 === 0 ? slot + 1 : slot - 1;
+        const partnerId = result[partnerSlot];
+        if (partnerId) {
+          const gPartner = groupMap.get(partnerId);
+          // idB going into the other pair — would idB conflict with partner?
+          if (gPartner === gB) continue; // would create new conflict
+        }
+
+        // Swap
+        [result[i + 1], result[slot]] = [result[slot], result[i + 1]];
+        resolved = true;
+        break;
+      }
+      if (resolved) break;
+    }
+  }
+
+  return result;
+}
+
 // ========== Split Group Advancement ==========
 
 export interface SplitAdvancementResult {

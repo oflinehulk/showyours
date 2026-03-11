@@ -717,14 +717,16 @@ export type GroupData = { label: string; matches: TournamentMatch[]; squadMap: M
 export function determineAdvancingTeams(
   groups: GroupData[],
   advancePerGroup: number,
-  advanceBestRemaining: number
+  advanceBestRemaining: number,
+  excludeSquadIds?: Set<string>
 ): AdvancingTeam[] {
   const advancing: AdvancingTeam[] = [];
   const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];
 
   // Collect top N from each group
   for (const group of groups) {
-    const standings = computeGroupStandings(group.matches, group.squadMap);
+    const standings = computeGroupStandings(group.matches, group.squadMap)
+      .filter(s => !excludeSquadIds || !excludeSquadIds.has(s.squad_id));
 
     for (let i = 0; i < standings.length; i++) {
       if (i < advancePerGroup) {
@@ -1057,14 +1059,16 @@ export function determineSplitAdvancingTeams(
   groups: GroupData[],
   advancePerGroup: number,
   advanceToLowerPerGroup: number,
-  advanceBestRemaining: number
+  advanceBestRemaining: number,
+  excludeSquadIds?: Set<string>
 ): SplitAdvancementResult {
   const ub: AdvancingTeam[] = [];
   const lb: AdvancingTeam[] = [];
   const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];
 
   for (const group of groups) {
-    const standings = computeGroupStandings(group.matches, group.squadMap);
+    const standings = computeGroupStandings(group.matches, group.squadMap)
+      .filter(s => !excludeSquadIds || !excludeSquadIds.has(s.squad_id));
 
     // Variable advancement: bottom N always go to LB, everyone else to UB.
     // For equal-sized groups this matches the configured advancePerGroup.

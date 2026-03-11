@@ -1039,6 +1039,10 @@ function CurrentStageActions({
   const { data: stageMatches } = useStageMatches(currentStage.id);
   const { data: groups } = useTournamentGroups(currentStage.id);
   const { data: groupTeams } = useTournamentGroupTeams(currentStage.id);
+  const [showMatchupEditor, setShowMatchupEditor] = useState(false);
+  const [splitResultState, setSplitResultState] = useState<SplitAdvancementResult | null>(null);
+  const [groupLabelMapState, setGroupLabelMapState] = useState<Map<string, string>>(new Map());
+  const [stageCompleted, setStageCompleted] = useState(false);
 
   const allMatchesCompleted = stageMatches && stageMatches.length > 0 && stageMatches.every(m => m.status === 'completed');
   const hasResults = stageMatches && stageMatches.some(m => m.status === 'completed' || m.status === 'ongoing');

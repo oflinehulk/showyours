@@ -1067,7 +1067,8 @@ export function determineSplitAdvancingTeams(
   const remainingCandidates: (GroupStanding & { groupLabel: string })[] = [];
 
   for (const group of groups) {
-    const standings = computeGroupStandings(group.matches, group.squadMap);
+    const standings = computeGroupStandings(group.matches, group.squadMap)
+      .filter(s => !excludeSquadIds || !excludeSquadIds.has(s.squad_id));
 
     // Variable advancement: bottom N always go to LB, everyone else to UB.
     // For equal-sized groups this matches the configured advancePerGroup.

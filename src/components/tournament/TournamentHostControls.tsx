@@ -1005,6 +1005,16 @@ function MultiStageOngoing({
         />
       )}
 
+      {/* Pending stage that needs bracket generation (previous stage already completed) */}
+      {currentStage?.status === 'pending' && currentStage.stage_number > 1 && (
+        <PendingStageActions
+          tournament={tournament}
+          currentStage={currentStage}
+          stages={stages}
+          registrations={registrations}
+        />
+      )}
+
       {/* Complete Tournament (when all stages done) */}
       {allStagesComplete && (
         <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
@@ -1392,6 +1402,159 @@ function StepIndicator({ status, isMultiStage }: { status: string; isMultiStage?
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ========== Pending Stage Actions (generate bracket for next stage) ==========
+
+function PendingStageActions({
+  tournament,
+  currentStage,
+  stages,
+  registrations,
+}: {
+  tournament: Tournament;
+  currentStage: TournamentStage;
+  stages: TournamentStage[];
+  registrations: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+}) {
+  const generateStageBracket = useGenerateStageBracket();
+  const prevStage = stages.find(s => s.stage_number === currentStage.stage_number - 1);
+  const { data: prevStageMatches } = useStageMatches(prevStage?.id);
+  const { data: groups } = useTournamentGroups(prevStage?.id);
+  const { data: groupTeams } = useTournamentGroupTeams(prevStage?.id);
+  const [generating, setGenerating] = useState(false);
+
+  if (!prevStage || prevStage.status !== 'completed') {
+    return (
+      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+        <p className="text-xs text-muted-foreground">
+          Waiting for {prevStage?.name || 'previous stage'} to complete before generating {currentStage.name} bracket.
+        </p>
+      </div>
+    );
+  }
+
+  const isPrevGroupStage = prevStage.format === 'round_robin' && prevStage.group_count > 0;
+
+  const handleGenerateKnockout = async () => {
+    setGenerating(true);
+    try {
+      if (isPrevGroupStage && groups && groupTeams && prevStageMatches) {
+        const squadMap = new Map(
+          registrations
+            .filter(r => r.status === 'approved')
+            .map(r => [r.tournament_squad_id, r.tournament_squads])
+        );
+
+        const groupData = groups.map(group => {
+          const teamIds = (groupTeams || [])
+            .filter(gt => gt.group_id === group.id)
+            .map(gt => gt.tournament_squad_id);
+          const groupSquadMap = new Map<string, typeof squadMap extends Map<string, infer V> ? V : never>();
+          for (const tid of teamIds) {
+            const squad = squadMap.get(tid);
+            if (squad) groupSquadMap.set(tid, squad);
+          }
+          const groupMatches = (prevStageMatches || []).filter(m => m.group_id === group.id);
+          for (const m of groupMatches) {
+            if (m.squad_a_id && m.squad_a && !groupSquadMap.has(m.squad_a_id)) {
+              groupSquadMap.set(m.squad_a_id, m.squad_a as typeof squadMap extends Map<string, infer V> ? V : never);
+            }
+            if (m.squad_b_id && m.squad_b && !groupSquadMap.has(m.squad_b_id)) {
+              groupSquadMap.set(m.squad_b_id, m.squad_b as typeof squadMap extends Map<string, infer V> ? V : never);
+            }
+          }
+          return {
+            label: group.label,
+            matches: groupMatches,
+            squadMap: groupSquadMap,
+          };
+        });
+
+        const useSplitAdvancement = prevStage.advance_to_lower_per_group > 0
+          && currentStage.format === 'double_elimination';
+
+        if (useSplitAdvancement) {
+          const splitResult = determineSplitAdvancingTeams(
+            groupData,
+            prevStage.advance_per_group,
+            prevStage.advance_to_lower_per_group,
+            prevStage.advance_best_remaining,
+          );
+
+          const groupLabelMap = new Map<string, string>();
+          for (const team of [...splitResult.upperBracket, ...splitResult.lowerBracket]) {
+            groupLabelMap.set(team.squadId, team.groupLabel);
+          }
+
+          const ubSeeded = splitResult.upperBracket.map(a => a.squadId);
+          const lbSeeded = splitResult.lowerBracket.map(a => a.squadId);
+
+          const ubBracketOrder = avoidSameGroupInR1(applyStandardSeeding(ubSeeded), groupLabelMap);
+          const lbBracketOrder = avoidSameGroupInR1(applyStandardSeeding(lbSeeded), groupLabelMap);
+
+          await generateStageBracket.mutateAsync({
+            tournamentId: tournament.id,
+            stageId: currentStage.id,
+            stage: currentStage,
+            ubSquadIds: ubBracketOrder as string[],
+            lbSquadIds: lbBracketOrder as string[],
+          });
+
+          toast.success(`${currentStage.name} bracket generated with ${ubSeeded.length} UB + ${lbSeeded.length} LB teams.`);
+        } else {
+          const advancing = determineAdvancingTeams(
+            groupData,
+            prevStage.advance_per_group,
+            prevStage.advance_best_remaining,
+          );
+
+          const advancingSquadIds = advancing.map(a => a.squadId);
+
+          await generateStageBracket.mutateAsync({
+            tournamentId: tournament.id,
+            stageId: currentStage.id,
+            stage: currentStage,
+            squadIds: advancingSquadIds,
+          });
+
+          toast.success(`${currentStage.name} bracket generated with ${advancingSquadIds.length} teams.`);
+        }
+      }
+    } catch (error: unknown) {
+      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const prevMatchCount = prevStageMatches?.length || 0;
+  const prevCompletedCount = prevStageMatches?.filter(m => m.status === 'completed').length || 0;
+
+  return (
+    <div className="p-4 rounded-lg bg-muted/30 border border-border">
+      <div className="flex items-center gap-2 mb-2">
+        <ArrowRight className="w-4 h-4 text-secondary" />
+        <h4 className="text-sm font-semibold text-foreground">Generate {currentStage.name}</h4>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        {prevStage.name} is complete ({prevCompletedCount}/{prevMatchCount} matches).
+        Generate the {currentStage.name} bracket from group results.
+      </p>
+      <Button
+        onClick={handleGenerateKnockout}
+        disabled={generating}
+        className="btn-gaming"
+      >
+        {generating ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : (
+          <Play className="w-4 h-4 mr-2" />
+        )}
+        Generate {currentStage.name} Bracket
+      </Button>
     </div>
   );
 }

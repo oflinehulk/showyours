@@ -960,10 +960,12 @@ function BracketConnectors({
   matchCount,
   roundIndex,
   bracketType,
+  matchByes,
 }: {
   matchCount: number;
   roundIndex: number;
   bracketType: string;
+  matchByes?: boolean[];
 }) {
   const pairCount = Math.floor(matchCount / 2);
   const gap = Math.pow(2, roundIndex) * (MATCH_H + BASE_GAP) - MATCH_H;
@@ -982,28 +984,53 @@ function BracketConnectors({
       className="flex flex-col w-6 md:w-8"
       style={{ paddingTop: `${topPad}px` }}
     >
-      {Array.from({ length: pairCount }, (_, i) => (
-        <div
-          key={i}
-          className="flex flex-col"
-          style={{
-            height: `${pairHeight}px`,
-            marginBottom: i < pairCount - 1 || hasOddMatch ? `${pairGap}px` : '0',
-          }}
-        >
-          {/* Top match → right + down */}
-          <div className={cn('flex-1 border-t-2 border-r-2 rounded-tr-sm', lineColor)} />
-          {/* Bottom match → right + up */}
-          <div className={cn('flex-1 border-b-2 border-r-2 rounded-br-sm', lineColor)} />
-        </div>
-      ))}
+      {Array.from({ length: pairCount }, (_, i) => {
+        // Check if both matches in this pair are byes — hide the connector
+        const topIsBye = matchByes?.[i * 2] ?? false;
+        const botIsBye = matchByes?.[i * 2 + 1] ?? false;
+        const bothByes = topIsBye && botIsBye;
+
+        return (
+          <div
+            key={i}
+            className="flex flex-col"
+            style={{
+              height: `${pairHeight}px`,
+              marginBottom: i < pairCount - 1 || hasOddMatch ? `${pairGap}px` : '0',
+            }}
+          >
+            {bothByes ? (
+              <>
+                <div className="flex-1" />
+                <div className="flex-1" />
+              </>
+            ) : (
+              <>
+                {/* Top match → right + down */}
+                <div className={cn(
+                  'flex-1 border-t-2 border-r-2 rounded-tr-sm',
+                  topIsBye ? 'border-transparent' : lineColor,
+                  // Keep right border if either is real
+                  !topIsBye && `border-r-2 ${lineColor}`,
+                )} style={topIsBye ? { borderTopColor: 'transparent', borderRightColor: `var(--connector-color, rgba(255,69,0,0.3))` } : undefined} />
+                {/* Bottom match → right + up */}
+                <div className={cn(
+                  'flex-1 border-b-2 border-r-2 rounded-br-sm',
+                  botIsBye ? 'border-transparent' : lineColor,
+                  !botIsBye && `border-r-2 ${lineColor}`,
+                )} style={botIsBye ? { borderBottomColor: 'transparent', borderRightColor: `var(--connector-color, rgba(255,69,0,0.3))` } : undefined} />
+              </>
+            )}
+          </div>
+        );
+      })}
       {/* Odd match - just a horizontal line */}
       {hasOddMatch && (
         <div
           style={{ height: `${MATCH_H}px` }}
           className="flex items-center"
         >
-          <div className={cn('w-full border-t-2', lineColor)} />
+          <div className={cn('w-full border-t-2', matchByes?.[matchCount - 1] ? 'border-transparent' : lineColor)} />
         </div>
       )}
     </div>

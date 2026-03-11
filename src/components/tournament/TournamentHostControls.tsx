@@ -45,9 +45,7 @@ import { GroupAssignment } from '@/components/tournament/GroupAssignment';
 import { GroupStandings } from '@/components/tournament/GroupStandings';
 import { HostAddSquad } from '@/components/tournament/HostAddSquad';
 import { computeGroupStandings, determineAdvancingTeams, determineSplitAdvancingTeams, avoidSameGroupInR1 } from '@/lib/bracket-utils';
-import type { SplitAdvancementResult } from '@/lib/bracket-utils';
 import { applyStandardSeeding } from '@/hooks/tournament/useBracketSeeding';
-import { KnockoutMatchupEditor } from '@/components/tournament/KnockoutMatchupEditor';
 import {
   Settings,
   Play,
@@ -1041,10 +1039,6 @@ function CurrentStageActions({
   const { data: stageMatches } = useStageMatches(currentStage.id);
   const { data: groups } = useTournamentGroups(currentStage.id);
   const { data: groupTeams } = useTournamentGroupTeams(currentStage.id);
-  const [showMatchupEditor, setShowMatchupEditor] = useState(false);
-  const [splitResultState, setSplitResultState] = useState<SplitAdvancementResult | null>(null);
-  const [groupLabelMapState, setGroupLabelMapState] = useState<Map<string, string>>(new Map());
-  const [stageCompleted, setStageCompleted] = useState(false);
 
   const allMatchesCompleted = stageMatches && stageMatches.length > 0 && stageMatches.every(m => m.status === 'completed');
   const hasResults = stageMatches && stageMatches.some(m => m.status === 'completed' || m.status === 'ongoing');
@@ -1060,12 +1054,6 @@ function CurrentStageActions({
 
       // If there is a next stage and this is a group stage, compute advancing teams and generate next stage
       if (nextStage && isGroupStage && groups && groupTeams && stageMatches) {
-        // Build set of withdrawn squad IDs to exclude from advancement
-        const withdrawnSquadIds = new Set(
-          registrations
-            .filter(r => r.status === 'withdrawn')
-            .map(r => r.tournament_squad_id)
-        );
         const squadMap = new Map(
           registrations
             .filter(r => r.status === 'approved')
@@ -1102,13 +1090,12 @@ function CurrentStageActions({
           && nextStage.format === 'double_elimination';
 
         if (useSplitAdvancement) {
-          // Split advancement: compute teams, then show matchup editor
+          // Split advancement: top -> UB, bottom -> LB
           const splitResult = determineSplitAdvancingTeams(
             groupData,
             currentStage.advance_per_group,
             currentStage.advance_to_lower_per_group,
             currentStage.advance_best_remaining,
-            withdrawnSquadIds,
           );
 
           // Build group map for same-group avoidance (squadId → groupLabel)
@@ -1117,20 +1104,28 @@ function CurrentStageActions({
             groupLabelMap.set(team.squadId, team.groupLabel);
           }
 
-          // Show matchup editor instead of auto-generating
-          setSplitResultState(splitResult);
-          setGroupLabelMapState(groupLabelMap);
-          setStageCompleted(true);
-          setShowMatchupEditor(true);
-          toast.success(`${currentStage.name} completed! Now assign knockout matchups.`);
-          return; // Don't auto-generate — let host use the editor
+          // Apply standard seeding placement (1v16, 8v9, etc.) then same-group avoidance
+          const ubSeeded = splitResult.upperBracket.map(a => a.squadId);
+          const lbSeeded = splitResult.lowerBracket.map(a => a.squadId);
+
+          const ubBracketOrder = avoidSameGroupInR1(applyStandardSeeding(ubSeeded), groupLabelMap);
+          const lbBracketOrder = avoidSameGroupInR1(applyStandardSeeding(lbSeeded), groupLabelMap);
+
+          await generateStageBracket.mutateAsync({
+            tournamentId: tournament.id,
+            stageId: nextStage.id,
+            stage: nextStage,
+            ubSquadIds: ubBracketOrder as string[],
+            lbSquadIds: lbBracketOrder as string[],
+          });
+
+          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${ubSeeded.length} UB + ${lbSeeded.length} LB teams.`);
         } else {
           // Flat advancement
           const advancing = determineAdvancingTeams(
             groupData,
             currentStage.advance_per_group,
             currentStage.advance_best_remaining,
-            withdrawnSquadIds,
           );
 
           const advancingSquadIds = advancing.map(a => a.squadId);
@@ -1166,38 +1161,6 @@ function CurrentStageActions({
       toast.error('Failed to reset stage', { description: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
-
-  const handleMatchupConfirm = async (ubOrder: string[], lbOrder: string[]) => {
-    if (!nextStage) return;
-    try {
-      await generateStageBracket.mutateAsync({
-        tournamentId: tournament.id,
-        stageId: nextStage.id,
-        stage: nextStage,
-        ubSquadIds: ubOrder,
-        lbSquadIds: lbOrder,
-      });
-      setShowMatchupEditor(false);
-      toast.success(`${nextStage.name} bracket generated with ${splitResultState?.upperBracket.length} UB + ${splitResultState?.lowerBracket.length} LB teams.`);
-    } catch (error: unknown) {
-      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
-    }
-  };
-
-  // Show matchup editor when stage is completed and split advancement is active
-  if (showMatchupEditor && splitResultState && nextStage) {
-    return (
-      <div className="p-4 rounded-lg bg-muted/30 border border-border">
-        <KnockoutMatchupEditor
-          splitResult={splitResultState}
-          groupLabelMap={groupLabelMapState}
-          onConfirm={handleMatchupConfirm}
-          onCancel={() => setShowMatchupEditor(false)}
-          isPending={generateStageBracket.isPending}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 rounded-lg bg-muted/30 border border-border">

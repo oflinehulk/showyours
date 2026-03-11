@@ -1446,6 +1446,9 @@ function PendingStageActions({
     setGenerating(true);
     try {
       if (isPrevGroupStage && groups && groupTeams && prevStageMatches) {
+        const withdrawnSquadIds = new Set(
+          registrations.filter(r => r.status === 'withdrawn').map(r => r.tournament_squad_id)
+        );
         const squadMap = new Map(
           registrations
             .filter(r => r.status === 'approved')

@@ -1186,6 +1186,7 @@ function DesktopBracketConnectors({
         </div>
       )}
     </div>
+  );
 }
 
 // Compact M6-style match card (team A on top, team B on bottom)

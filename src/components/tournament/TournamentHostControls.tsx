@@ -1167,6 +1167,38 @@ function CurrentStageActions({
     }
   };
 
+  const handleMatchupConfirm = async (ubOrder: string[], lbOrder: string[]) => {
+    if (!nextStage) return;
+    try {
+      await generateStageBracket.mutateAsync({
+        tournamentId: tournament.id,
+        stageId: nextStage.id,
+        stage: nextStage,
+        ubSquadIds: ubOrder,
+        lbSquadIds: lbOrder,
+      });
+      setShowMatchupEditor(false);
+      toast.success(`${nextStage.name} bracket generated with ${splitResultState?.upperBracket.length} UB + ${splitResultState?.lowerBracket.length} LB teams.`);
+    } catch (error: unknown) {
+      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  // Show matchup editor when stage is completed and split advancement is active
+  if (showMatchupEditor && splitResultState && nextStage) {
+    return (
+      <div className="p-4 rounded-lg bg-muted/30 border border-border">
+        <KnockoutMatchupEditor
+          splitResult={splitResultState}
+          groupLabelMap={groupLabelMapState}
+          onConfirm={handleMatchupConfirm}
+          onCancel={() => setShowMatchupEditor(false)}
+          isPending={generateStageBracket.isPending}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 rounded-lg bg-muted/30 border border-border">
       <div className="flex items-center gap-2 mb-2">

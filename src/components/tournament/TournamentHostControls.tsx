@@ -1102,7 +1102,7 @@ function CurrentStageActions({
           && nextStage.format === 'double_elimination';
 
         if (useSplitAdvancement) {
-          // Split advancement: top -> UB, bottom -> LB
+          // Split advancement: compute teams, then show matchup editor
           const splitResult = determineSplitAdvancingTeams(
             groupData,
             currentStage.advance_per_group,
@@ -1117,22 +1117,13 @@ function CurrentStageActions({
             groupLabelMap.set(team.squadId, team.groupLabel);
           }
 
-          // Apply standard seeding placement (1v16, 8v9, etc.) then same-group avoidance
-          const ubSeeded = splitResult.upperBracket.map(a => a.squadId);
-          const lbSeeded = splitResult.lowerBracket.map(a => a.squadId);
-
-          const ubBracketOrder = avoidSameGroupInR1(applyStandardSeeding(ubSeeded), groupLabelMap);
-          const lbBracketOrder = avoidSameGroupInR1(applyStandardSeeding(lbSeeded), groupLabelMap);
-
-          await generateStageBracket.mutateAsync({
-            tournamentId: tournament.id,
-            stageId: nextStage.id,
-            stage: nextStage,
-            ubSquadIds: ubBracketOrder as string[],
-            lbSquadIds: lbBracketOrder as string[],
-          });
-
-          toast.success(`${currentStage.name} completed! ${nextStage.name} bracket generated with ${ubSeeded.length} UB + ${lbSeeded.length} LB teams.`);
+          // Show matchup editor instead of auto-generating
+          setSplitResultState(splitResult);
+          setGroupLabelMapState(groupLabelMap);
+          setStageCompleted(true);
+          setShowMatchupEditor(true);
+          toast.success(`${currentStage.name} completed! Now assign knockout matchups.`);
+          return; // Don't auto-generate — let host use the editor
         } else {
           // Flat advancement
           const advancing = determineAdvancingTeams(

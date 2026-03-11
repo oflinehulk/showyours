@@ -671,7 +671,9 @@ function EliminationStageView({
   const losersMatches = stageMatches.filter(m => m.bracket_type === 'losers');
   const semiFinalsMatches = stageMatches.filter(m => m.bracket_type === 'semi_finals');
   const finalsMatches = stageMatches.filter(m => m.bracket_type === 'finals');
-  const maxRound = Math.max(...stageMatches.map(m => m.round), 0);
+
+  // Build global match numbering for M6-style labels
+  const globalMatchMap = buildGlobalMatchMap(winnersMatches, losersMatches, semiFinalsMatches, finalsMatches);
 
   const sharedProps = {
     isHost,
@@ -705,17 +707,24 @@ function EliminationStageView({
     );
   }
 
+  const isDE = stage.format === 'double_elimination' || losersMatches.length > 0;
+
   return (
-    <>
+    <div className="space-y-6">
+      {/* ===== UPPER BRACKET ===== */}
       {winnersMatches.length > 0 && (
-        <GlowCard className="p-6">
-          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-            <Trophy className="w-5 h-5 text-[#FF4500]" />
-            {stage.format === 'double_elimination' ? 'Winners Bracket' : 'Bracket'}
-          </h3>
-          <BracketView
+        <GlowCard className="p-4 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-3 h-3 rounded-sm bg-[#FF4500]" />
+            <h3 className="text-lg font-display font-semibold text-foreground tracking-wide">
+              {isDE ? 'UPPER BRACKET' : 'BRACKET'}
+            </h3>
+          </div>
+          <M6BracketView
             matches={winnersMatches}
-            maxRound={maxRound}
+            bracketType="winners"
+            globalMatchMap={globalMatchMap}
+            totalWBRounds={Math.max(...winnersMatches.map(m => m.round), 0)}
             onMatchClick={onMatchClick}
             onDispute={onDispute}
             onResolve={onResolve}
@@ -724,15 +733,35 @@ function EliminationStageView({
         </GlowCard>
       )}
 
+      {/* ===== Divider ===== */}
+      {isDE && (winnersMatches.length > 0 || losersMatches.length > 0) && (
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-[#FF4500]/30" />
+            <span className="text-[10px] font-display font-medium text-muted-foreground uppercase tracking-widest">Upper Bracket</span>
+          </div>
+          <div className="flex-1 border-t border-dashed border-muted-foreground/20" />
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-[#FF6B35]/50" />
+            <span className="text-[10px] font-display font-medium text-muted-foreground uppercase tracking-widest">Lower Bracket</span>
+          </div>
+        </div>
+      )}
+
+      {/* ===== LOWER BRACKET ===== */}
       {losersMatches.length > 0 && (
-        <GlowCard glowColor="secondary" className="p-6">
-          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
-            <Users className="w-5 h-5 text-[#FF6B35]" />
-            Losers Bracket
-          </h3>
-          <BracketView
+        <GlowCard glowColor="secondary" className="p-4 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-3 h-3 rounded-sm bg-[#FF6B35]" />
+            <h3 className="text-lg font-display font-semibold text-foreground tracking-wide">
+              LOWER BRACKET
+            </h3>
+          </div>
+          <M6BracketView
             matches={losersMatches}
-            maxRound={maxRound}
+            bracketType="losers"
+            globalMatchMap={globalMatchMap}
+            totalWBRounds={Math.max(...winnersMatches.map(m => m.round), 0)}
             onMatchClick={onMatchClick}
             onDispute={onDispute}
             onResolve={onResolve}
@@ -741,59 +770,143 @@ function EliminationStageView({
         </GlowCard>
       )}
 
+      {/* ===== SEMI-FINAL ===== */}
       {semiFinalsMatches.length > 0 && (
-        <GlowCard glowColor="accent" className="p-6">
-          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+        <GlowCard glowColor="accent" className="p-4 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
             <Trophy className="w-5 h-5 text-orange-400" />
-            Semi-Final
-          </h3>
+            <h3 className="text-lg font-display font-semibold text-foreground tracking-wide">
+              SEMI-FINAL
+            </h3>
+          </div>
           <div className="flex justify-center">
-            {semiFinalsMatches.map((match) => (
-              <div key={match.id} className="flex flex-col items-center gap-1">
-                <MatchCard
-                  match={match}
-                  onClick={() => onMatchClick(match)}
-                  onDispute={() => onDispute(match)}
-                  onResolve={() => onResolve(match)}
-                  large
-                  {...sharedProps}
-                />
-                <span className="text-[10px] text-muted-foreground">Loser finishes 3rd place</span>
-              </div>
-            ))}
+            {semiFinalsMatches.map((match) => {
+              const gn = globalMatchMap.get(match.id);
+              return (
+                <div key={match.id} className="flex flex-col items-center gap-1">
+                  {gn && (
+                    <span className="text-[10px] font-display font-bold text-[#FF6B35] uppercase tracking-wider mb-1">
+                      Match {gn.globalNumber}
+                    </span>
+                  )}
+                  <MatchCard
+                    match={match}
+                    onClick={() => onMatchClick(match)}
+                    onDispute={() => onDispute(match)}
+                    onResolve={() => onResolve(match)}
+                    large
+                    matchLabel={gn ? `UB Final Loser vs LB Winner` : undefined}
+                    {...sharedProps}
+                  />
+                </div>
+              );
+            })}
           </div>
         </GlowCard>
       )}
 
+      {/* ===== GRAND FINAL ===== */}
       {finalsMatches.length > 0 && (
-        <GlowCard glowColor="accent" className="p-6 neon-border">
-          <h3 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2 tracking-wide">
+        <GlowCard glowColor="accent" className="p-4 md:p-6 neon-border">
+          <div className="flex items-center gap-2 mb-4">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            Grand Finals
-          </h3>
+            <h3 className="text-lg font-display font-semibold text-foreground tracking-wide">
+              GRAND FINAL
+            </h3>
+          </div>
           <div className="flex justify-center">
-            {finalsMatches.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                onClick={() => onMatchClick(match)}
-                onDispute={() => onDispute(match)}
-                onResolve={() => onResolve(match)}
-                large
-                {...sharedProps}
-              />
-            ))}
+            {finalsMatches.map((match) => {
+              const gn = globalMatchMap.get(match.id);
+              return (
+                <div key={match.id} className="flex flex-col items-center gap-1">
+                  {gn && (
+                    <span className="text-[10px] font-display font-bold text-yellow-500 uppercase tracking-wider mb-1">
+                      Match {gn.globalNumber}
+                    </span>
+                  )}
+                  <MatchCard
+                    match={match}
+                    onClick={() => onMatchClick(match)}
+                    onDispute={() => onDispute(match)}
+                    onResolve={() => onResolve(match)}
+                    large
+                    matchLabel={gn ? `UB Winner vs ${semiFinalsMatches.length > 0 ? 'SF' : 'LB'} Winner` : undefined}
+                    {...sharedProps}
+                  />
+                </div>
+              );
+            })}
           </div>
         </GlowCard>
       )}
-    </>
+    </div>
   );
 }
 
-// Bracket visualization
-function BracketView({
+// ========== M6-Style Global Match Numbering ==========
+
+interface GlobalMatchInfo {
+  globalNumber: number;
+  sourceLabel?: string; // e.g. "Match 1 Winner", "Match 5 Loser"
+}
+
+function buildGlobalMatchMap(
+  winners: TournamentMatch[],
+  losers: TournamentMatch[],
+  semis: TournamentMatch[],
+  finals: TournamentMatch[]
+): Map<string, GlobalMatchInfo> {
+  const map = new Map<string, GlobalMatchInfo>();
+  let num = 1;
+
+  // WB matches sorted by round then match_number
+  const sortedWB = [...winners].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
+  for (const m of sortedWB) {
+    map.set(m.id, { globalNumber: num });
+    num++;
+  }
+
+  // LB matches
+  const sortedLB = [...losers].sort((a, b) => a.round - b.round || a.match_number - b.match_number);
+  for (const m of sortedLB) {
+    map.set(m.id, { globalNumber: num });
+    num++;
+  }
+
+  // Semi-finals
+  for (const m of semis) {
+    map.set(m.id, { globalNumber: num });
+    num++;
+  }
+
+  // Grand Finals
+  for (const m of finals) {
+    map.set(m.id, { globalNumber: num });
+    num++;
+  }
+
+  return map;
+}
+
+// ========== M6-Style Bracket Visualization ==========
+
+function getWBRoundLabel(round: number, totalRounds: number): string {
+  if (totalRounds <= 1) return 'Final';
+  if (round === totalRounds) return 'UB Final';
+  if (round === totalRounds - 1) return 'UB Semi-Final';
+  return `UB Round ${round}`;
+}
+
+function getLBRoundLabel(round: number, totalLBRounds: number): string {
+  if (round === totalLBRounds) return 'LB Final';
+  return `LB Round ${round}`;
+}
+
+function M6BracketView({
   matches,
-  maxRound,
+  bracketType,
+  globalMatchMap,
+  totalWBRounds,
   onMatchClick,
   onDispute,
   onResolve,
@@ -805,7 +918,9 @@ function BracketView({
   onToss,
 }: {
   matches: TournamentMatch[];
-  maxRound: number;
+  bracketType: 'winners' | 'losers';
+  globalMatchMap: Map<string, GlobalMatchInfo>;
+  totalWBRounds: number;
   onMatchClick: (match: TournamentMatch) => void;
   onDispute: (match: TournamentMatch) => void;
   onResolve: (match: TournamentMatch) => void;
@@ -818,6 +933,7 @@ function BracketView({
 }) {
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
   const isMobile = useIsMobile();
+  const totalLBRounds = bracketType === 'losers' ? Math.max(...rounds, 0) : 0;
 
   const matchCardProps = (match: TournamentMatch) => ({
     key: match.id,
@@ -833,6 +949,11 @@ function BracketView({
     userSquadIds,
   });
 
+  const getRoundLabel = (round: number) => {
+    if (bracketType === 'winners') return getWBRoundLabel(round, totalWBRounds);
+    return getLBRoundLabel(round, totalLBRounds);
+  };
+
   if (isMobile) {
     return (
       <div className="overflow-x-auto -mx-3 px-3 scrollbar-hide">
@@ -840,15 +961,25 @@ function BracketView({
           {rounds.map((round, roundIndex) => (
             <div key={round} className="flex items-stretch">
               <div className="flex flex-col gap-2 min-w-[155px]">
-                <h4 className="text-[10px] font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-[#0a0a0a] py-1 z-10">
-                  {roundIndex === rounds.length - 1 ? 'Final' : `R${round}`}
+                <h4 className="text-[10px] font-display font-medium text-muted-foreground text-center uppercase tracking-wider sticky top-0 bg-card py-1 z-10">
+                  {getRoundLabel(round)}
                 </h4>
                 {matches
                   .filter(m => m.round === round)
                   .sort((a, b) => a.match_number - b.match_number)
-                  .map((match) => (
-                    <MatchCard {...matchCardProps(match)} />
-                  ))}
+                  .map((match) => {
+                    const gn = globalMatchMap.get(match.id);
+                    return (
+                      <div key={match.id} className="flex flex-col gap-0.5">
+                        {gn && (
+                          <span className="text-[9px] font-display font-bold text-[#FF6B35] uppercase tracking-wider text-center">
+                            Match {gn.globalNumber}
+                          </span>
+                        )}
+                        <MatchCard {...matchCardProps(match)} />
+                      </div>
+                    );
+                  })}
               </div>
               {roundIndex < rounds.length - 1 && (
                 <div className="flex items-center px-1">
@@ -869,14 +1000,24 @@ function BracketView({
           <div key={round} className="flex items-stretch">
             <div className="flex flex-col gap-4 min-w-[220px]">
               <h4 className="text-xs font-display font-medium text-muted-foreground text-center uppercase tracking-wider">
-                Round {round}
+                {getRoundLabel(round)}
               </h4>
               {matches
                 .filter(m => m.round === round)
                 .sort((a, b) => a.match_number - b.match_number)
-                .map((match) => (
-                  <MatchCard {...matchCardProps(match)} />
-                ))}
+                .map((match) => {
+                  const gn = globalMatchMap.get(match.id);
+                  return (
+                    <div key={match.id} className="flex flex-col gap-0.5">
+                      {gn && (
+                        <span className="text-[10px] font-display font-bold text-[#FF6B35] uppercase tracking-wider text-center">
+                          Match {gn.globalNumber}
+                        </span>
+                      )}
+                      <MatchCard {...matchCardProps(match)} />
+                    </div>
+                  );
+                })}
             </div>
             {roundIndex < rounds.length - 1 && (
               <div className="flex items-center px-1">

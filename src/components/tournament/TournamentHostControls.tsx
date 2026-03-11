@@ -1489,6 +1489,7 @@ function PendingStageActions({
             prevStage.advance_per_group,
             prevStage.advance_to_lower_per_group,
             prevStage.advance_best_remaining,
+            withdrawnSquadIds,
           );
 
           const groupLabelMap = new Map<string, string>();

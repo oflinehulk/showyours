@@ -255,9 +255,20 @@ export function computeGroupStandings(
   }
 
   // Build standings
+  // Also build squad references from match data for teams missing from squadMap
+  const extendedSquadMap = new Map(squadMap);
+  for (const m of matches) {
+    if (m.squad_a_id && m.squad_a && !extendedSquadMap.has(m.squad_a_id)) {
+      extendedSquadMap.set(m.squad_a_id, m.squad_a);
+    }
+    if (m.squad_b_id && m.squad_b && !extendedSquadMap.has(m.squad_b_id)) {
+      extendedSquadMap.set(m.squad_b_id, m.squad_b);
+    }
+  }
+
   const standings: GroupStanding[] = [];
   for (const [squadId, s] of stats) {
-    const squad = squadMap.get(squadId);
+    const squad = extendedSquadMap.get(squadId);
     if (!squad) continue;
     standings.push({
       squad_id: squadId,

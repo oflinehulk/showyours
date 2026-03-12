@@ -582,6 +582,8 @@ function EliminationStageView({
   userSquadIds: string[];
   onToss?: (m: TournamentMatch) => void;
 }) {
+  const [wildCardMatch, setWildCardMatch] = useState<TournamentMatch | null>(null);
+
   if (stageMatches.length === 0) {
     return (
       <GlowCard className="p-8 text-center">
@@ -598,6 +600,15 @@ function EliminationStageView({
   const losersMatches = stageMatches.filter(m => m.bracket_type === 'losers');
   const semiFinalsMatches = stageMatches.filter(m => m.bracket_type === 'semi_finals');
   const finalsMatches = stageMatches.filter(m => m.bracket_type === 'finals');
+
+  // Determine LB Round 1 for wild card eligibility
+  const lbRound1 = losersMatches.length > 0
+    ? Math.min(...losersMatches.map(m => m.round))
+    : 0;
+
+  const handleWildCard = isHost ? (match: TournamentMatch) => {
+    setWildCardMatch(match);
+  } : undefined;
 
   // Build global match numbering for M6-style labels
   const globalMatchMap = buildGlobalMatchMap(winnersMatches, losersMatches, semiFinalsMatches, finalsMatches);

@@ -8,18 +8,41 @@ import { Loader2, Check, ChevronLeft, ChevronRight, Swords, CalendarCheck, Clock
 import { useSchedulingContext, useSubmitAvailability, type MatchSchedulingInfo } from '@/hooks/useScheduling';
 import { toast } from 'sonner';
 
-const TIME_SLOTS = [
+// BO1 slots: 30-min intervals (16 slots)
+const TIME_SLOTS_BO1 = [
   '16:00', '16:30', '17:00', '17:30',
   '18:00', '18:30', '19:00', '19:30',
   '20:00', '20:30', '21:00', '21:30',
   '22:00', '22:30', '23:00', '23:30',
 ];
-const SLOT_LABELS = [
+const SLOT_LABELS_BO1 = [
   '4 PM', '4:30', '5 PM', '5:30',
   '6 PM', '6:30', '7 PM', '7:30',
   '8 PM', '8:30', '9 PM', '9:30',
   '10 PM', '10:30', '11 PM', '11:30',
 ];
+
+// BO3 slots: 1.5-hour intervals (a BO3 takes ~1.5 hours)
+const TIME_SLOTS_BO3 = [
+  '16:30', '18:00', '19:30', '21:00', '22:30',
+];
+const SLOT_LABELS_BO3 = [
+  '4:30 PM', '6 PM', '7:30 PM', '9 PM', '10:30 PM',
+];
+
+// BO5 slots: 2.5-hour intervals
+const TIME_SLOTS_BO5 = [
+  '16:30', '19:00', '21:30',
+];
+const SLOT_LABELS_BO5 = [
+  '4:30 PM', '7 PM', '9:30 PM',
+];
+
+function getTimeSlotsForBestOf(bestOf: number): { slots: string[]; labels: string[] } {
+  if (bestOf >= 5) return { slots: TIME_SLOTS_BO5, labels: SLOT_LABELS_BO5 };
+  if (bestOf >= 3) return { slots: TIME_SLOTS_BO3, labels: SLOT_LABELS_BO3 };
+  return { slots: TIME_SLOTS_BO1, labels: SLOT_LABELS_BO1 };
+}
 
 function getNextDays(count: number): string[] {
   const days: string[] = [];
@@ -85,6 +108,11 @@ function MatchSlotPicker({
   );
 
   const hasOpponentPicked = match.opponent_slots.length > 0;
+
+  const { slots: TIME_SLOTS, labels: SLOT_LABELS } = useMemo(
+    () => getTimeSlotsForBestOf(match.best_of || 1),
+    [match.best_of]
+  );
 
   return (
     <div>

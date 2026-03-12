@@ -779,6 +779,14 @@ function EliminationStageView({
           </div>
         </GlowCard>
       )}
+
+      {/* Wild Card Dialog */}
+      <WildCardDialog
+        open={!!wildCardMatch}
+        onOpenChange={(open) => { if (!open) setWildCardMatch(null); }}
+        tournamentId={tournamentId}
+        match={wildCardMatch}
+      />
     </div>
   );
 }

@@ -109,6 +109,11 @@ function MatchSlotPicker({
 
   const hasOpponentPicked = match.opponent_slots.length > 0;
 
+  const { slots: TIME_SLOTS, labels: SLOT_LABELS } = useMemo(
+    () => getTimeSlotsForBestOf(match.best_of || 1),
+    [match.best_of]
+  );
+
   return (
     <div>
       {/* Day navigation */}

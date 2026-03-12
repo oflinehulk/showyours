@@ -141,3 +141,35 @@ export function useDeleteRegistration() {
     },
   });
 }
+
+export function useWildCardAdd() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      tournamentId,
+      squadId,
+      matchId,
+    }: {
+      tournamentId: string;
+      squadId: string;
+      matchId: string;
+    }) => {
+      const { data, error } = await supabase.rpc('rpc_wild_card_add', {
+        p_tournament_id: tournamentId,
+        p_squad_id: squadId,
+        p_match_id: matchId,
+      });
+
+      if (error) throw new Error(error.message);
+      return { tournamentSquadId: data as string, tournamentId };
+    },
+    onSuccess: ({ tournamentId }) => {
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.registrations(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.allSquadsForHostAdd });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
+    },
+  });
+}

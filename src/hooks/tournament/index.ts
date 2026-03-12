@@ -24,6 +24,7 @@ export {
   useTournamentRegistrations,
   useRegisterForTournament,
   useHostAddSquad,
+  useWildCardAdd,
   useUpdateRegistrationStatus,
   useWithdrawFromTournament,
   useDeleteRegistration,

@@ -53,6 +53,7 @@ import {
   Layers,
   Coins,
   RotateCcw,
+  Zap,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {

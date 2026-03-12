@@ -1393,6 +1393,14 @@ export type Database = {
         Args: { p_match_slots: Json; p_token: string }
         Returns: Json
       }
+      rpc_wild_card_add: {
+        Args: {
+          p_match_id: string
+          p_squad_id: string
+          p_tournament_id: string
+        }
+        Returns: string
+      }
       rpc_withdraw_squad_with_forfeits: {
         Args: {
           p_registration_id: string

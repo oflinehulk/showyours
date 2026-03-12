@@ -20,6 +20,7 @@ export interface MatchSchedulingInfo {
   group_id: string | null;
   scheduled_time: string | null;
   status: string;
+  best_of: number;
   opponent_name: string | null;
   opponent_id: string | null;
   my_slots: { date: string; time: string }[];

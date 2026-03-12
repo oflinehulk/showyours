@@ -1017,11 +1017,16 @@ function M6BracketView({
                     const bye = isByeMatch(match);
                     if (bye) {
                       const advancingTeam = match.squad_a || match.squad_b;
+                      const canWildCard = onWildCard && bracketType === 'losers' && lbRound1 != null && match.round === lbRound1;
                       return (
                         <div
                           key={match.id}
                           style={{ height: `${MATCH_H}px` }}
-                          className="rounded border border-dashed border-muted-foreground/15 bg-[#0a0a0a] flex items-center justify-between px-3 opacity-60"
+                          className={cn(
+                            "rounded border border-dashed border-muted-foreground/15 bg-[#0a0a0a] flex items-center justify-between px-3",
+                            canWildCard ? 'opacity-80 hover:opacity-100 cursor-pointer hover:border-yellow-500/30 transition-all' : 'opacity-60'
+                          )}
+                          onClick={canWildCard ? () => onWildCard(match) : undefined}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-4 w-4 shrink-0">
@@ -1032,9 +1037,16 @@ function M6BracketView({
                             </Avatar>
                             <span className="text-[11px] text-muted-foreground truncate">{advancingTeam?.name || 'TBD'}</span>
                           </div>
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/20 text-muted-foreground shrink-0">
-                            BYE
-                          </Badge>
+                          {canWildCard ? (
+                            <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-yellow-500/30 text-yellow-500 shrink-0 flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5" />
+                              Wild Card
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/20 text-muted-foreground shrink-0">
+                              BYE
+                            </Badge>
+                          )}
                         </div>
                       );
                     }

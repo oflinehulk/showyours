@@ -855,6 +855,8 @@ function M6BracketView({
   tournamentStatus,
   userSquadIds,
   onToss,
+  onWildCard,
+  lbRound1,
 }: {
   matches: TournamentMatch[];
   bracketType: 'winners' | 'losers';
@@ -869,6 +871,8 @@ function M6BracketView({
   tournamentStatus: string;
   userSquadIds: string[];
   onToss?: (m: TournamentMatch) => void;
+  onWildCard?: (match: TournamentMatch) => void;
+  lbRound1?: number;
 }) {
   const isMobile = useIsMobile();
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);

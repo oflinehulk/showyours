@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { WildCardDialog } from '@/components/tournament/WildCardDialog';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ import {
   Layers,
   Coins,
   RotateCcw,
+  Zap,
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -580,6 +582,8 @@ function EliminationStageView({
   userSquadIds: string[];
   onToss?: (m: TournamentMatch) => void;
 }) {
+  const [wildCardMatch, setWildCardMatch] = useState<TournamentMatch | null>(null);
+
   if (stageMatches.length === 0) {
     return (
       <GlowCard className="p-8 text-center">
@@ -596,6 +600,15 @@ function EliminationStageView({
   const losersMatches = stageMatches.filter(m => m.bracket_type === 'losers');
   const semiFinalsMatches = stageMatches.filter(m => m.bracket_type === 'semi_finals');
   const finalsMatches = stageMatches.filter(m => m.bracket_type === 'finals');
+
+  // Determine LB Round 1 for wild card eligibility
+  const lbRound1 = losersMatches.length > 0
+    ? Math.min(...losersMatches.map(m => m.round))
+    : 0;
+
+  const handleWildCard = isHost ? (match: TournamentMatch) => {
+    setWildCardMatch(match);
+  } : undefined;
 
   // Build global match numbering for M6-style labels
   const globalMatchMap = buildGlobalMatchMap(winnersMatches, losersMatches, semiFinalsMatches, finalsMatches);
@@ -690,6 +703,8 @@ function EliminationStageView({
             onMatchClick={onMatchClick}
             onDispute={onDispute}
             onResolve={onResolve}
+            onWildCard={handleWildCard}
+            lbRound1={lbRound1}
             {...sharedProps}
           />
         </GlowCard>
@@ -764,6 +779,14 @@ function EliminationStageView({
           </div>
         </GlowCard>
       )}
+
+      {/* Wild Card Dialog */}
+      <WildCardDialog
+        open={!!wildCardMatch}
+        onOpenChange={(open) => { if (!open) setWildCardMatch(null); }}
+        tournamentId={tournamentId}
+        match={wildCardMatch}
+      />
     </div>
   );
 }
@@ -840,6 +863,8 @@ function M6BracketView({
   tournamentStatus,
   userSquadIds,
   onToss,
+  onWildCard,
+  lbRound1,
 }: {
   matches: TournamentMatch[];
   bracketType: 'winners' | 'losers';
@@ -854,6 +879,8 @@ function M6BracketView({
   tournamentStatus: string;
   userSquadIds: string[];
   onToss?: (m: TournamentMatch) => void;
+  onWildCard?: (match: TournamentMatch) => void;
+  lbRound1?: number;
 }) {
   const isMobile = useIsMobile();
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b);
@@ -908,6 +935,7 @@ function M6BracketView({
                   <div className="flex flex-wrap gap-1.5">
                     {byeMatches.map(m => {
                       const advancingTeam = m.squad_a || m.squad_b;
+                      const canWildCard = onWildCard && bracketType === 'losers' && lbRound1 != null && m.round === lbRound1;
                       return (
                         <div key={m.id} className="flex items-center gap-1.5 bg-[#0a0a0a] rounded px-2 py-1">
                           <Avatar className="h-4 w-4 shrink-0">
@@ -917,7 +945,17 @@ function M6BracketView({
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-[11px] text-muted-foreground">{advancingTeam?.name || 'TBD'}</span>
-                          <CheckCircle className="w-3 h-3 text-green-500/60" />
+                          {canWildCard ? (
+                            <button
+                              onClick={() => onWildCard(m)}
+                              className="flex items-center gap-0.5 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors ml-1"
+                            >
+                              <Zap className="w-3 h-3" />
+                              <span>Wild Card</span>
+                            </button>
+                          ) : (
+                            <CheckCircle className="w-3 h-3 text-green-500/60" />
+                          )}
                         </div>
                       );
                     })}
@@ -979,11 +1017,16 @@ function M6BracketView({
                     const bye = isByeMatch(match);
                     if (bye) {
                       const advancingTeam = match.squad_a || match.squad_b;
+                      const canWildCard = onWildCard && bracketType === 'losers' && lbRound1 != null && match.round === lbRound1;
                       return (
                         <div
                           key={match.id}
                           style={{ height: `${MATCH_H}px` }}
-                          className="rounded border border-dashed border-muted-foreground/15 bg-[#0a0a0a] flex items-center justify-between px-3 opacity-60"
+                          className={cn(
+                            "rounded border border-dashed border-muted-foreground/15 bg-[#0a0a0a] flex items-center justify-between px-3",
+                            canWildCard ? 'opacity-80 hover:opacity-100 cursor-pointer hover:border-yellow-500/30 transition-all' : 'opacity-60'
+                          )}
+                          onClick={canWildCard ? () => onWildCard(match) : undefined}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar className="h-4 w-4 shrink-0">
@@ -994,9 +1037,16 @@ function M6BracketView({
                             </Avatar>
                             <span className="text-[11px] text-muted-foreground truncate">{advancingTeam?.name || 'TBD'}</span>
                           </div>
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/20 text-muted-foreground shrink-0">
-                            BYE
-                          </Badge>
+                          {canWildCard ? (
+                            <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-yellow-500/30 text-yellow-500 shrink-0 flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5" />
+                              Wild Card
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 border-muted-foreground/20 text-muted-foreground shrink-0">
+                              BYE
+                            </Badge>
+                          )}
                         </div>
                       );
                     }

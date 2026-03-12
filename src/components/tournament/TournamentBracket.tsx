@@ -927,6 +927,7 @@ function M6BracketView({
                   <div className="flex flex-wrap gap-1.5">
                     {byeMatches.map(m => {
                       const advancingTeam = m.squad_a || m.squad_b;
+                      const canWildCard = onWildCard && bracketType === 'losers' && lbRound1 != null && m.round === lbRound1;
                       return (
                         <div key={m.id} className="flex items-center gap-1.5 bg-[#0a0a0a] rounded px-2 py-1">
                           <Avatar className="h-4 w-4 shrink-0">
@@ -936,7 +937,17 @@ function M6BracketView({
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-[11px] text-muted-foreground">{advancingTeam?.name || 'TBD'}</span>
-                          <CheckCircle className="w-3 h-3 text-green-500/60" />
+                          {canWildCard ? (
+                            <button
+                              onClick={() => onWildCard(m)}
+                              className="flex items-center gap-0.5 text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors ml-1"
+                            >
+                              <Zap className="w-3 h-3" />
+                              <span>Wild Card</span>
+                            </button>
+                          ) : (
+                            <CheckCircle className="w-3 h-3 text-green-500/60" />
+                          )}
                         </div>
                       );
                     })}

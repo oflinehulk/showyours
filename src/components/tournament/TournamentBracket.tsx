@@ -703,6 +703,8 @@ function EliminationStageView({
             onMatchClick={onMatchClick}
             onDispute={onDispute}
             onResolve={onResolve}
+            onWildCard={handleWildCard}
+            lbRound1={lbRound1}
             {...sharedProps}
           />
         </GlowCard>

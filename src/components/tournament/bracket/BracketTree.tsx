@@ -142,7 +142,7 @@ export function BracketTree({
                   <div
                     key={match.id}
                     className="absolute left-0"
-                    style={{ top: `${top}px`, width: `${CARD_W}px` }}
+                    style={{ top: `${top}px`, width: `${CARD_W}px`, height: `${MATCH_H}px` }}
                   >
                     <BracketMatchCard
                       match={match}

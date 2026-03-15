@@ -547,6 +547,15 @@ export async function advanceLoserToLosersBracket(
 
   if (!loserId) return;
 
+  // Skip entirely if no losers bracket exists (e.g., single elimination)
+  const { count: lbCount } = await supabase
+    .from('tournament_matches')
+    .select('id', { count: 'exact', head: true })
+    .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'losers')
+    .limit(1);
+  if (!lbCount || lbCount === 0) return;
+
   const { round, match_number, stage_id } = completedMatch;
   const k = await fetchStageK(stage_id);
 

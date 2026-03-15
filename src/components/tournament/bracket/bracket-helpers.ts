@@ -1,4 +1,16 @@
+import { format } from 'date-fns';
 import type { TournamentMatch } from '@/lib/tournament-types';
+
+export function safeFormatDate(dateStr: string | null | undefined, fmt: string): string | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return format(d, fmt);
+  } catch {
+    return null;
+  }
+}
 
 export function isByeMatch(match: TournamentMatch): boolean {
   // A real bye is a match that was auto-completed with only one team

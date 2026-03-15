@@ -37,6 +37,20 @@ export function generateSingleEliminationBracket(
   const bo = opts?.defaultBestOf ?? 1;
   const fbo = opts?.finalsBestOf ?? 5;
 
+  // Special case: exactly 2 teams = single finals match
+  if (totalRounds <= 1) {
+    matches.push({
+      ...baseMatch(tournamentId, opts),
+      round: 1,
+      match_number: 1,
+      bracket_type: 'finals',
+      squad_a_id: squadIds[0] ?? null,
+      squad_b_id: squadIds[1] ?? null,
+      best_of: fbo,
+    } as MatchInsert);
+    return matches;
+  }
+
   // Pad to power of 2
   const paddedLength = Math.pow(2, totalRounds);
   const padded: (string | null)[] = [...squadIds];
@@ -89,6 +103,11 @@ export function generateDoubleEliminationBracket(
 ): MatchInsert[] {
   if (squadIds.filter(Boolean).length < 2) {
     throw new Error('Need at least 2 teams to generate a bracket');
+  }
+
+  // 2-team DE reduces to single elimination
+  if (squadIds.filter(Boolean).length === 2) {
+    return generateSingleEliminationBracket(tournamentId, squadIds, opts);
   }
   const totalRounds = Math.ceil(Math.log2(squadIds.length));
   const paddedLength = Math.pow(2, totalRounds);

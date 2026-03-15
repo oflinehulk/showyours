@@ -20,8 +20,8 @@ import {
   Coins,
   RotateCcw,
 } from 'lucide-react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { safeFormatDate } from './bracket-helpers';
 import {
   useUpdateMatchCheckIn,
   useForfeitMatch,
@@ -127,7 +127,7 @@ export function MatchCard({
       <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
         <Clock className="w-3 h-3" />
         {match.scheduled_time
-          ? format(new Date(match.scheduled_time), 'MMM d, h:mm a')
+          ? safeFormatDate(match.scheduled_time, 'MMM d, h:mm a') ?? 'TBA'
           : 'TBA'}
       </p>
 

@@ -63,6 +63,12 @@ export function MultiStageBracket({
     onToss: (match: TournamentMatch) => setTossMatch(match),
   };
 
+  // Derive fresh match data from allMatches to avoid stale dialog state
+  const freshSelectedMatch = selectedMatch ? allMatches.find(m => m.id === selectedMatch.id) ?? selectedMatch : null;
+  const freshDisputeMatch = disputeMatch ? allMatches.find(m => m.id === disputeMatch.id) ?? disputeMatch : null;
+  const freshResolveMatch = resolveMatch ? allMatches.find(m => m.id === resolveMatch.id) ?? resolveMatch : null;
+  const freshTossMatch = tossMatch ? allMatches.find(m => m.id === tossMatch.id) ?? tossMatch : null;
+
   return (
     <div className="space-y-6">
       {/* Stage Tabs */}
@@ -121,7 +127,7 @@ export function MultiStageBracket({
 
       {/* Score Edit Sheet */}
       <ScoreEditSheet
-        match={selectedMatch}
+        match={freshSelectedMatch}
         tournamentId={tournament.id}
         isHost={isHost}
         canEdit={isHost && (tournament.status === 'ongoing' || tournament.status === 'bracket_generated')}
@@ -131,7 +137,7 @@ export function MultiStageBracket({
 
       {/* Dispute Dialog */}
       <DisputeDialog
-        match={disputeMatch}
+        match={freshDisputeMatch}
         tournamentId={tournament.id}
         open={!!disputeMatch}
         onOpenChange={(open) => { if (!open) setDisputeMatch(null); }}
@@ -139,18 +145,18 @@ export function MultiStageBracket({
 
       {/* Resolve Dispute Dialog */}
       <ResolveDisputeDialog
-        match={resolveMatch}
+        match={freshResolveMatch}
         tournamentId={tournament.id}
         open={!!resolveMatch}
         onOpenChange={(open) => { if (!open) setResolveMatch(null); }}
       />
 
       {/* Coin Toss Overlay */}
-      {tossMatch && tossMatch.squad_a && tossMatch.squad_b && (
+      {freshTossMatch && freshTossMatch.squad_a && freshTossMatch.squad_b && (
         <CoinTossOverlay
-          match={tossMatch}
-          squadA={tossMatch.squad_a}
-          squadB={tossMatch.squad_b}
+          match={freshTossMatch}
+          squadA={freshTossMatch.squad_a}
+          squadB={freshTossMatch.squad_b}
           tournamentId={tournament.id}
           onClose={() => setTossMatch(null)}
         />

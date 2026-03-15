@@ -25,6 +25,7 @@ export function useTournamentRealtime(tournamentId: string | undefined) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
+          queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
         }
       )
       .on(
@@ -37,6 +38,31 @@ export function useTournamentRealtime(tournamentId: string | undefined) {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: tournamentKeys.registrations(tournamentId) });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tournament_stages',
+          filter: `tournament_id=eq.${tournamentId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: tournamentKeys.stages(tournamentId) });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tournaments',
+          filter: `id=eq.${tournamentId}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(tournamentId) });
+          queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
         }
       )
       .subscribe();

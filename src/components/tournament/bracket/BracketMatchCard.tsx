@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CheckCircle, AlertCircle, AlertTriangle, Clock, Flag } from 'lucide-react';
-import { format } from 'date-fns';
+import { safeFormatDate } from './bracket-helpers';
 import type { TournamentMatch, TournamentSquad } from '@/lib/tournament-types';
 
 interface BracketMatchCardProps {
@@ -25,9 +25,16 @@ export function BracketMatchCard({
   const isOngoing = match.status === 'ongoing';
   const isDisputed = match.status === 'disputed';
 
+  const teamAName = match.squad_a?.name || 'TBD';
+  const teamBName = match.squad_b?.name || 'TBD';
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Match: ${teamAName} vs ${teamBName}${isCompleted ? ' (Completed)' : isOngoing ? ' (Live)' : ''}`}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       style={{ width: `${cardWidth}px` }}
       className={cn(
         'rounded-lg border bg-[#111] cursor-pointer transition-all overflow-hidden select-none',
@@ -52,10 +59,10 @@ export function BracketMatchCard({
           <span className="text-[9px] text-muted-foreground/70">Bo{match.best_of}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          {!compact && match.scheduled_time && (
+          {!compact && match.scheduled_time && safeFormatDate(match.scheduled_time, 'MMM d') && (
             <span className="text-[9px] text-muted-foreground/60 flex items-center gap-0.5">
               <Clock className="w-2.5 h-2.5" />
-              {format(new Date(match.scheduled_time), 'MMM d')}
+              {safeFormatDate(match.scheduled_time, 'MMM d')}
             </span>
           )}
           {isCompleted && <CheckCircle className="w-3 h-3 text-green-400" />}

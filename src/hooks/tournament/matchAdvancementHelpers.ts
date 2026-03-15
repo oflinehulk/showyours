@@ -143,12 +143,15 @@ async function findDownstreamWinnerTarget(
         if (next && (next as Record<string, unknown>)[slot] === winner_id) {
           return { match: next as unknown as TournamentMatch, slot };
         }
-      } else if (round === k || offset % 2 === 1) {
+      } else if (round === k || offset % 2 === 0) {
+        // round===k: passthrough to first mixed round
+        // even offset (pure round): passthrough to next mixed round (same count)
         const next = await findNextMatch(tournamentId, round + 1, match_number, ['losers'], stage_id);
         if (next && next.squad_a_id === winner_id) {
           return { match: next as unknown as TournamentMatch, slot: 'squad_a_id' };
         }
       } else {
+        // odd offset (mixed round): halving to next pure round (half count)
         const nextMN = Math.ceil(match_number / 2);
         const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
         const next = await findNextMatch(tournamentId, round + 1, nextMN, ['losers'], stage_id);
@@ -377,18 +380,7 @@ export async function advanceWinnerToNextRound(
           if (advErr) throw new Error(advErr.message);
         }
       } else if (offset % 2 === 1) {
-        const nextMatch = await findNextMatch(
-          tournamentId, round + 1, match_number, ['losers'], stage_id
-        );
-
-        if (nextMatch) {
-          const { error: advErr } = await supabase
-            .from('tournament_matches')
-            .update({ squad_a_id: winner_id })
-            .eq('id', nextMatch.id);
-          if (advErr) throw new Error(advErr.message);
-        }
-      } else {
+        // Mixed round → next is pure (half matches) → use SE halving
         const nextRound = round + 1;
         const nextMatchNumber = Math.ceil(match_number / 2);
         const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
@@ -421,6 +413,19 @@ export async function advanceWinnerToNextRound(
               if (advErr) throw new Error(advErr.message);
             }
           }
+        }
+      } else {
+        // Pure round → next is mixed (same match count) → use passthrough
+        const nextMatch = await findNextMatch(
+          tournamentId, round + 1, match_number, ['losers'], stage_id
+        );
+
+        if (nextMatch) {
+          const { error: advErr } = await supabase
+            .from('tournament_matches')
+            .update({ squad_a_id: winner_id })
+            .eq('id', nextMatch.id);
+          if (advErr) throw new Error(advErr.message);
         }
       }
     } else {

@@ -44,8 +44,8 @@ export function BracketTree({
 
   // Layout constants
   const CARD_W = isMobile ? 175 : 230;
-  const MATCH_H = isMobile ? 72 : 76;
-  const BASE_GAP = isMobile ? 8 : 10;
+  const MATCH_H = isMobile ? 88 : 96;
+  const BASE_GAP = isMobile ? 8 : 12;
   const HEADER_H = 32;
   const CONNECTOR_W = isMobile ? 20 : 28;
 

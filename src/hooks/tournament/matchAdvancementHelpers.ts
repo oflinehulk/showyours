@@ -89,6 +89,7 @@ export async function revertWinnerAdvancement(
   if (!winner_id) return;
 
   if (bracket_type === 'winners') {
+    // 1. Remove winner from next WB match
     const nextRound = round + 1;
     const nextMatchNumber = Math.ceil(match_number / 2);
     const slot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
@@ -102,6 +103,55 @@ export async function revertWinnerAdvancement(
         .from('tournament_matches')
         .update({ [slot]: null })
         .eq('id', nextMatch.id);
+    }
+
+    // 2. Remove loser from the LB match they were dropped into
+    const loserId = winner_id === completedMatch.squad_a_id
+      ? completedMatch.squad_b_id
+      : completedMatch.squad_a_id;
+
+    if (loserId) {
+      const k = await fetchStageK(stage_id);
+
+      if (k > 0) {
+        // Seeded DE: check if this was the WB Final (loser goes to SF)
+        const nextWbMatch = await findNextMatch(
+          tournamentId, nextRound, nextMatchNumber, ['winners'], stage_id
+        );
+
+        if (!nextWbMatch) {
+          // WB Final loser -> Semi-Finals squad_a
+          const sfMatch = await findSemiFinals(tournamentId, stage_id);
+          if (sfMatch && sfMatch.squad_a_id === loserId) {
+            await supabase.from('tournament_matches').update({ squad_a_id: null }).eq('id', sfMatch.id);
+          }
+        } else {
+          // Loser -> LB round k + 2*round - 1, same match_number, squad_b slot
+          const lbRound = k + 2 * round - 1;
+          const lbMatch = await findNextMatch(tournamentId, lbRound, match_number, ['losers'], stage_id);
+          if (lbMatch && lbMatch.squad_b_id === loserId) {
+            await supabase.from('tournament_matches').update({ squad_b_id: null }).eq('id', lbMatch.id);
+          }
+        }
+      } else {
+        // Standard DE
+        if (round === 1) {
+          // WB R1 losers -> LB R1: ceil(match_number/2), slot by odd/even
+          const lbMatchNumber = Math.ceil(match_number / 2);
+          const lbSlot = match_number % 2 === 1 ? 'squad_a_id' : 'squad_b_id';
+          const lbMatch = await findNextMatch(tournamentId, 1, lbMatchNumber, ['losers'], stage_id);
+          if (lbMatch && (lbMatch as Record<string, unknown>)[lbSlot] === loserId) {
+            await supabase.from('tournament_matches').update({ [lbSlot]: null }).eq('id', lbMatch.id);
+          }
+        } else {
+          // WB R2+ losers -> LB round 2*(round-1), same match_number, squad_b slot
+          const lbRound = 2 * (round - 1);
+          const lbMatch = await findNextMatch(tournamentId, lbRound, match_number, ['losers'], stage_id);
+          if (lbMatch && lbMatch.squad_b_id === loserId) {
+            await supabase.from('tournament_matches').update({ squad_b_id: null }).eq('id', lbMatch.id);
+          }
+        }
+      }
     }
   }
 

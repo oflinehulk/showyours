@@ -1,9 +1,12 @@
 import type { TournamentMatch } from '@/lib/tournament-types';
 
 export function isByeMatch(match: TournamentMatch): boolean {
+  // A real bye is a match that was auto-completed with only one team
+  // (from bracket padding). Pending matches with one empty slot are
+  // just waiting for advancement — NOT byes.
   return (
-    (!match.squad_a_id || !match.squad_b_id) &&
-    (match.status === 'completed' || match.status === 'pending')
+    match.status === 'completed' &&
+    (!match.squad_a_id || !match.squad_b_id)
   );
 }
 

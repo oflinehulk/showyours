@@ -144,7 +144,7 @@ export function EliminationStageView({
             )}
 
             {/* Divider between UB and LB */}
-            {isDE && (winnersMatches.length > 0 || losersMatches.length > 0) && (
+            {isDE && winnersMatches.length > 0 && losersMatches.length > 0 && (
               <div className="flex items-center gap-3 my-4 sticky left-0 pr-4">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-sm bg-[#FF4500]/30" />

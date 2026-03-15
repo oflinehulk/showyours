@@ -163,8 +163,8 @@ export function MatchCard({
       <div className="mt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-1">
           {(() => {
-            const showForfeitA = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.squad_a_checked_in && match.squad_b_checked_in;
-            const showForfeitB = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && match.squad_a_checked_in && !match.squad_b_checked_in;
+            const showForfeitA = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id;
+            const showForfeitB = isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id;
             const showDispute = canDispute;
             const showResolve = isHost && match.status === 'disputed';
             const showDoToss = onToss && isHost && isOngoing && match.status === 'pending' && match.squad_a_id && match.squad_b_id && !match.toss_completed_at;

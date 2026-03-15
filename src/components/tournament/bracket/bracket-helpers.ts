@@ -45,7 +45,7 @@ export function getWBRoundLabel(round: number, totalRounds: number): string {
   if (totalRounds <= 1) return 'Final';
   if (round === totalRounds) return 'UB Final';
   if (round === totalRounds - 1) return 'UB Semi-Final';
-  if (round === totalRounds - 2 && totalRounds > 3) return 'UB Quarter-Final';
+  if (round === totalRounds - 2 && totalRounds >= 3) return 'UB Quarter-Final';
   return `UB Round ${round}`;
 }
 

@@ -42,12 +42,7 @@ export function FinalsSection({
           {semiFinalsMatches.map((match) => {
             const gn = globalMatchMap.get(match.id);
             return (
-              <div key={match.id} className="flex flex-col items-center gap-1">
-                {gn && (
-                  <span className="text-[9px] font-display font-bold text-[#FF6B35] uppercase tracking-wider">
-                    M{gn.globalNumber}
-                  </span>
-                )}
+              <div key={match.id}>
                 <BracketMatchCard
                   match={match}
                   globalNumber={gn?.globalNumber}
@@ -86,11 +81,6 @@ export function FinalsSection({
 
             return (
               <div key={match.id} className="flex flex-col items-center gap-1.5">
-                {gn && (
-                  <span className="text-[9px] font-display font-bold text-yellow-500 uppercase tracking-wider">
-                    M{gn.globalNumber}
-                  </span>
-                )}
                 <div className={cn(
                   'rounded-xl p-[2px]',
                   'bg-gradient-to-br from-yellow-500/30 via-[#FF4500]/20 to-yellow-500/30',

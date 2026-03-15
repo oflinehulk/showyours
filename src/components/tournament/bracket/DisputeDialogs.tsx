@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +28,10 @@ export function DisputeDialog({
 }) {
   const [reason, setReason] = useState('');
   const raiseDispute = useRaiseDispute();
+
+  useEffect(() => {
+    if (open) setReason('');
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!match || !reason.trim()) return;
@@ -96,6 +100,14 @@ export function ResolveDisputeDialog({
   const [newScoreA, setNewScoreA] = useState('');
   const [newScoreB, setNewScoreB] = useState('');
   const resolveDispute = useResolveDispute();
+
+  useEffect(() => {
+    if (open) {
+      setNotes('');
+      setNewScoreA('');
+      setNewScoreB('');
+    }
+  }, [open]);
 
   const handleResolve = async () => {
     if (!match || !notes.trim()) return;

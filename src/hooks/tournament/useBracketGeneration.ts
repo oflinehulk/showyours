@@ -22,6 +22,17 @@ export function useGenerateBracket() {
       tournamentId: string;
       format: TournamentFormat;
     }) => {
+      // Guard: verify tournament is in a valid state for bracket generation
+      const { data: tournament, error: tErr } = await supabase
+        .from('tournaments')
+        .select('status')
+        .eq('id', tournamentId)
+        .single();
+      if (tErr) throw new Error(tErr.message);
+      if (!['registration_closed', 'bracket_generated'].includes(tournament.status)) {
+        throw new Error(`Cannot generate bracket in ${tournament.status} state`);
+      }
+
       const { data: registrations, error: regError } = await supabase
         .from('tournament_registrations')
         .select('tournament_squad_id, seed')
@@ -85,6 +96,8 @@ export function useGenerateBracket() {
       queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(tournamentId) });
       queryClient.invalidateQueries({ queryKey: tournamentKeys.matches(tournamentId) });
       queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.stages(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: ['stage-matches'] });
     },
   });
 }
@@ -94,6 +107,17 @@ export function useResetBracket() {
 
   return useMutation({
     mutationFn: async (tournamentId: string) => {
+      // Guard: don't allow resetting completed tournaments
+      const { data: tournament, error: tErr } = await supabase
+        .from('tournaments')
+        .select('status')
+        .eq('id', tournamentId)
+        .single();
+      if (tErr) throw new Error(tErr.message);
+      if (tournament.status === 'completed') {
+        throw new Error('Cannot reset bracket of a completed tournament');
+      }
+
       const { error: deleteError } = await supabase
         .from('tournament_matches')
         .delete()

@@ -98,6 +98,7 @@ export function useUpdateRegistrationStatus() {
     },
     onSuccess: ({ tournamentId }) => {
       queryClient.invalidateQueries({ queryKey: tournamentKeys.registrations(tournamentId) });
+      queryClient.invalidateQueries({ queryKey: tournamentKeys.all });
     },
   });
 }
@@ -109,7 +110,7 @@ export function useWithdrawFromTournament() {
     mutationFn: async ({ registrationId, tournamentId }: { registrationId: string; tournamentId: string }) => {
       const { error } = await supabase
         .from('tournament_registrations')
-        .delete()
+        .update({ status: 'withdrawn' })
         .eq('id', registrationId);
 
       if (error) throw new Error(error.message);

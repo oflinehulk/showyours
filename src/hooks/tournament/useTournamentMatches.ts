@@ -45,13 +45,15 @@ export function useGlobalUpcomingMatches(limit = 10) {
         .in('status', ['pending', 'ongoing'])
         .not('scheduled_time', 'is', null)
         .order('scheduled_time', { ascending: true })
-        .limit(limit);
+        .limit(limit * 3); // Fetch extra to account for client-side filtering
 
       if (error) throw new Error(error.message);
       type MatchWithTournament = TournamentMatch & { tournament?: { id: string; name: string; status: string } | null };
-      return (data as MatchWithTournament[] || []).filter(
-        (m) => m.tournament && ['bracket_generated', 'ongoing'].includes(m.tournament.status)
-      ) as (TournamentMatch & { tournament: { id: string; name: string; status: string } })[];
+      return ((data as MatchWithTournament[]) || [])
+        .filter(
+          (m) => m.tournament && ['bracket_generated', 'ongoing'].includes(m.tournament.status)
+        )
+        .slice(0, limit) as (TournamentMatch & { tournament: { id: string; name: string; status: string } })[];
     },
   });
 }
@@ -79,7 +81,7 @@ export function useUpdateMatchResult() {
       // Guard: verify match is in a submittable state
       const { data: currentMatch, error: statusErr } = await supabase
         .from('tournament_matches')
-        .select('status')
+        .select('status, updated_at')
         .eq('id', matchId)
         .single();
       if (statusErr) throw new Error(statusErr.message);
@@ -101,10 +103,16 @@ export function useUpdateMatchResult() {
           completed_at: new Date().toISOString(),
         })
         .eq('id', matchId)
+        .eq('updated_at', currentMatch.updated_at)
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new Error('This match was modified by someone else. Please refresh and try again.');
+        }
+        throw new Error(error.message);
+      }
 
       await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
 
@@ -168,7 +176,7 @@ export function useForfeitMatch() {
 
       const { data: match, error: fetchErr } = await supabase
         .from('tournament_matches')
-        .select('squad_a_id, squad_b_id')
+        .select('squad_a_id, squad_b_id, updated_at')
         .eq('id', matchId)
         .single();
       if (fetchErr) throw new Error(fetchErr.message);
@@ -184,10 +192,16 @@ export function useForfeitMatch() {
           completed_at: new Date().toISOString(),
         })
         .eq('id', matchId)
+        .eq('updated_at', match.updated_at)
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          throw new Error('This match was modified by someone else. Please refresh and try again.');
+        }
+        throw new Error(error.message);
+      }
 
       await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
 
@@ -277,12 +291,14 @@ export function useCreateTiebreakerMatch() {
       squadBId: string;
       bestOf?: 1 | 3 | 5;
     }) => {
-      // Get the max match_number for this group to assign next number
+      // Get the max match_number across all tiebreakers in this stage to avoid collisions
       const { data: existing, error: fetchErr } = await supabase
         .from('tournament_matches')
         .select('match_number')
         .eq('tournament_id', tournamentId)
-        .eq('group_id', groupId)
+        .eq('stage_id', stageId)
+        .eq('round', 99)
+        .eq('bracket_type', 'winners')
         .order('match_number', { ascending: false })
         .limit(1);
 
@@ -335,12 +351,14 @@ export function useCreateMiniRRTiebreaker() {
       squadIds: [string, string, string]; // exactly 3 teams
       bestOf?: 1 | 3 | 5;
     }) => {
-      // Get the max match_number for this group
+      // Get the max match_number across all tiebreakers in this stage to avoid collisions
       const { data: existing, error: fetchErr } = await supabase
         .from('tournament_matches')
         .select('match_number')
         .eq('tournament_id', tournamentId)
-        .eq('group_id', groupId)
+        .eq('stage_id', stageId)
+        .eq('round', 99)
+        .eq('bracket_type', 'winners')
         .order('match_number', { ascending: false })
         .limit(1);
 

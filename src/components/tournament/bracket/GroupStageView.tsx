@@ -152,6 +152,7 @@ export function GroupStageView({
                     .sort((a, b) => {
                       if (a.round === 99 && b.round !== 99) return 1;
                       if (a.round !== 99 && b.round === 99) return -1;
+                      if (a.round !== b.round) return a.round - b.round;
                       return a.match_number - b.match_number;
                     })
                     .map((match) => (

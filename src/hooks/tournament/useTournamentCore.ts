@@ -142,21 +142,45 @@ export function useDeleteTournament() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from('tournament_matches').delete().eq('tournament_id', id);
-      await supabase.from('roster_changes').delete().eq('tournament_id', id);
-      await supabase.from('tournament_invitations').delete().eq('tournament_id', id);
+      const { error: matchErr } = await supabase.from('tournament_matches').delete().eq('tournament_id', id);
+      if (matchErr) throw new Error(`Failed to delete matches: ${matchErr.message}`);
 
-      const { data: registrations } = await supabase
+      const { error: rosterErr } = await supabase.from('roster_changes').delete().eq('tournament_id', id);
+      if (rosterErr) throw new Error(`Failed to delete roster changes: ${rosterErr.message}`);
+
+      const { error: invErr } = await supabase.from('tournament_invitations').delete().eq('tournament_id', id);
+      if (invErr) throw new Error(`Failed to delete invitations: ${invErr.message}`);
+
+      // Clean up stages, groups, group_teams
+      const { data: stages } = await supabase.from('tournament_stages').select('id').eq('tournament_id', id);
+      if (stages && stages.length > 0) {
+        const stageIds = stages.map(s => s.id);
+        const { data: groups } = await supabase.from('tournament_groups').select('id').in('stage_id', stageIds);
+        if (groups && groups.length > 0) {
+          const { error: gtErr } = await supabase.from('tournament_group_teams').delete().in('group_id', groups.map(g => g.id));
+          if (gtErr) throw new Error(`Failed to delete group teams: ${gtErr.message}`);
+          const { error: gErr } = await supabase.from('tournament_groups').delete().in('stage_id', stageIds);
+          if (gErr) throw new Error(`Failed to delete groups: ${gErr.message}`);
+        }
+        const { error: sErr } = await supabase.from('tournament_stages').delete().eq('tournament_id', id);
+        if (sErr) throw new Error(`Failed to delete stages: ${sErr.message}`);
+      }
+
+      const { data: registrations, error: regFetchErr } = await supabase
         .from('tournament_registrations')
         .select('tournament_squad_id')
         .eq('tournament_id', id);
+      if (regFetchErr) throw new Error(`Failed to fetch registrations: ${regFetchErr.message}`);
 
-      await supabase.from('tournament_registrations').delete().eq('tournament_id', id);
+      const { error: regDelErr } = await supabase.from('tournament_registrations').delete().eq('tournament_id', id);
+      if (regDelErr) throw new Error(`Failed to delete registrations: ${regDelErr.message}`);
 
       if (registrations && registrations.length > 0) {
         const squadIds = registrations.map(r => r.tournament_squad_id);
-        await supabase.from('tournament_squad_members').delete().in('tournament_squad_id', squadIds);
-        await supabase.from('tournament_squads').delete().in('id', squadIds);
+        const { error: memErr } = await supabase.from('tournament_squad_members').delete().in('tournament_squad_id', squadIds);
+        if (memErr) throw new Error(`Failed to delete squad members: ${memErr.message}`);
+        const { error: sqErr } = await supabase.from('tournament_squads').delete().in('id', squadIds);
+        if (sqErr) throw new Error(`Failed to delete squads: ${sqErr.message}`);
       }
 
       const { error } = await supabase.from('tournaments').delete().eq('id', id);

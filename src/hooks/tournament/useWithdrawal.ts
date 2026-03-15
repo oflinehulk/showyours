@@ -17,16 +17,6 @@ export function useWithdrawSquad() {
       squadId: string;
       tournamentId: string;
     }) => {
-      // Fetch matches that will be forfeited so we can advance winners client-side
-      const { data: matches, error: matchError } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .in('status', ['pending', 'ongoing'])
-        .or(`squad_a_id.eq.${squadId},squad_b_id.eq.${squadId}`);
-
-      if (matchError) throw new Error(matchError.message);
-
       // Atomic forfeit + withdrawal via RPC
       const { error } = await supabase.rpc('rpc_withdraw_squad_with_forfeits', {
         p_registration_id: registrationId,
@@ -36,23 +26,20 @@ export function useWithdrawSquad() {
 
       if (error) throw new Error(error.message);
 
-      // Advance winners client-side (DB lacks next_match_id columns)
-      for (const match of matches || []) {
-        const opponentId = match.squad_a_id === squadId ? match.squad_b_id : match.squad_a_id;
-        if (!opponentId) continue;
+      // Re-fetch forfeited matches with fresh data after RPC
+      const { data: forfeitedMatches, error: matchError } = await supabase
+        .from('tournament_matches')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('is_forfeit', true)
+        .eq('status', 'completed')
+        .or(`squad_a_id.eq.${squadId},squad_b_id.eq.${squadId}`);
 
-        const winsNeeded = Math.ceil((match.best_of || 1) / 2);
-        const completed: TournamentMatch = {
-          ...match,
-          winner_id: opponentId,
-          status: 'completed',
-          is_forfeit: true,
-          squad_a_score: opponentId === match.squad_a_id ? winsNeeded : 0,
-          squad_b_score: opponentId === match.squad_b_id ? winsNeeded : 0,
-          completed_at: new Date().toISOString(),
-        } as unknown as TournamentMatch;
+      if (matchError) throw new Error(matchError.message);
 
-        await advanceWinnerToNextRound(tournamentId, completed);
+      // Advance winners using fresh data
+      for (const match of forfeitedMatches || []) {
+        await advanceWinnerToNextRound(tournamentId, match as unknown as TournamentMatch);
       }
 
       return tournamentId;

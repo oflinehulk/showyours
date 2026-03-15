@@ -122,6 +122,11 @@ async function findDownstreamWinnerTarget(
     if (next && (next as Record<string, unknown>)[slot] === winner_id) {
       return { match: next as unknown as TournamentMatch, slot };
     }
+    // WB Final fallback: check if winner went to GF slot A
+    const gf = await findGrandFinals(tournamentId, stage_id);
+    if (gf && gf.squad_a_id === winner_id) {
+      return { match: gf as unknown as TournamentMatch, slot: 'squad_a_id' };
+    }
     return null;
   }
 
@@ -150,6 +155,15 @@ async function findDownstreamWinnerTarget(
         if (next && next.squad_a_id === winner_id) {
           return { match: next as unknown as TournamentMatch, slot: 'squad_a_id' };
         }
+        // LB champion fallback: check SF then GF
+        const sf = await findSemiFinals(tournamentId, stage_id);
+        if (sf && sf.squad_b_id === winner_id) {
+          return { match: sf as unknown as TournamentMatch, slot: 'squad_b_id' };
+        }
+        const gf2 = await findGrandFinals(tournamentId, stage_id);
+        if (gf2 && gf2.squad_b_id === winner_id) {
+          return { match: gf2 as unknown as TournamentMatch, slot: 'squad_b_id' };
+        }
       } else {
         // odd offset (mixed round): halving to next pure round (half count)
         const nextMN = Math.ceil(match_number / 2);
@@ -173,6 +187,11 @@ async function findDownstreamWinnerTarget(
         const next = await findNextMatch(tournamentId, round + 1, match_number, ['losers'], stage_id);
         if (next && next.squad_a_id === winner_id) {
           return { match: next as unknown as TournamentMatch, slot: 'squad_a_id' };
+        }
+        // LB champion fallback in standard DE: check GF
+        const gf = await findGrandFinals(tournamentId, stage_id);
+        if (gf && gf.squad_b_id === winner_id) {
+          return { match: gf as unknown as TournamentMatch, slot: 'squad_b_id' };
         }
       } else {
         const nextMN = Math.ceil(match_number / 2);
@@ -329,6 +348,16 @@ export async function advanceWinnerToNextRound(
         .update({ [slot]: winner_id })
         .eq('id', nextMatch.id);
       if (advErr) throw new Error(advErr.message);
+    } else {
+      // WB Final: no more WB rounds, advance winner to Grand Finals slot A
+      const gfMatch = await findGrandFinals(tournamentId, stage_id);
+      if (gfMatch) {
+        const { error: advErr } = await supabase
+          .from('tournament_matches')
+          .update({ squad_a_id: winner_id })
+          .eq('id', gfMatch.id);
+        if (advErr) throw new Error(advErr.message);
+      }
     }
 
     await advanceLoserToLosersBracket(tournamentId, completedMatch);
@@ -426,6 +455,25 @@ export async function advanceWinnerToNextRound(
             .update({ squad_a_id: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+        } else {
+          // LB Champion: no more LB rounds, advance to SF slot B (or GF slot B if no SF)
+          const sfMatch = await findSemiFinals(tournamentId, stage_id);
+          if (sfMatch) {
+            const { error: advErr } = await supabase
+              .from('tournament_matches')
+              .update({ squad_b_id: winner_id })
+              .eq('id', sfMatch.id);
+            if (advErr) throw new Error(advErr.message);
+          } else {
+            const gfMatch = await findGrandFinals(tournamentId, stage_id);
+            if (gfMatch) {
+              const { error: advErr } = await supabase
+                .from('tournament_matches')
+                .update({ squad_b_id: winner_id })
+                .eq('id', gfMatch.id);
+              if (advErr) throw new Error(advErr.message);
+            }
+          }
         }
       }
     } else {
@@ -442,6 +490,16 @@ export async function advanceWinnerToNextRound(
             .update({ squad_a_id: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+        } else {
+          // LB Champion in standard DE: advance to GF slot B
+          const gfMatch = await findGrandFinals(tournamentId, stage_id);
+          if (gfMatch) {
+            const { error: advErr } = await supabase
+              .from('tournament_matches')
+              .update({ squad_b_id: winner_id })
+              .eq('id', gfMatch.id);
+            if (advErr) throw new Error(advErr.message);
+          }
         }
       } else {
         const nextRound = round + 1;

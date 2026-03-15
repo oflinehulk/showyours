@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { TiptapEditor } from '@/components/TiptapEditor';
 import { TiptapViewer } from '@/components/TiptapViewer';
-import { TournamentBracket } from '@/components/tournament/TournamentBracket';
+import { TournamentBracket } from '@/components/tournament/bracket';
 import { TournamentRegistrations } from '@/components/tournament/TournamentRegistrations';
 import { TournamentRegistrationForm } from '@/components/tournament/TournamentRegistrationForm';
 import { TournamentHostControls } from '@/components/tournament/TournamentHostControls';

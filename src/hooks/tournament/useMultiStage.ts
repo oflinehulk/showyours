@@ -415,6 +415,18 @@ export function useCompleteStage() {
       stageId: string;
       tournamentId: string;
     }) => {
+      // Guard: verify all matches in this stage are completed
+      const { data: pendingMatches, error: checkErr } = await supabase
+        .from('tournament_matches')
+        .select('id')
+        .eq('stage_id', stageId)
+        .neq('status', 'completed')
+        .limit(1);
+      if (checkErr) throw new Error(checkErr.message);
+      if (pendingMatches && pendingMatches.length > 0) {
+        throw new Error('Cannot complete stage: not all matches have been completed');
+      }
+
       const { error } = await supabase
         .from('tournament_stages')
         .update({ status: 'completed' })

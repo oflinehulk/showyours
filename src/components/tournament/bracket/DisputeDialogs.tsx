@@ -104,6 +104,11 @@ export function ResolveDisputeDialog({
     const scoreA = hasNewScores ? parseInt(newScoreA) : undefined;
     const scoreB = hasNewScores ? parseInt(newScoreB) : undefined;
 
+    if (scoreA !== undefined && scoreB !== undefined && (isNaN(scoreA) || isNaN(scoreB))) {
+      toast.error('Scores must be valid numbers');
+      return;
+    }
+
     let newWinnerId: string | undefined;
     if (scoreA !== undefined && scoreB !== undefined && scoreA !== scoreB) {
       const winningSide = scoreA > scoreB ? match.squad_a_id : match.squad_b_id;

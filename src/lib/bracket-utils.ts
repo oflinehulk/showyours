@@ -790,6 +790,19 @@ function nextPow2(n: number): number {
   return Math.pow(2, Math.ceil(Math.log2(n)));
 }
 
+// Standard bracket seed order (distributes byes evenly next to top seeds)
+function generateStandardSeedOrder(size: number): number[] {
+  if (size === 1) return [0];
+  if (size === 2) return [0, 1];
+  const half = generateStandardSeedOrder(size / 2);
+  const result: number[] = [];
+  for (const seed of half) {
+    result.push(seed);
+    result.push(size - 1 - seed);
+  }
+  return result;
+}
+
 /** Compute the number of initial LB-only rounds before WB dropdowns merge in. */
 export function computeLBInitialRounds(ubCount: number, lbCount: number): number {
   if (lbCount === 0) return 0;
@@ -844,8 +857,12 @@ export function generateSeededDoubleEliminationBracket(
   while (ubPadded.length < pUb) ubPadded.push(null);
 
   const pLb = nextPow2(lbSquadIds.length);
-  const lbPadded: (string | null)[] = [...lbSquadIds];
-  while (lbPadded.length < pLb) lbPadded.push(null);
+  // Distribute LB byes via standard seeding so nulls are spread out (not clustered at end)
+  const lbSeedOrder = generateStandardSeedOrder(pLb);
+  const lbPadded: (string | null)[] = new Array(pLb).fill(null);
+  for (let i = 0; i < lbSquadIds.length; i++) {
+    lbPadded[lbSeedOrder[i]] = lbSquadIds[i];
+  }
 
   const k = computeLBInitialRounds(ubSquadIds.length, lbSquadIds.length);
   const totalLBRounds = k + 2 * (rUb - 1);

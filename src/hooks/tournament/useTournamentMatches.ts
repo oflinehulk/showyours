@@ -76,6 +76,20 @@ export function useUpdateMatchResult() {
       screenshotUrl?: string;
       tournamentId: string;
     }) => {
+      // Guard: verify match is in a submittable state
+      const { data: currentMatch, error: statusErr } = await supabase
+        .from('tournament_matches')
+        .select('status')
+        .eq('id', matchId)
+        .single();
+      if (statusErr) throw new Error(statusErr.message);
+      if (currentMatch.status === 'completed') {
+        throw new Error('This match has already been completed');
+      }
+      if (currentMatch.status === 'disputed') {
+        throw new Error('This match is under dispute and cannot be updated');
+      }
+
       const { data, error } = await supabase
         .from('tournament_matches')
         .update({

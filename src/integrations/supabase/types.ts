@@ -1329,6 +1329,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _cascade_reset_inner: {
+        Args: {
+          p_match_id: string
+          p_tournament_id: string
+          p_visited: string[]
+        }
+        Returns: {
+          reset_count: number
+          visited: string[]
+        }[]
+      }
       admin_get_user_emails: {
         Args: never
         Returns: {
@@ -1349,6 +1360,16 @@ export type Database = {
         Returns: boolean
       }
       normalize_mlbb_id: { Args: { p_input: string }; Returns: string }
+      rpc_advance_match_winner: {
+        Args: {
+          p_match_id: string
+          p_screenshot_url?: string
+          p_squad_a_score: number
+          p_squad_b_score: number
+          p_winner_id: string
+        }
+        Returns: Json
+      }
       rpc_approve_roster_change: {
         Args: { p_change_id: string }
         Returns: undefined
@@ -1356,6 +1377,14 @@ export type Database = {
       rpc_batch_seed_registrations: {
         Args: { p_tournament_id: string }
         Returns: undefined
+      }
+      rpc_cascade_reset_match: {
+        Args: { p_match_id: string; p_tournament_id: string }
+        Returns: number
+      }
+      rpc_delete_tournament_cascade: {
+        Args: { p_tournament_id: string }
+        Returns: number
       }
       rpc_get_scheduling_context: { Args: { p_token: string }; Returns: Json }
       rpc_host_add_squad: {
@@ -1391,6 +1420,17 @@ export type Database = {
       }
       rpc_submit_availability: {
         Args: { p_match_slots: Json; p_token: string }
+        Returns: Json
+      }
+      rpc_swap_team_atomic: {
+        Args: {
+          p_group_id: string
+          p_new_registration_id: string
+          p_new_squad_id: string
+          p_stage_id: string
+          p_tournament_id: string
+          p_withdrawn_squad_id: string
+        }
         Returns: Json
       }
       rpc_wild_card_add: {

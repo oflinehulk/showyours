@@ -13,7 +13,8 @@ function base64UrlDecode(str: string): Uint8Array {
   return new Uint8Array([...binary].map((c) => c.charCodeAt(0)));
 }
 
-function base64UrlEncode(buffer: ArrayBuffer): string {
+function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   return btoa(String.fromCharCode(...new Uint8Array(buffer)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")

@@ -106,7 +106,7 @@ async function createVapidAuthHeader(
   rawSig.set(r, 0);
   rawSig.set(s, 32);
 
-  const token = `${unsignedToken}.${base64UrlEncode(rawSig)}`;
+  const token = `${unsignedToken}.${base64UrlEncode(rawSig as Uint8Array)}`;
 
   return {
     authorization: `vapid t=${token}, k=${vapidPublicKey}`,

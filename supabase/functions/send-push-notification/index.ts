@@ -13,8 +13,9 @@ function base64UrlDecode(str: string): Uint8Array {
   return new Uint8Array([...binary].map((c) => c.charCodeAt(0)));
 }
 
-function base64UrlEncode(buffer: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
@@ -105,7 +106,7 @@ async function createVapidAuthHeader(
   rawSig.set(r, 0);
   rawSig.set(s, 32);
 
-  const token = `${unsignedToken}.${base64UrlEncode(rawSig)}`;
+  const token = `${unsignedToken}.${base64UrlEncode(rawSig as Uint8Array)}`;
 
   return {
     authorization: `vapid t=${token}, k=${vapidPublicKey}`,
@@ -133,7 +134,7 @@ async function encryptPayload(
   // Import client's public key
   const clientKey = await crypto.subtle.importKey(
     "raw",
-    clientPublicKey,
+    (clientPublicKey as Uint8Array).buffer,
     { name: "ECDH", namedCurve: "P-256" },
     false,
     []
@@ -162,7 +163,7 @@ async function encryptPayload(
   );
 
   const ikm = await crypto.subtle.deriveBits(
-    { name: "HKDF", hash: "SHA-256", salt: clientAuth, info: authInfo },
+    { name: "HKDF", hash: "SHA-256", salt: (clientAuth as Uint8Array).buffer as ArrayBuffer, info: (authInfo as Uint8Array).buffer as ArrayBuffer },
     hkdfKey,
     256
   );
@@ -266,7 +267,7 @@ async function sendPushToSubscription(
         TTL: "86400",
         Urgency: "normal",
       },
-      body,
+      body: (body as Uint8Array).buffer as ArrayBuffer,
     });
 
     if (response.status === 410 || response.status === 404) {
@@ -355,9 +356,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ sent, expired: expired.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("send-push error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

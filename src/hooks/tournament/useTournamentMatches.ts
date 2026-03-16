@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { TournamentMatch, MatchStatus } from '@/lib/tournament-types';
-import { advanceWinnerToNextRound, revertWinnerAdvancement } from './matchAdvancementHelpers';
+import { advanceWinnerToNextRound } from './matchAdvancementHelpers';
 import { tournamentKeys } from './queryKeys';
 
 // Fetch matches for a tournament
@@ -58,7 +58,7 @@ export function useGlobalUpcomingMatches(limit = 10) {
   });
 }
 
-// Update match result
+// Update match result (atomic: completes match + advances winner + drops loser)
 export function useUpdateMatchResult() {
   const queryClient = useQueryClient();
 
@@ -78,44 +78,15 @@ export function useUpdateMatchResult() {
       screenshotUrl?: string;
       tournamentId: string;
     }) => {
-      // Guard: verify match is in a submittable state
-      const { data: currentMatch, error: statusErr } = await supabase
-        .from('tournament_matches')
-        .select('status, updated_at')
-        .eq('id', matchId)
-        .single();
-      if (statusErr) throw new Error(statusErr.message);
-      if (currentMatch.status === 'completed') {
-        throw new Error('This match has already been completed');
-      }
-      if (currentMatch.status === 'disputed') {
-        throw new Error('This match is under dispute and cannot be updated');
-      }
+      const { data, error } = await supabase.rpc('rpc_advance_match_winner', {
+        p_match_id: matchId,
+        p_winner_id: winnerId,
+        p_squad_a_score: squadAScore,
+        p_squad_b_score: squadBScore,
+        p_screenshot_url: screenshotUrl ?? null,
+      });
 
-      const { data, error } = await supabase
-        .from('tournament_matches')
-        .update({
-          winner_id: winnerId,
-          squad_a_score: squadAScore,
-          squad_b_score: squadBScore,
-          result_screenshot: screenshotUrl,
-          status: 'completed' as MatchStatus,
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', matchId)
-        .eq('updated_at', currentMatch.updated_at)
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          throw new Error('This match was modified by someone else. Please refresh and try again.');
-        }
-        throw new Error(error.message);
-      }
-
-      await advanceWinnerToNextRound(tournamentId, data as unknown as TournamentMatch);
-
+      if (error) throw new Error(error.message);
       return { data, tournamentId };
     },
     onSuccess: ({ tournamentId }) => {
@@ -214,7 +185,7 @@ export function useForfeitMatch() {
   });
 }
 
-// Reset a completed match back to pending (host only)
+// Reset a completed match back to pending (atomic cascade via RPC)
 export function useResetMatchResult() {
   const queryClient = useQueryClient();
 
@@ -226,42 +197,12 @@ export function useResetMatchResult() {
       matchId: string;
       tournamentId: string;
     }) => {
-      // Fetch the current match to revert advancement
-      const { data: match, error: fetchErr } = await supabase
-        .from('tournament_matches')
-        .select('*')
-        .eq('id', matchId)
-        .single();
-      if (fetchErr) throw new Error(fetchErr.message);
-
-      if (match.status !== 'completed') {
-        throw new Error('Only completed matches can be reset');
-      }
-
-      // Revert winner advancement in bracket
-      await revertWinnerAdvancement(tournamentId, match as unknown as TournamentMatch);
-
-      // Reset the match: clear scores & status, keep screenshots
-      const { error } = await supabase
-        .from('tournament_matches')
-        .update({
-          status: 'pending' as MatchStatus,
-          winner_id: null,
-          squad_a_score: 0,
-          squad_b_score: 0,
-          completed_at: null,
-          is_forfeit: false,
-          squad_a_checked_in: false,
-          squad_b_checked_in: false,
-          toss_winner: null,
-          blue_side_team: null,
-          red_side_team: null,
-          toss_completed_at: null,
-        })
-        .eq('id', matchId);
+      const { error } = await supabase.rpc('rpc_cascade_reset_match', {
+        p_match_id: matchId,
+        p_tournament_id: tournamentId,
+      });
 
       if (error) throw new Error(error.message);
-
       return tournamentId;
     },
     onSuccess: (tournamentId) => {

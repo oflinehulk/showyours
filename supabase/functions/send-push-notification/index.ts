@@ -267,7 +267,7 @@ async function sendPushToSubscription(
         TTL: "86400",
         Urgency: "normal",
       },
-      body,
+      body: (body as Uint8Array).buffer as ArrayBuffer,
     });
 
     if (response.status === 410 || response.status === 404) {

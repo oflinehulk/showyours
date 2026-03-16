@@ -163,7 +163,7 @@ async function encryptPayload(
   );
 
   const ikm = await crypto.subtle.deriveBits(
-    { name: "HKDF", hash: "SHA-256", salt: clientAuth, info: authInfo },
+    { name: "HKDF", hash: "SHA-256", salt: (clientAuth as Uint8Array).buffer as ArrayBuffer, info: (authInfo as Uint8Array).buffer as ArrayBuffer },
     hkdfKey,
     256
   );

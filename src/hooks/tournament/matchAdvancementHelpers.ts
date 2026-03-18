@@ -461,6 +461,7 @@ export async function advanceWinnerToNextRound(
             .update({ squad_a_id: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+          await checkAndAutoCompleteBye(tournamentId, nextMatch.id);
         } else {
           // LB Champion: no more LB rounds, advance to SF slot B (or GF slot B if no SF)
           const sfMatch = await findSemiFinals(tournamentId, stage_id);

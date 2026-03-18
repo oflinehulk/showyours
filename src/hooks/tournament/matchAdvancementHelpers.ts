@@ -534,6 +534,49 @@ export async function advanceWinnerToNextRound(
   }
 }
 
+// After placing a team into a match, check if the match is now a BYE
+// (only one team present) and auto-complete it + advance the winner.
+async function checkAndAutoCompleteBye(
+  tournamentId: string,
+  matchId: string,
+) {
+  const { data: match, error } = await supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('id', matchId)
+    .single();
+
+  if (error || !match || match.status !== 'pending') return;
+
+  const hasA = !!match.squad_a_id;
+  const hasB = !!match.squad_b_id;
+
+  // Not a BYE if both teams present, or neither team present
+  if ((hasA && hasB) || (!hasA && !hasB)) return;
+
+  const winnerId = hasA ? match.squad_a_id : match.squad_b_id;
+  const bestOf = match.best_of || 1;
+  const winScore = Math.ceil(bestOf / 2);
+
+  const { error: compErr } = await supabase
+    .from('tournament_matches')
+    .update({
+      winner_id: winnerId,
+      status: 'completed' as MatchStatus,
+      squad_a_score: hasA ? winScore : 0,
+      squad_b_score: hasB ? winScore : 0,
+      completed_at: new Date().toISOString(),
+    })
+    .eq('id', matchId);
+  if (compErr) throw new Error(`checkAndAutoCompleteBye failed: ${compErr.message}`);
+
+  // Advance the winner to the next round
+  await advanceWinnerToNextRound(tournamentId, {
+    ...match,
+    winner_id: winnerId,
+  } as unknown as TournamentMatch);
+}
+
 // Advance the loser of a winners bracket match to the losers bracket
 export async function advanceLoserToLosersBracket(
   tournamentId: string,

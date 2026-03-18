@@ -398,6 +398,7 @@ export async function advanceWinnerToNextRound(
             .update({ [slot]: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+          await checkAndAutoCompleteBye(tournamentId, nextMatch.id);
         }
       } else if (round === k) {
         const nextMatch = await findNextMatch(

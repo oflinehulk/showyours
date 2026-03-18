@@ -665,6 +665,7 @@ export async function advanceLoserToLosersBracket(
           .update({ squad_b_id: loserId })
           .eq('id', lbMatch.id);
         if (advErr) throw new Error(advErr.message);
+        await checkAndAutoCompleteBye(tournamentId, lbMatch.id);
       }
     }
   }

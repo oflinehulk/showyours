@@ -677,32 +677,36 @@ export async function advanceLoserToLosersBracket(
   }
 }
 
+// Compute win score that satisfies the valid_match_scores CHECK constraint
+function byeWinScore(bestOf: number | null): number {
+  return Math.ceil((bestOf || 1) / 2);
+}
+
 // Auto-complete bye matches (one squad vs null) after bracket generation
 export async function autoCompleteByes(tournamentId: string, stageId?: string) {
+  // Pass 1: WB R1 byes (squad_a present, squad_b null)
   let queryA = supabase
     .from('tournament_matches')
     .select('*')
     .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'winners')
+    .eq('status', 'pending')
     .eq('round', 1)
     .is('squad_b_id', null)
     .not('squad_a_id', 'is', null);
-
-  if (stageId) {
-    queryA = queryA.eq('stage_id', stageId);
-  }
+  if (stageId) queryA = queryA.eq('stage_id', stageId);
 
   const { data: byeMatches, error: queryAErr } = await queryA;
   if (queryAErr) throw new Error(`autoCompleteByes queryA failed: ${queryAErr.message}`);
 
-  if (!byeMatches) return;
-
-  for (const match of byeMatches) {
+  for (const match of byeMatches || []) {
+    const winScore = byeWinScore(match.best_of);
     const { error: compErr } = await supabase
       .from('tournament_matches')
       .update({
         winner_id: match.squad_a_id,
         status: 'completed' as MatchStatus,
-        squad_a_score: 1,
+        squad_a_score: winScore,
         squad_b_score: 0,
         completed_at: new Date().toISOString(),
       })
@@ -715,31 +719,30 @@ export async function autoCompleteByes(tournamentId: string, stageId?: string) {
     } as unknown as TournamentMatch);
   }
 
+  // Pass 2: WB R1 reverse byes (squad_b present, squad_a null)
   let queryB = supabase
     .from('tournament_matches')
     .select('*')
     .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'winners')
+    .eq('status', 'pending')
     .eq('round', 1)
     .is('squad_a_id', null)
     .not('squad_b_id', 'is', null);
-
-  if (stageId) {
-    queryB = queryB.eq('stage_id', stageId);
-  }
+  if (stageId) queryB = queryB.eq('stage_id', stageId);
 
   const { data: reverseByes, error: queryBErr } = await queryB;
   if (queryBErr) throw new Error(`autoCompleteByes queryB failed: ${queryBErr.message}`);
 
-  if (!reverseByes) return;
-
-  for (const match of reverseByes) {
+  for (const match of reverseByes || []) {
+    const winScore = byeWinScore(match.best_of);
     const { error: compErr } = await supabase
       .from('tournament_matches')
       .update({
         winner_id: match.squad_b_id,
         status: 'completed' as MatchStatus,
         squad_a_score: 0,
-        squad_b_score: 1,
+        squad_b_score: winScore,
         completed_at: new Date().toISOString(),
       })
       .eq('id', match.id);
@@ -751,72 +754,138 @@ export async function autoCompleteByes(tournamentId: string, stageId?: string) {
     } as unknown as TournamentMatch);
   }
 
-  // Remaining passes: loop over LB byes until no more are found.
-  // Each completed bye may cascade a winner into the next round, creating
-  // a new bye there (e.g. WB bye → no loser drops → LB R2 has only one
-  // team → bye → advance → possibly another bye in LB R3, etc.).
+  // Pass 3: LB R1 byes (squad_a present, squad_b null)
+  let queryLB1_A = supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'losers')
+    .eq('status', 'pending')
+    .eq('round', 1)
+    .is('squad_b_id', null)
+    .not('squad_a_id', 'is', null);
+  if (stageId) queryLB1_A = queryLB1_A.eq('stage_id', stageId);
+  const { data: lb1ByesA, error: lb1AErr } = await queryLB1_A;
+  if (lb1AErr) throw new Error(`autoCompleteByes LB R1 queryA failed: ${lb1AErr.message}`);
+
+  for (const match of lb1ByesA || []) {
+    const winScore = byeWinScore(match.best_of);
+    const { error: compErr } = await supabase
+      .from('tournament_matches')
+      .update({
+        winner_id: match.squad_a_id,
+        status: 'completed' as MatchStatus,
+        squad_a_score: winScore,
+        squad_b_score: 0,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', match.id);
+    if (compErr) throw new Error(`autoCompleteByes LB R1 update failed: ${compErr.message}`);
+    await advanceWinnerToNextRound(tournamentId, {
+      ...match,
+      winner_id: match.squad_a_id,
+    } as unknown as TournamentMatch);
+  }
+
+  // Pass 4: LB R1 reverse byes (squad_b present, squad_a null)
+  let queryLB1_B = supabase
+    .from('tournament_matches')
+    .select('*')
+    .eq('tournament_id', tournamentId)
+    .eq('bracket_type', 'losers')
+    .eq('status', 'pending')
+    .eq('round', 1)
+    .is('squad_a_id', null)
+    .not('squad_b_id', 'is', null);
+  if (stageId) queryLB1_B = queryLB1_B.eq('stage_id', stageId);
+  const { data: lb1ByesB, error: lb1BErr } = await queryLB1_B;
+  if (lb1BErr) throw new Error(`autoCompleteByes LB R1 queryB failed: ${lb1BErr.message}`);
+
+  for (const match of lb1ByesB || []) {
+    const winScore = byeWinScore(match.best_of);
+    const { error: compErr } = await supabase
+      .from('tournament_matches')
+      .update({
+        winner_id: match.squad_b_id,
+        status: 'completed' as MatchStatus,
+        squad_a_score: 0,
+        squad_b_score: winScore,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', match.id);
+    if (compErr) throw new Error(`autoCompleteByes LB R1 reverse update failed: ${compErr.message}`);
+    await advanceWinnerToNextRound(tournamentId, {
+      ...match,
+      winner_id: match.squad_b_id,
+    } as unknown as TournamentMatch);
+  }
+
+  // Remaining passes: loop over ALL bracket byes (any round, any bracket_type)
+  // until no more are found. Each completed bye may cascade a winner into the
+  // next round, creating a new bye there (e.g. WB bye → no loser drops → LB R2
+  // has only one team → bye → advance → possibly another bye in LB R3, etc.).
   const MAX_ITERATIONS = 20; // safety limit
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     let found = 0;
 
-    // LB byes: squad_a present, squad_b null
+    // Byes: squad_a present, squad_b null
     let queryLB_A = supabase
       .from('tournament_matches')
       .select('*')
       .eq('tournament_id', tournamentId)
-      .eq('bracket_type', 'losers')
       .eq('status', 'pending')
       .is('squad_b_id', null)
       .not('squad_a_id', 'is', null);
     if (stageId) queryLB_A = queryLB_A.eq('stage_id', stageId);
     const { data: lbByesA, error: lbAErr } = await queryLB_A;
-    if (lbAErr) throw new Error(`autoCompleteByes LB queryA failed: ${lbAErr.message}`);
+    if (lbAErr) throw new Error(`autoCompleteByes loop queryA failed: ${lbAErr.message}`);
 
     for (const match of lbByesA || []) {
       found++;
+      const winScore = byeWinScore(match.best_of);
       const { error: compErr } = await supabase
         .from('tournament_matches')
         .update({
           winner_id: match.squad_a_id,
           status: 'completed' as MatchStatus,
-          squad_a_score: 1,
+          squad_a_score: winScore,
           squad_b_score: 0,
           completed_at: new Date().toISOString(),
         })
         .eq('id', match.id);
-      if (compErr) throw new Error(`autoCompleteByes LB update failed: ${compErr.message}`);
+      if (compErr) throw new Error(`autoCompleteByes loop update failed: ${compErr.message}`);
       await advanceWinnerToNextRound(tournamentId, {
         ...match,
         winner_id: match.squad_a_id,
       } as unknown as TournamentMatch);
     }
 
-    // LB byes: squad_b present, squad_a null
+    // Byes: squad_b present, squad_a null
     let queryLB_B = supabase
       .from('tournament_matches')
       .select('*')
       .eq('tournament_id', tournamentId)
-      .eq('bracket_type', 'losers')
       .eq('status', 'pending')
       .is('squad_a_id', null)
       .not('squad_b_id', 'is', null);
     if (stageId) queryLB_B = queryLB_B.eq('stage_id', stageId);
     const { data: lbByesB, error: lbBErr } = await queryLB_B;
-    if (lbBErr) throw new Error(`autoCompleteByes LB queryB failed: ${lbBErr.message}`);
+    if (lbBErr) throw new Error(`autoCompleteByes loop queryB failed: ${lbBErr.message}`);
 
     for (const match of lbByesB || []) {
       found++;
+      const winScore = byeWinScore(match.best_of);
       const { error: compErr } = await supabase
         .from('tournament_matches')
         .update({
           winner_id: match.squad_b_id,
           status: 'completed' as MatchStatus,
           squad_a_score: 0,
-          squad_b_score: 1,
+          squad_b_score: winScore,
           completed_at: new Date().toISOString(),
         })
         .eq('id', match.id);
-      if (compErr) throw new Error(`autoCompleteByes LB reverse update failed: ${compErr.message}`);
+      if (compErr) throw new Error(`autoCompleteByes loop reverse update failed: ${compErr.message}`);
       await advanceWinnerToNextRound(tournamentId, {
         ...match,
         winner_id: match.squad_b_id,

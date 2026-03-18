@@ -650,6 +650,7 @@ export async function advanceLoserToLosersBracket(
           .update({ [slot]: loserId })
           .eq('id', lbMatch.id);
         if (advErr) throw new Error(advErr.message);
+        await checkAndAutoCompleteBye(tournamentId, lbMatch.id);
       }
     } else {
       const lbRound = 2 * (round - 1);

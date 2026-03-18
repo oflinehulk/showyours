@@ -1340,6 +1340,10 @@ export type Database = {
           visited: string[]
         }[]
       }
+      _check_and_complete_bye: {
+        Args: { p_depth?: number; p_match_id: string; p_tournament_id: string }
+        Returns: undefined
+      }
       admin_get_user_emails: {
         Args: never
         Returns: {

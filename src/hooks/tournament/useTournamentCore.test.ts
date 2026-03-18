@@ -112,13 +112,11 @@ describe('useDeleteTournament', () => {
   });
 
   it('deletes a tournament', async () => {
-    mockSupabaseResponse(null);
-
     const { result } = renderHook(() => useDeleteTournament(), { wrapper: createWrapper() });
 
     result.current.mutate('t1');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(supabase.from).toHaveBeenCalledWith('tournaments');
+    expect(supabase.rpc).toHaveBeenCalledWith('rpc_delete_tournament_cascade', { p_tournament_id: 't1' });
   });
 });

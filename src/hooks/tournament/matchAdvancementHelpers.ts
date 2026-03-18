@@ -411,6 +411,7 @@ export async function advanceWinnerToNextRound(
             .update({ squad_a_id: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+          await checkAndAutoCompleteBye(tournamentId, nextMatch.id);
         }
       } else if (offset % 2 === 1) {
         // Mixed round → next is pure (half matches) → use SE halving

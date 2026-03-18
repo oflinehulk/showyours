@@ -497,6 +497,7 @@ export async function advanceWinnerToNextRound(
             .update({ squad_a_id: winner_id })
             .eq('id', nextMatch.id);
           if (advErr) throw new Error(advErr.message);
+          await checkAndAutoCompleteBye(tournamentId, nextMatch.id);
         } else {
           // LB Champion in standard DE: advance to GF slot B
           const gfMatch = await findGrandFinals(tournamentId, stage_id);

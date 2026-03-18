@@ -83,7 +83,7 @@ export function useUpdateMatchResult() {
         p_winner_id: winnerId,
         p_squad_a_score: squadAScore,
         p_squad_b_score: squadBScore,
-        p_screenshot_url: screenshotUrl ?? null,
+        p_screenshot_url: screenshotUrl ?? undefined,
       });
 
       if (error) throw new Error(error.message);

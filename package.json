@@ -49,6 +49,7 @@
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
     "@types/dompurify": "^3.0.5",
+    "@vitejs/plugin-react": "^6.0.1",
     "@vitejs/plugin-react-swc": "3.11.0",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",

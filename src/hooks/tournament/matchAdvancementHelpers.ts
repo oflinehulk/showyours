@@ -631,6 +631,8 @@ export async function advanceLoserToLosersBracket(
           .update({ squad_b_id: loserId })
           .eq('id', lbMatch.id);
         if (advErr) throw new Error(advErr.message);
+        // Check if the LB match is now a BYE (only one team) and auto-complete
+        await checkAndAutoCompleteBye(tournamentId, lbMatch.id);
       }
     }
   } else {

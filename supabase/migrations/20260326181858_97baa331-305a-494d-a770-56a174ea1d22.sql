@@ -1,0 +1,2 @@
+ALTER TABLE tournament_squad_members DROP CONSTRAINT tournament_squad_members_member_status_check;
+ALTER TABLE tournament_squad_members ADD CONSTRAINT tournament_squad_members_member_status_check CHECK (member_status IN ('active', 'inactive', 'removed_by_host', 'replaced_by_host'));

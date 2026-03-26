@@ -46,7 +46,7 @@ export interface TournamentSquad {
   updated_at: string;
 }
 
-export type MemberStatus = 'active' | 'inactive';
+export type MemberStatus = 'active' | 'inactive' | 'removed_by_host' | 'replaced_by_host';
 
 export interface TournamentSquadMember {
   id: string;

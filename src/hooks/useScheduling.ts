@@ -147,8 +147,8 @@ export function useGenerateSchedulingTokens() {
       tournamentId: string;
       squadIds: string[];
     }) => {
-      // expires_at: 30 days from now
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      // expires_at: 90 days from now
+      const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
       const rows = squadIds.map((squadId) => ({
         tournament_id: tournamentId,
         tournament_squad_id: squadId,

@@ -1,3 +1,4 @@
+import { getUserFriendlyMessage } from '@/lib/error-utils';
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -85,7 +86,7 @@ export function ImageUpload({
       onUpload(publicUrl);
       toast.success('Image uploaded successfully!');
     } catch (error: unknown) {
-      toast.error('Failed to upload image', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to upload image', { description: getUserFriendlyMessage(error) });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -215,7 +216,7 @@ export function MultiImageUpload({
       onUpload(publicUrl);
       toast.success('Screenshot uploaded!');
     } catch (error: unknown) {
-      toast.error('Failed to upload', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to upload', { description: getUserFriendlyMessage(error) });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {

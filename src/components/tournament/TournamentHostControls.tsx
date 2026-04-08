@@ -1,3 +1,4 @@
+import { getUserFriendlyMessage } from '@/lib/error-utils';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,7 +114,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       });
       toast.success('Registration closed');
     } catch (error: unknown) {
-      toast.error('Failed to close registration', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to close registration', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -125,7 +126,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       });
       toast.success('Registration reopened');
     } catch (error: unknown) {
-      toast.error('Failed to reopen registration', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to reopen registration', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -136,7 +137,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         description: 'All approved squad rosters have been re-locked with current members.',
       });
     } catch (error: unknown) {
-      toast.error('Failed to recapture snapshots', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to recapture snapshots', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -150,7 +151,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         description: 'Matches have been created. You can now start the tournament.',
       });
     } catch (error: unknown) {
-      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to generate bracket', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -174,7 +175,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       });
       toast.success('Tournament started!');
     } catch (error: unknown) {
-      toast.error('Failed to start tournament', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to start tournament', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -183,7 +184,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       await resetBracket.mutateAsync(tournament.id);
       toast.success('Bracket reset', { description: 'You can now reconfigure seeding and format.' });
     } catch (error: unknown) {
-      toast.error('Failed to reset bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to reset bracket', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -195,7 +196,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       });
       toast.success('Tournament completed!');
     } catch (error: unknown) {
-      toast.error('Failed to complete tournament', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to complete tournament', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -207,7 +208,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       });
       toast.success('Tournament cancelled');
     } catch (error: unknown) {
-      toast.error('Failed to cancel tournament', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to cancel tournament', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -217,7 +218,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       toast.success('Tournament deleted');
       navigate('/tournaments');
     } catch (error: unknown) {
-      toast.error('Failed to delete tournament', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to delete tournament', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -226,7 +227,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
       await autoSeed.mutateAsync(tournament.id);
       toast.success('Seeds assigned by registration order');
     } catch (error: unknown) {
-      toast.error('Failed to auto-seed', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to auto-seed', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -252,7 +253,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         tournamentId: tournament.id,
       });
     } catch (error: unknown) {
-      toast.error('Failed to update seed', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to update seed', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -267,7 +268,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
         description: 'All remaining matches have been forfeited.',
       });
     } catch (error: unknown) {
-      toast.error('Failed to withdraw squad', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to withdraw squad', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -452,7 +453,7 @@ export function TournamentHostControls({ tournament, registrations }: Tournament
                         });
                       } catch (error: unknown) {
                         toast.error('Failed to switch format', {
-                          description: error instanceof Error ? error.message : 'Unknown error',
+                          description: getUserFriendlyMessage(error),
                         });
                       }
                     }}
@@ -689,7 +690,7 @@ function MultiStageSetup({
       await autoSeed.mutateAsync(tournament.id);
       toast.success('Seeds assigned by registration order');
     } catch (error: unknown) {
-      toast.error('Failed to auto-seed', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to auto-seed', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -715,7 +716,7 @@ function MultiStageSetup({
         tournamentId: tournament.id,
       });
     } catch (error: unknown) {
-      toast.error('Failed to update seed', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to update seed', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -743,7 +744,7 @@ function MultiStageSetup({
 
       toast.success(`${firstStage.name} bracket generated!`);
     } catch (error: unknown) {
-      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to generate bracket', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -766,7 +767,7 @@ function MultiStageSetup({
               toast.success('Switched to single-stage mode');
             } catch (error: unknown) {
               toast.error('Failed to switch', {
-                description: error instanceof Error ? error.message : 'Unknown error',
+                description: getUserFriendlyMessage(error),
               });
             }
           }}
@@ -1159,7 +1160,7 @@ function CurrentStageActions({
         toast.success(`${currentStage.name} completed!`);
       }
     } catch (error: unknown) {
-      toast.error('Failed', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -1172,7 +1173,7 @@ function CurrentStageActions({
       });
       toast.success('Stage bracket reset', { description: 'You can now reconfigure groups and regenerate the bracket.' });
     } catch (error: unknown) {
-      toast.error('Failed to reset stage', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to reset stage', { description: getUserFriendlyMessage(error) });
     }
   };
 
@@ -1533,7 +1534,7 @@ function PendingStageActions({
         }
       }
     } catch (error: unknown) {
-      toast.error('Failed to generate bracket', { description: error instanceof Error ? error.message : 'Unknown error' });
+      toast.error('Failed to generate bracket', { description: getUserFriendlyMessage(error) });
     } finally {
       setGenerating(false);
     }

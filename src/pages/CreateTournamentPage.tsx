@@ -1,3 +1,4 @@
+import { getUserFriendlyMessage } from '@/lib/error-utils';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -85,7 +86,7 @@ export default function CreateTournamentPage() {
       navigate(`/tournament/${tournament.id}`);
     } catch (error: unknown) {
       toast.error('Failed to create tournament', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: getUserFriendlyMessage(error),
       });
     }
   };

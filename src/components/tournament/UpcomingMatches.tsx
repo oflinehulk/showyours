@@ -175,6 +175,16 @@ export function UpcomingMatches({
               {dateLabel}
               {dateLabel === 'Today' && isHost && (
                 <div className="ml-auto flex items-center gap-1.5">
+                  {bannerUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-muted-foreground hover:text-[#FF4500]"
+                      onClick={() => setUseBannerBg(prev => !prev)}
+                    >
+                      {useBannerBg ? '🖼 Banner' : '⬛ Dark'}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

@@ -63,12 +63,14 @@ export function UpcomingMatches({
   tournamentStatus,
   userSquadIds = [],
   registrations,
+  bannerUrl,
 }: UpcomingMatchesProps) {
   const scheduleCardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [generatingThumbnail, setGeneratingThumbnail] = useState(false);
   const [renderScheduleCard, setRenderScheduleCard] = useState(false);
   const [thumbnailMatches, setThumbnailMatches] = useState<TournamentMatch[]>([]);
+  const [useBannerBg, setUseBannerBg] = useState(false);
 
   // Only show matches that have a scheduled time — TBA matches are already visible in the Bracket tab
   const upcoming = matches

@@ -47,6 +47,7 @@ interface UpcomingMatchesProps {
   tournamentStatus?: string;
   userSquadIds?: string[];
   registrations?: (TournamentRegistration & { tournament_squads: TournamentSquad })[];
+  bannerUrl?: string | null;
 }
 
 function parseRosterSnapshot(snapshot: Json | null): RosterSnapshotEntry[] {

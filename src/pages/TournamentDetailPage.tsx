@@ -892,6 +892,7 @@ export default function TournamentDetailPage() {
                   tournamentStatus={tournament.status}
                   userSquadIds={userSquadIds}
                   registrations={registrations || []}
+                  bannerUrl={tournament.banner_url}
                 />
               </TabsContent>
             </>

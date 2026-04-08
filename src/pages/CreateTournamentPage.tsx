@@ -85,7 +85,7 @@ export default function CreateTournamentPage() {
       navigate(`/tournament/${tournament.id}`);
     } catch (error: unknown) {
       toast.error('Failed to create tournament', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: getUserFriendlyMessage(error),
       });
     }
   };

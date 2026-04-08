@@ -229,7 +229,7 @@ export function UpcomingMatches({
         ))}
       </div>
 
-      {/* Hidden render target for YouTube schedule thumbnail (1280x720) */}
+      {/* Hidden render target for YouTube schedule thumbnail (1280x720) — Adaptive Layout */}
       {renderScheduleCard && (
         <div
           ref={scheduleCardRef}
@@ -244,180 +244,316 @@ export function UpcomingMatches({
             overflow: 'hidden',
           }}
         >
-          {/* Subtle background glow */}
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(ellipse at top center, rgba(255,69,0,0.06) 0%, transparent 60%)',
-          }} />
+          {/* Background: banner or dark */}
+          {useBannerBg && bannerUrl ? (
+            <>
+              <img
+                src={bannerUrl}
+                crossOrigin="anonymous"
+                style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.85) 50%, rgba(0,0,0,0.95) 100%)',
+              }} />
+            </>
+          ) : (
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'radial-gradient(ellipse at top center, rgba(255,69,0,0.08) 0%, transparent 60%)',
+            }} />
+          )}
 
           <div style={{
             position: 'relative',
-            padding: '40px 48px 32px',
+            padding: thumbnailMatches.length === 1 ? '0' : '40px 48px 32px',
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
           }}>
-            {/* Header */}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{
-                color: '#FF4500',
-                fontSize: '28px',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                marginBottom: '6px',
-                lineHeight: '1.2',
-              }}>
-                {tournamentName}
-              </div>
-              <div style={{
-                color: '#888',
-                fontSize: '18px',
-                lineHeight: '1.3',
-              }}>
-                {format(new Date(), 'EEEE, MMMM d, yyyy')} &mdash; Match Schedule
-              </div>
-            </div>
-
-            {/* Separator */}
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #FF4500, rgba(255,69,0,0.05))',
-              marginBottom: '20px',
-              flexShrink: 0,
-            }} />
-
-            {/* Match Grid - 2 columns */}
-            <div style={{
-              flex: 1,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '14px',
-              alignContent: 'center',
-            }}>
-              {thumbnailMatches.slice(0, 6).map((m) => (
-                <div key={m.id} style={{
-                  padding: '16px 24px',
-                  borderRadius: '12px',
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,69,0,0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}>
-                  {/* Time + Bo + Round */}
+            {/* ========== SINGLE MATCH — HERO LAYOUT ========== */}
+            {thumbnailMatches.length === 1 && (() => {
+              const m = thumbnailMatches[0];
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  {/* Header bar */}
                   <div style={{
-                    color: '#FF4500',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    marginBottom: '12px',
+                    padding: '28px 48px 20px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
-                    {m.scheduled_time ? format(new Date(m.scheduled_time), 'h:mm a') : 'TBA'}
-                    <span style={{ color: '#666', marginLeft: '12px', fontSize: '13px' }}>Bo{m.best_of}</span>
-                    <span style={{ color: '#555', marginLeft: '12px', fontSize: '12px' }}>Round {m.round} &middot; Match #{m.match_number}</span>
+                    <div>
+                      <div style={{ color: '#FF4500', fontSize: '22px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+                        {tournamentName}
+                      </div>
+                      <div style={{ color: '#888', fontSize: '16px', marginTop: '4px' }}>
+                        {format(new Date(), 'EEEE, MMMM d, yyyy')}
+                        {m.bracket_type && <span style={{ marginLeft: '12px', color: '#FF4500', opacity: 0.7, fontSize: '14px', textTransform: 'uppercase' }}>
+                          {m.bracket_type.replace('_', ' ')} bracket
+                        </span>}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ color: '#FF4500', fontSize: '16px', fontWeight: 600 }}>
+                        {m.scheduled_time ? format(new Date(m.scheduled_time), 'h:mm a') : 'TBA'}
+                      </div>
+                      <div style={{ color: '#666', fontSize: '14px' }}>
+                        Round {m.round} · Match #{m.match_number} · Bo{m.best_of}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Teams - vertical layout */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {/* Separator */}
+                  <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, #FF4500, transparent)', margin: '0 48px', flexShrink: 0 }} />
+
+                  {/* Main VS Section */}
+                  <div style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 48px', gap: '40px',
+                  }}>
                     {/* Team A */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(255,255,255,0.02)',
-                    }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                       {m.squad_a?.logo_url ? (
-                        <img
-                          src={m.squad_a.logo_url}
-                          crossOrigin="anonymous"
-                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                        />
+                        <img src={m.squad_a.logo_url} crossOrigin="anonymous"
+                          style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,69,0,0.3)' }} />
                       ) : (
                         <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          backgroundColor: '#1a1a1a', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          fontSize: '14px', color: '#666', flexShrink: 0,
+                          width: '140px', height: '140px', borderRadius: '50%', backgroundColor: '#1a1a1a',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '56px', color: '#555', border: '3px solid rgba(255,69,0,0.2)',
                         }}>
                           {m.squad_a?.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                       )}
-                      <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>
+                      <div style={{ color: '#eee', fontWeight: 700, fontSize: '32px', textAlign: 'center', lineHeight: 1.2, maxWidth: '300px' }}>
                         {m.squad_a?.name || 'TBD'}
-                      </span>
+                      </div>
                     </div>
 
                     {/* VS */}
                     <div style={{
-                      textAlign: 'center',
-                      color: 'rgba(255,69,0,0.5)',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      letterSpacing: '0.15em',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0,
                     }}>
-                      VS
+                      <div style={{
+                        color: '#FF4500', fontSize: '52px', fontWeight: 900, letterSpacing: '0.08em',
+                        textShadow: '0 0 30px rgba(255,69,0,0.4)',
+                      }}>
+                        VS
+                      </div>
+                      <div style={{
+                        color: '#666', fontSize: '13px', letterSpacing: '0.2em', textTransform: 'uppercase',
+                      }}>
+                        Bo{m.best_of}
+                      </div>
                     </div>
 
                     {/* Team B */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      backgroundColor: 'rgba(255,255,255,0.02)',
-                    }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                       {m.squad_b?.logo_url ? (
-                        <img
-                          src={m.squad_b.logo_url}
-                          crossOrigin="anonymous"
-                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                        />
+                        <img src={m.squad_b.logo_url} crossOrigin="anonymous"
+                          style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,69,0,0.3)' }} />
                       ) : (
                         <div style={{
-                          width: '32px', height: '32px', borderRadius: '50%',
-                          backgroundColor: '#1a1a1a', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center',
-                          fontSize: '14px', color: '#666', flexShrink: 0,
+                          width: '140px', height: '140px', borderRadius: '50%', backgroundColor: '#1a1a1a',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '56px', color: '#555', border: '3px solid rgba(255,69,0,0.2)',
                         }}>
                           {m.squad_b?.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                       )}
-                      <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>
+                      <div style={{ color: '#eee', fontWeight: 700, fontSize: '32px', textAlign: 'center', lineHeight: 1.2, maxWidth: '300px' }}>
                         {m.squad_b?.name || 'TBD'}
-                      </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Branding footer */}
-            <div style={{
-              borderTop: '1px solid rgba(255,69,0,0.2)',
-              paddingTop: '16px',
-              marginTop: '16px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}>
-              <span style={{
-                color: '#FF4500',
-                fontSize: '16px',
-                letterSpacing: '0.25em',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-              }}>
-                ShowYours
-              </span>
-              <span style={{ color: '#555', fontSize: '14px' }}>
-                showyours.fun
-              </span>
-            </div>
+                  {/* Footer */}
+                  <div style={{
+                    borderTop: '1px solid rgba(255,69,0,0.2)', padding: '16px 48px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ color: '#FF4500', fontSize: '16px', letterSpacing: '0.25em', fontWeight: 700, textTransform: 'uppercase' }}>
+                      ShowYours
+                    </span>
+                    <span style={{ color: '#555', fontSize: '14px' }}>showyours.fun</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ========== TWO MATCHES — SPLIT SCREEN ========== */}
+            {thumbnailMatches.length === 2 && (() => {
+              return (
+                <>
+                  {/* Header */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ color: '#FF4500', fontSize: '26px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
+                      {tournamentName}
+                    </div>
+                    <div style={{ color: '#888', fontSize: '17px' }}>
+                      {format(new Date(), 'EEEE, MMMM d, yyyy')} — Match Schedule
+                    </div>
+                  </div>
+                  <div style={{ height: '2px', background: 'linear-gradient(90deg, #FF4500, rgba(255,69,0,0.05))', marginBottom: '20px', flexShrink: 0 }} />
+
+                  {/* Two matches side by side */}
+                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignContent: 'center' }}>
+                    {thumbnailMatches.map((m) => (
+                      <div key={m.id} style={{
+                        padding: '28px 24px',
+                        borderRadius: '16px',
+                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,69,0,0.15)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
+                      }}>
+                        {/* Meta */}
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ color: '#FF4500', fontSize: '18px', fontWeight: 600 }}>
+                            {m.scheduled_time ? format(new Date(m.scheduled_time), 'h:mm a') : 'TBA'}
+                          </div>
+                          <div style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>
+                            Round {m.round} · Match #{m.match_number} · Bo{m.best_of}
+                            {m.bracket_type && <span style={{ marginLeft: '8px', color: '#FF4500', opacity: 0.6 }}>
+                              {m.bracket_type.replace('_', ' ')}
+                            </span>}
+                          </div>
+                        </div>
+
+                        {/* Teams horizontal */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', justifyContent: 'center' }}>
+                          {/* Team A */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1 }}>
+                            {m.squad_a?.logo_url ? (
+                              <img src={m.squad_a.logo_url} crossOrigin="anonymous"
+                                style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,69,0,0.2)' }} />
+                            ) : (
+                              <div style={{
+                                width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#1a1a1a',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#555',
+                              }}>
+                                {m.squad_a?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            <span style={{ color: '#ddd', fontWeight: 700, fontSize: '18px', textAlign: 'center', lineHeight: 1.2 }}>
+                              {m.squad_a?.name || 'TBD'}
+                            </span>
+                          </div>
+
+                          <span style={{ color: '#FF4500', fontSize: '28px', fontWeight: 900, letterSpacing: '0.1em', flexShrink: 0 }}>VS</span>
+
+                          {/* Team B */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1 }}>
+                            {m.squad_b?.logo_url ? (
+                              <img src={m.squad_b.logo_url} crossOrigin="anonymous"
+                                style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,69,0,0.2)' }} />
+                            ) : (
+                              <div style={{
+                                width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#1a1a1a',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', color: '#555',
+                              }}>
+                                {m.squad_b?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            <span style={{ color: '#ddd', fontWeight: 700, fontSize: '18px', textAlign: 'center', lineHeight: 1.2 }}>
+                              {m.squad_b?.name || 'TBD'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{
+                    borderTop: '1px solid rgba(255,69,0,0.2)', paddingTop: '16px', marginTop: '16px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ color: '#FF4500', fontSize: '16px', letterSpacing: '0.25em', fontWeight: 700, textTransform: 'uppercase' }}>ShowYours</span>
+                    <span style={{ color: '#555', fontSize: '14px' }}>showyours.fun</span>
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* ========== 3-6 MATCHES — GRID LAYOUT ========== */}
+            {thumbnailMatches.length >= 3 && (() => {
+              const count = Math.min(thumbnailMatches.length, 6);
+              const cols = count <= 4 ? 2 : 3;
+              return (
+                <>
+                  {/* Header */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ color: '#FF4500', fontSize: '28px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px', lineHeight: '1.2' }}>
+                      {tournamentName}
+                    </div>
+                    <div style={{ color: '#888', fontSize: '18px', lineHeight: '1.3' }}>
+                      {format(new Date(), 'EEEE, MMMM d, yyyy')} — Match Schedule
+                    </div>
+                  </div>
+                  <div style={{ height: '2px', background: 'linear-gradient(90deg, #FF4500, rgba(255,69,0,0.05))', marginBottom: '20px', flexShrink: 0 }} />
+
+                  {/* Grid */}
+                  <div style={{
+                    flex: 1, display: 'grid',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gap: '14px', alignContent: 'center',
+                  }}>
+                    {thumbnailMatches.slice(0, 6).map((m) => (
+                      <div key={m.id} style={{
+                        padding: '16px 24px', borderRadius: '12px',
+                        backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,69,0,0.15)',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                      }}>
+                        <div style={{ color: '#FF4500', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+                          {m.scheduled_time ? format(new Date(m.scheduled_time), 'h:mm a') : 'TBA'}
+                          <span style={{ color: '#666', marginLeft: '12px', fontSize: '13px' }}>Bo{m.best_of}</span>
+                          <span style={{ color: '#555', marginLeft: '12px', fontSize: '12px' }}>
+                            R{m.round} #{m.match_number}
+                            {m.bracket_type && ` · ${m.bracket_type.replace('_', ' ')}`}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 10px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                            {m.squad_a?.logo_url ? (
+                              <img src={m.squad_a.logo_url} crossOrigin="anonymous"
+                                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#666', flexShrink: 0 }}>
+                                {m.squad_a?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>{m.squad_a?.name || 'TBD'}</span>
+                          </div>
+                          <div style={{ textAlign: 'center', color: 'rgba(255,69,0,0.5)', fontSize: '12px', fontWeight: 700, letterSpacing: '0.15em' }}>VS</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 10px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                            {m.squad_b?.logo_url ? (
+                              <img src={m.squad_b.logo_url} crossOrigin="anonymous"
+                                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: '#666', flexShrink: 0 }}>
+                                {m.squad_b?.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                            <span style={{ color: '#ddd', fontWeight: 700, fontSize: '17px' }}>{m.squad_b?.name || 'TBD'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{
+                    borderTop: '1px solid rgba(255,69,0,0.2)', paddingTop: '16px', marginTop: '16px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ color: '#FF4500', fontSize: '16px', letterSpacing: '0.25em', fontWeight: 700, textTransform: 'uppercase' }}>ShowYours</span>
+                    <span style={{ color: '#555', fontSize: '14px' }}>showyours.fun</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
